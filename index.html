@@ -373,6 +373,22 @@ function updateSaveStatusLine(){
   else if(saveStatus==='error') el.innerHTML = '⚠ Falha ao salvar na nuvem (tentando de novo na próxima alteração)';
   else el.innerHTML = '☁ Sincronizado com a nuvem';
 }
+function setForceSaveMsg(text, isError){
+  const el = document.getElementById('force-save-msg');
+  if(!el) return;
+  el.textContent = text;
+  el.style.color = isError ? 'var(--danger)' : '';
+}
+async function forceSaveNow(){
+  clearTimeout(saveTimer);
+  if(cloudStatus==='connected' && sbClient){
+    setForceSaveMsg('Salvando na nuvem...');
+    await cloudSave();
+    setForceSaveMsg(saveStatus==='saved' ? '✓ Alterações salvas na nuvem.' : '⚠ Falha ao salvar — tente de novo.', saveStatus!=='saved');
+  } else {
+    setForceSaveMsg('✓ Salvo neste navegador.');
+  }
+}
 /* If the tab is being switched away from or closed while a save is still waiting on the debounce,
    flush it immediately instead of risking losing the last change. */
 document.addEventListener('visibilitychange', function(){
@@ -1005,6 +1021,13 @@ function renderSettingsView(){
   });
   html += '</div>';
 
+  if(ui.settingsTab!=='nuvem'){
+    html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">'
+      + '<button class="btn btn-primary btn-sm" data-action="force-save">💾 Salvar agora</button>'
+      + '<span id="force-save-msg" class="hint" style="margin-top:0;"></span>'
+      + '</div>';
+  }
+
   if(ui.settingsTab==='analistas'){
     html += '<div class="section-card"><h3>Analistas</h3><table><thead><tr><th></th><th>Nome</th><th>Quadro</th><th></th></tr></thead><tbody>';
     state.analysts.forEach(a=>{
@@ -1316,6 +1339,7 @@ document.addEventListener('click', function(e){
   else if(a==='delete-module'){ state.modules = state.modules.filter(m=>m!==el.dataset.name); render(); }
   else if(a==='clear-modules'){ showConfirm('Remover todos os módulos cadastrados da lista?', function(){ state.modules = []; }); }
   else if(a==='cloud-disconnect'){ showConfirm('Desconectar da nuvem? O app volta a salvar só neste navegador (os dados na nuvem continuam existindo).', function(){ disconnectCloud(); }); }
+  else if(a==='force-save'){ forceSaveNow(); }
   else if(a==='cloud-reconnect-default'){ connectCloud(DEFAULT_CLOUD_CONFIG.url, DEFAULT_CLOUD_CONFIG.anonKey); }
   else if(a==='delete-type'){ state.agendaTypes = state.agendaTypes.filter(t=>t!==el.dataset.name); render(); }
   else if(a==='settings-tab'){ ui.settingsTab = el.dataset.tab; render(); }
