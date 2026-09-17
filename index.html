@@ -286,10 +286,28 @@ function loadLocalState(){
 
 /* ---- Cloud (Supabase) config: optional. When configured, data is stored in a
    Postgres table instead of (only) localStorage, so it can be shared across
-   devices/browsers. See the "Nuvem" tab in Configurações to set it up. ---- */
+   devices/browsers. See the "Nuvem" tab in Configurações to set it up.
+   DEFAULT_CLOUD_CONFIG is baked into this file so every computer that opens
+   the published page connects automatically, with no per-browser setup.
+   The publishable key is meant to be public (protected by RLS/policies, not
+   by secrecy), so it's fine for it to live here in plain sight. ---- */
+const DEFAULT_CLOUD_CONFIG = {
+  url: 'https://pfabqqdhvacakszoklxh.supabase.co',
+  anonKey: 'sb_publishable_0lFYSvX-C7n3Y1FVZ4RWvQ_8HVOCxQI'
+};
 const CLOUD_CONFIG_KEY = 'implanta_cloud_config_v1';
-function loadCloudConfig(){ try{ const raw=localStorage.getItem(CLOUD_CONFIG_KEY); return raw?JSON.parse(raw):null; }catch(e){ return null; } }
+const CLOUD_DISABLED_KEY = 'implanta_cloud_disabled_v1';
+function loadCloudConfig(){
+  try{
+    if(localStorage.getItem(CLOUD_DISABLED_KEY)==='1') return null;
+    const raw = localStorage.getItem(CLOUD_CONFIG_KEY);
+    if(raw) return JSON.parse(raw);
+    if(DEFAULT_CLOUD_CONFIG.url && DEFAULT_CLOUD_CONFIG.anonKey) return DEFAULT_CLOUD_CONFIG;
+    return null;
+  }catch(e){ return null; }
+}
 var cloudConfig = loadCloudConfig();
+var usingDefaultCloud = !!(cloudConfig && DEFAULT_CLOUD_CONFIG.url && cloudConfig.url===DEFAULT_CLOUD_CONFIG.url && cloudConfig.anonKey===DEFAULT_CLOUD_CONFIG.anonKey);
 var sbClient = null;
 var cloudStatus = cloudConfig ? 'connecting' : 'local'; // 'local' | 'connecting' | 'connected' | 'error'
 var cloudErrorMsg = '';
@@ -331,13 +349,16 @@ function updateSaveStatusLine(){
 }
 async function connectCloud(url, anonKey){
   cloudConfig = {url, anonKey};
+  usingDefaultCloud = (url===DEFAULT_CLOUD_CONFIG.url && anonKey===DEFAULT_CLOUD_CONFIG.anonKey);
   localStorage.setItem(CLOUD_CONFIG_KEY, JSON.stringify(cloudConfig));
+  localStorage.removeItem(CLOUD_DISABLED_KEY);
   cloudStatus = 'connecting'; cloudErrorMsg=''; render();
   await boot();
 }
 function disconnectCloud(){
-  cloudConfig = null; sbClient = null; cloudStatus = 'local'; cloudErrorMsg='';
+  cloudConfig = null; sbClient = null; cloudStatus = 'local'; cloudErrorMsg=''; usingDefaultCloud = false;
   localStorage.removeItem(CLOUD_CONFIG_KEY);
+  localStorage.setItem(CLOUD_DISABLED_KEY, '1');
   render();
 }
 async function boot(){
@@ -995,13 +1016,19 @@ function renderSettingsView(){
     html += '</div><form class="inline-add" data-form="add-type"><input type="text" name="name" placeholder="Nome do tipo" required><button class="btn btn-primary btn-sm" type="submit">Adicionar</button></form></div>';
   } else if(ui.settingsTab==='nuvem'){
     html += '<div class="section-card"><h3>Sincronização na nuvem</h3>';
+    const hasDefault = !!(DEFAULT_CLOUD_CONFIG.url && DEFAULT_CLOUD_CONFIG.anonKey);
     if(cloudStatus==='connected'){
-      html += '<p class="hint" style="margin-top:-2px;">☁ Conectado. Os dados deste app são salvos em um banco de dados na nuvem (Supabase) e ficam disponíveis em qualquer navegador ou dispositivo que use a mesma URL e chave.</p>'
+      html += '<p class="hint" style="margin-top:-2px;">☁ Conectado'+(usingDefaultCloud?' à nuvem padrão deste site':' a uma nuvem configurada manualmente neste navegador')+'. Os dados deste app são salvos em um banco de dados na nuvem (Supabase) e ficam disponíveis em qualquer navegador ou dispositivo que abra esta mesma página.</p>'
         + '<button class="btn btn-danger btn-sm" data-action="cloud-disconnect" style="margin-top:10px;">Desconectar (voltar a salvar só neste navegador)</button>';
     } else {
       if(cloudStatus==='error') html += '<div class="error-msg">'+esc(cloudErrorMsg)+'</div>';
-      html += '<p class="hint" style="margin-top:-2px;">Por padrão, os dados ficam salvos só neste navegador. Para acessar de outros computadores/dispositivos com os mesmos dados, conecte a um banco de dados gratuito no Supabase.</p>'
-        + '<form data-form="cloud-config">'
+      if(hasDefault){
+        html += '<p class="hint" style="margin-top:-2px;">Este navegador está configurado para salvar só localmente (você desconectou da nuvem padrão deste site, ou a conexão falhou).</p>'
+          + '<button class="btn btn-primary btn-sm" data-action="cloud-reconnect-default" style="margin-bottom:16px;">Reconectar à nuvem deste site</button>';
+      } else {
+        html += '<p class="hint" style="margin-top:-2px;">Por padrão, os dados ficam salvos só neste navegador. Para acessar de outros computadores/dispositivos com os mesmos dados, conecte a um banco de dados gratuito no Supabase.</p>';
+      }
+      html += '<form data-form="cloud-config">'
         + '<div class="field"><label>Project URL</label><input type="text" name="url" placeholder="https://xxxxx.supabase.co" value="'+esc(cloudConfig?cloudConfig.url:'')+'" required></div>'
         + '<div class="field"><label>Anon public key</label><input type="text" name="anonKey" placeholder="eyJhbGci..." value="'+esc(cloudConfig?cloudConfig.anonKey:'')+'" required></div>'
         + '<div class="form-actions"><span style="flex:1;"></span><button type="submit" class="btn btn-primary">Conectar</button></div>'
@@ -1255,6 +1282,7 @@ document.addEventListener('click', function(e){
   else if(a==='delete-module'){ state.modules = state.modules.filter(m=>m!==el.dataset.name); render(); }
   else if(a==='clear-modules'){ showConfirm('Remover todos os módulos cadastrados da lista?', function(){ state.modules = []; }); }
   else if(a==='cloud-disconnect'){ showConfirm('Desconectar da nuvem? O app volta a salvar só neste navegador (os dados na nuvem continuam existindo).', function(){ disconnectCloud(); }); }
+  else if(a==='cloud-reconnect-default'){ connectCloud(DEFAULT_CLOUD_CONFIG.url, DEFAULT_CLOUD_CONFIG.anonKey); }
   else if(a==='delete-type'){ state.agendaTypes = state.agendaTypes.filter(t=>t!==el.dataset.name); render(); }
   else if(a==='settings-tab'){ ui.settingsTab = el.dataset.tab; render(); }
   else if(a==='cal-nav'){ const dir=el.dataset.dir; if(dir==='0') ui.calStart=startOfWeekISO(todayISO()); else ui.calStart = addDaysISO(ui.calStart, 7*parseInt(dir,10)); render(); }
