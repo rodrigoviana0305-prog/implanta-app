@@ -267,6 +267,7 @@ function defaultState(){
       {id:uid('pt'), name:'Estoque', color:'#3E74B0'}
     ],
     modules: [],
+    screens: [],
     agendaTypes: [
       {id:uid('at'), name:'Treinamento'},
       {id:uid('at'), name:'Reunião'},
@@ -279,7 +280,7 @@ function uid(p){ return p+'_'+Math.random().toString(36).slice(2,9)+Date.now().t
 function normalizeState(raw){
   let s = raw;
   if(!s || typeof s!=='object') s = defaultState();
-  ['analysts','boards','clients','cards','schedules','productTags','modules','agendaTypes'].forEach(k=>{ if(!Array.isArray(s[k])) s[k]=defaultState()[k]; });
+  ['analysts','boards','clients','cards','schedules','productTags','modules','screens','agendaTypes'].forEach(k=>{ if(!Array.isArray(s[k])) s[k]=defaultState()[k]; });
   // Migrate modules/agendaTypes from old plain-string arrays to {id, name} objects, if needed.
   s.modules = s.modules.map(m=> (typeof m==='string') ? {id:uid('md'), name:m} : m);
   s.agendaTypes = s.agendaTypes.map(t=> (typeof t==='string') ? {id:uid('at'), name:t} : t);
@@ -517,6 +518,12 @@ function clientHasCardInBoard(clientId, boardId){ return state.cards.some(c=>c.c
 function cardsUsingProduct(tagId){ return state.cards.filter(c=> (c.productTags||[]).includes(tagId)); }
 function schedulesUsingModule(name){ return state.schedules.filter(s=> (s.modules||[]).includes(name)); }
 function schedulesUsingType(name){ return state.schedules.filter(s=> s.type===name); }
+function screensForModule(moduleId){ return state.screens.filter(s=>s.moduleId===moduleId); }
+function schedulesUsingScreen(name){ return state.schedules.filter(s=> (s.trainedScreens||[]).includes(name)); }
+function renameScreenEverywhere(oldName, newName){
+  if(oldName===newName) return;
+  state.schedules.forEach(s=>{ if(Array.isArray(s.trainedScreens) && s.trainedScreens.includes(oldName)){ s.trainedScreens = s.trainedScreens.map(n=> n===oldName?newName:n); } });
+}
 function clientNamesForSchedules(scheds){
   const names = new Set();
   scheds.forEach(s=>{ if(s.cardId){ const c=getCard(s.cardId); if(c){ const cl=getClient(c.clientId); if(cl) names.add(cl.name); } } });
@@ -856,6 +863,7 @@ function balanceItem(num,lbl){ return '<div class="balance-item"><div class="num
 function renderSchedRow(s){
   const due = scheduleIsDue(s);
   const modules = (s.modules||[]).join(', ');
+  const screens = (s.trainedScreens||[]).join(', ');
   let actions = '';
   if(s.status==='pendente'){
     actions = '<button class="btn btn-sm btn-primary" data-action="open-modal" data-modal="confirm-complete" data-id="'+s.id+'">Concluir</button>'
@@ -869,6 +877,7 @@ function renderSchedRow(s){
   return '<div class="sched-row'+(due?' due':'')+'">'
     + '<div class="sched-main"><div class="sched-time">'+fmtDateBR(s.date)+' · '+s.startTime+'–'+s.endTime+' <span class="badge '+s.status+'">'+statusLabel(s.status)+'</span></div>'
     + '<div class="sched-sub">'+esc(s.type)+(modules? ' · '+esc(modules) : '')+(s.status==='concluida'? ' · '+minToHM(s.deductMinutes)+' abatido':'')+'</div>'
+    + (screens? '<div class="sched-sub">🖥 '+esc(screens)+'</div>' : '')
     + (s.trainedUsers? '<div class="sched-sub">👤 '+esc(s.trainedUsers)+'</div>' : '')
     + '</div>'
     + '<div class="row-actions">'+actions+'</div></div>';
@@ -994,21 +1003,24 @@ function renderReportsView(){
   html += '</tbody></table></div>';
 
   // 2. Módulos treinados por cliente
-  html += '<div class="section-card"><h3>Módulos treinados por cliente</h3><table><thead><tr><th>Cliente</th><th>Módulos treinados</th><th>Usuários treinados</th></tr></thead><tbody>';
+  html += '<div class="section-card"><h3>Módulos treinados por cliente</h3><table><thead><tr><th>Cliente</th><th>Módulos treinados</th><th>Telas treinadas</th><th>Usuários treinados</th></tr></thead><tbody>';
   const anyTrained = state.cards.some(c=> state.schedules.some(s=>s.cardId===c.id && s.status==='concluida' && s.type==='Treinamento'));
-  if(!anyTrained) html += '<tr><td colspan="3" class="hint">Nenhum treinamento concluído registrado ainda.</td></tr>';
+  if(!anyTrained) html += '<tr><td colspan="4" class="hint">Nenhum treinamento concluído registrado ainda.</td></tr>';
   state.cards.forEach(c=>{
     const trainSchedules = state.schedules.filter(s=>s.cardId===c.id && s.status==='concluida' && s.type==='Treinamento');
     const mods = new Set();
+    const screens = new Set();
     const users = new Set();
     trainSchedules.forEach(s=>{
       (s.modules||[]).forEach(m=>mods.add(m));
+      (s.trainedScreens||[]).forEach(sc=>screens.add(sc));
       (s.trainedUsers||'').split(',').map(u=>u.trim()).filter(Boolean).forEach(u=>users.add(u));
     });
-    if(mods.size || users.size){
+    if(mods.size || screens.size || users.size){
       const client=getClient(c.clientId);
       html += '<tr><td>'+esc(client?client.name:'—')+'</td>'
         + '<td>'+([...mods].map(m=>'<span class="chip" style="background:var(--brand);margin-right:4px;">'+esc(m)+'</span>').join('')||'<span class="hint">—</span>')+'</td>'
+        + '<td>'+([...screens].map(esc).join(', ')||'<span class="hint">—</span>')+'</td>'
         + '<td>'+([...users].map(esc).join(', ')||'<span class="hint">—</span>')+'</td></tr>';
     }
   });
@@ -1055,7 +1067,7 @@ function renderClientsView(){
 /* ============================= SETTINGS VIEW ============================= */
 function renderSettingsView(){
   let html = '<div class="settings-tabs">';
-  [['analistas','Analistas'],['produtos','Produtos'],['modulos','Módulos do sistema'],['tipos','Tipos de agenda'],['nuvem','Nuvem']].forEach(([k,l])=>{
+  [['analistas','Analistas'],['produtos','Produtos'],['modulos','Módulos do sistema'],['telas','Telas'],['tipos','Tipos de agenda'],['nuvem','Nuvem']].forEach(([k,l])=>{
     html += '<button class="btn btn-sm'+(ui.settingsTab===k?' btn-primary':'')+'" data-action="settings-tab" data-tab="'+k+'">'+l+'</button>';
   });
   html += '</div>';
@@ -1105,17 +1117,45 @@ function renderSettingsView(){
       state.modules.forEach(m=>{
         const linked = schedulesUsingModule(m.name);
         const clientNames = clientNamesForSchedules(linked);
-        const canDelete = linked.length===0;
+        const linkedScreens = screensForModule(m.id);
+        const canDelete = linked.length===0 && linkedScreens.length===0;
+        const blockTitle = linked.length ? 'Não é possível excluir: há agendamento(s) usando este módulo.' : (linkedScreens.length ? 'Não é possível excluir: há tela(s) cadastrada(s) neste módulo.' : '');
         html += '<tr><td style="font-weight:700;">'+esc(m.name)+'</td>'
           + '<td>'+(linked.length ? (linked.length+' agendamento(s)'+(clientNames.length? ' — '+clientNames.map(esc).join(', '):'')) : '<span class="hint">Nenhum</span>')+'</td>'
           + '<td><div class="row-actions">'
             + '<button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="module-edit" data-id="'+m.id+'">Editar</button>'
-            + '<button class="btn btn-sm btn-danger" data-action="delete-module" data-id="'+m.id+'" '+(canDelete?'':'disabled title="Não é possível excluir: há agendamento(s) usando este módulo."')+'>Excluir</button>'
+            + '<button class="btn btn-sm btn-danger" data-action="delete-module" data-id="'+m.id+'" '+(canDelete?'':'disabled title="'+esc(blockTitle)+'"')+'>Excluir</button>'
             + '</div></td></tr>';
       });
       html += '</tbody></table>';
     }
     html += '<div style="margin-top:12px;"><button class="btn btn-primary btn-sm" data-action="open-modal" data-modal="module-new">+ Novo módulo</button></div></div>';
+  } else if(ui.settingsTab==='telas'){
+    html += '<div class="section-card"><h3>Telas — cadastro</h3>';
+    if(!state.modules.length){
+      html += '<p class="hint" style="margin-top:-2px;">Cadastre um módulo primeiro — toda tela precisa estar vinculada a um módulo.</p>';
+    } else if(!state.screens.length){
+      html += '<p class="hint" style="margin-top:-2px;">Nenhuma tela cadastrada ainda.</p>';
+    } else {
+      html += '<table><thead><tr><th>Tela</th><th>Módulo</th><th>Agendamentos vinculados</th><th></th></tr></thead><tbody>';
+      state.screens.forEach(scr=>{
+        const mod = byId(state.modules, scr.moduleId);
+        const linked = schedulesUsingScreen(scr.name);
+        const clientNames = clientNamesForSchedules(linked);
+        const canDelete = linked.length===0;
+        html += '<tr><td style="font-weight:700;">'+esc(scr.name)+'</td><td>'+esc(mod?mod.name:'—')+'</td>'
+          + '<td>'+(linked.length ? (linked.length+' agendamento(s)'+(clientNames.length? ' — '+clientNames.map(esc).join(', '):'')) : '<span class="hint">Nenhum</span>')+'</td>'
+          + '<td><div class="row-actions">'
+            + '<button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="screen-edit" data-id="'+scr.id+'">Editar</button>'
+            + '<button class="btn btn-sm btn-danger" data-action="delete-screen" data-id="'+scr.id+'" '+(canDelete?'':'disabled title="Não é possível excluir: há agendamento(s) usando esta tela."')+'>Excluir</button>'
+            + '</div></td></tr>';
+      });
+      html += '</tbody></table>';
+    }
+    if(state.modules.length){
+      html += '<div style="margin-top:12px;"><button class="btn btn-primary btn-sm" data-action="open-modal" data-modal="screen-new">+ Nova tela</button></div>';
+    }
+    html += '</div>';
   } else if(ui.settingsTab==='tipos'){
     html += '<div class="section-card"><h3>Tipos de agenda — cadastro</h3>';
     if(!state.agendaTypes.length){
@@ -1200,6 +1240,15 @@ function renderModal(){
       + '<form data-form="module" data-id="'+(md?md.id:'')+'">'
       + '<div class="field"><label>Nome do módulo</label><input type="text" name="name" value="'+esc(md?md.name:'')+'" required></div>'
       + '<div class="form-actions"><button type="submit" class="btn btn-primary">Salvar</button></div></form>';
+  } else if(m.type==='screen-new' || m.type==='screen-edit'){
+    const scr = m.type==='screen-edit' ? byId(state.screens, m.id) : null;
+    inner = '<div class="modal-header"><h3>'+(scr?'Editar tela':'Nova tela')+'</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
+      + '<form data-form="screen" data-id="'+(scr?scr.id:'')+'">'
+      + '<div class="field"><label>Nome da tela</label><input type="text" name="name" value="'+esc(scr?scr.name:'')+'" required></div>'
+      + '<div class="field"><label>Módulo</label><select name="moduleId">';
+    state.modules.forEach(md=> inner += '<option value="'+md.id+'" '+(scr && scr.moduleId===md.id?'selected':'')+'>'+esc(md.name)+'</option>');
+    inner += '</select></div>'
+      + '<div class="form-actions"><button type="submit" class="btn btn-primary">Salvar</button></div></form>';
   } else if(m.type==='type-new' || m.type==='type-edit'){
     const tp = m.type==='type-edit' ? byId(state.agendaTypes, m.id) : null;
     inner = '<div class="modal-header"><h3>'+(tp?'Editar tipo':'Novo tipo')+'</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
@@ -1249,6 +1298,7 @@ function renderScheduleForm(m){
     endTime: draft ? draft.endTime : (editing ? editing.endTime : (m.prefillEnd || '10:00')),
     type: draft ? draft.type : (editing ? editing.type : (state.agendaTypes[0] ? state.agendaTypes[0].name : '')),
     modules: draft ? (draft.modules||[]) : (editing ? (editing.modules||[]) : []),
+    trainedScreens: draft ? (draft.trainedScreens||[]) : (editing ? (editing.trainedScreens||[]) : []),
     trainedUsers: draft ? (draft.trainedUsers||'') : (editing ? (editing.trainedUsers||'') : ''),
     notes: draft ? (draft.notes||'') : (editing ? editing.notes : '')
   };
@@ -1289,6 +1339,17 @@ function renderScheduleForm(m){
       + '</div>';
   }
   html += '</div>';
+  const checkedModules = state.modules.filter(m=> eff.modules.includes(m.name));
+  checkedModules.forEach(mod=>{
+    const screensForMod = screensForModule(mod.id);
+    if(!screensForMod.length) return;
+    html += '<div class="field"><label>Telas treinadas — '+esc(mod.name)+'</label><div class="check-grid">';
+    screensForMod.forEach(scr=>{
+      const checked = eff.trainedScreens.includes(scr.name) ? 'checked':'';
+      html += '<label class="check-pill"><input type="checkbox" name="trainedScreens" value="'+esc(scr.name)+'" '+checked+'>'+esc(scr.name)+'</label>';
+    });
+    html += '</div></div>';
+  });
   html += '<div class="field"><label>Usuários treinados</label><textarea name="trainedUsers" placeholder="Nomes das pessoas que receberam o treinamento, separados por vírgula">'+esc(eff.trainedUsers)+'</textarea><span class="hint" style="margin-top:2px;">Para identificar quem do cliente participou do treinamento.</span></div>';
   html += '<div class="field"><label>Observações</label><textarea name="notes">'+esc(eff.notes)+'</textarea></div>';
   if(!readOnly){
@@ -1418,10 +1479,24 @@ document.addEventListener('click', function(e){
     const mod = byId(state.modules, id);
     if(!mod) return;
     const linked = schedulesUsingModule(mod.name);
+    const linkedScreens = screensForModule(id);
     if(linked.length){
       showAlert('Não é possível excluir: este módulo está sendo usado em '+linked.length+' agendamento(s). Remova-o desses agendamentos antes de excluir.');
+    } else if(linkedScreens.length){
+      showAlert('Não é possível excluir: este módulo tem '+linkedScreens.length+' tela(s) cadastrada(s) — '+linkedScreens.map(s=>s.name).join(', ')+'. Exclua ou reatribua essas telas primeiro.');
     } else {
       showConfirm('Excluir este módulo do cadastro?', function(){ state.modules = state.modules.filter(m=>m.id!==id); });
+    }
+  }
+  else if(a==='delete-screen'){
+    const id = el.dataset.id;
+    const scr = byId(state.screens, id);
+    if(!scr) return;
+    const linked = schedulesUsingScreen(scr.name);
+    if(linked.length){
+      showAlert('Não é possível excluir: esta tela está marcada como treinada em '+linked.length+' agendamento(s). Remova-a desses agendamentos antes de excluir.');
+    } else {
+      showConfirm('Excluir esta tela do cadastro?', function(){ state.screens = state.screens.filter(s=>s.id!==id); });
     }
   }
   else if(a==='cloud-disconnect'){ showConfirm('Desconectar da nuvem? O app volta a salvar só neste navegador (os dados na nuvem continuam existindo).', function(){ disconnectCloud(); }); }
@@ -1472,6 +1547,12 @@ document.addEventListener('change', function(e){
     const [boardId,listId] = e.target.value.split('::');
     moveCard(cardId, boardId, listId);
     render();
+  }
+  else if(e.target.matches('form[data-form="schedule"] input[name="modules"]')){
+    // Re-render so the "telas treinadas" sub-section appears/disappears for the module just
+    // (un)checked, without losing anything else already filled in on this form.
+    const form = e.target.closest('form');
+    if(ui.modal){ ui.modal.values = captureFormValues(form); render(); }
   }
   else if(e.target.matches('select[name="clientId"]') && e.target.closest('#modal-holder')){
     // for card-new modal: toggle new-client-name requirement visually (no-op needed, submit handles logic)
@@ -1560,7 +1641,7 @@ document.addEventListener('submit', async function(e){
       render(); return;
     }
     ui.formErr = '';
-    const data = { analystId, clientId, cardId, date, startTime, endTime, type: fd.get('type'), modules: fd.getAll('modules'), trainedUsers: fd.get('trainedUsers')||'', notes: fd.get('notes')||'' };
+    const data = { analystId, clientId, cardId, date, startTime, endTime, type: fd.get('type'), modules: fd.getAll('modules'), trainedScreens: fd.getAll('trainedScreens'), trainedUsers: fd.get('trainedUsers')||'', notes: fd.get('notes')||'' };
     let sched;
     if(id){ updateSchedule(id, data); sched = byId(state.schedules, id); }
     else{ sched = createSchedule(data); }
@@ -1604,6 +1685,18 @@ document.addEventListener('submit', async function(e){
       if(md){ renameModuleEverywhere(md.name, name); md.name = name; }
     } else if(name && !state.modules.some(m=>m.name===name)){
       state.modules.push({id:uid('md'), name});
+    }
+    ui.modal=null; render();
+  }
+  else if(type==='screen'){
+    const name = fd.get('name').trim();
+    const moduleId = fd.get('moduleId');
+    const id = form.dataset.id;
+    if(id){
+      const scr = byId(state.screens, id);
+      if(scr){ renameScreenEverywhere(scr.name, name); scr.name = name; scr.moduleId = moduleId; }
+    } else if(name && !state.screens.some(s=>s.name===name && s.moduleId===moduleId)){
+      state.screens.push({id:uid('scr'), name, moduleId});
     }
     ui.modal=null; render();
   }
