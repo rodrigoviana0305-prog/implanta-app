@@ -267,7 +267,12 @@ function defaultState(){
       {id:uid('pt'), name:'Estoque', color:'#3E74B0'}
     ],
     modules: [],
-    agendaTypes: ['Treinamento','Reunião','Visita','Interna']
+    agendaTypes: [
+      {id:uid('at'), name:'Treinamento'},
+      {id:uid('at'), name:'Reunião'},
+      {id:uid('at'), name:'Visita'},
+      {id:uid('at'), name:'Interna'}
+    ]
   };
 }
 function uid(p){ return p+'_'+Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4); }
@@ -275,6 +280,9 @@ function normalizeState(raw){
   let s = raw;
   if(!s || typeof s!=='object') s = defaultState();
   ['analysts','boards','clients','cards','schedules','productTags','modules','agendaTypes'].forEach(k=>{ if(!Array.isArray(s[k])) s[k]=defaultState()[k]; });
+  // Migrate modules/agendaTypes from old plain-string arrays to {id, name} objects, if needed.
+  s.modules = s.modules.map(m=> (typeof m==='string') ? {id:uid('md'), name:m} : m);
+  s.agendaTypes = s.agendaTypes.map(t=> (typeof t==='string') ? {id:uid('at'), name:t} : t);
   return s;
 }
 function loadLocalState(){
@@ -507,6 +515,21 @@ function cardUsedMinutes(card){ return state.schedules.filter(s=>s.cardId===card
 function cardBalanceHours(card){ return (card.contractedHours||0) - cardUsedMinutes(card)/60; }
 function clientHasCardInBoard(clientId, boardId){ return state.cards.some(c=>c.clientId===clientId && c.boardId===boardId); }
 function cardsUsingProduct(tagId){ return state.cards.filter(c=> (c.productTags||[]).includes(tagId)); }
+function schedulesUsingModule(name){ return state.schedules.filter(s=> (s.modules||[]).includes(name)); }
+function schedulesUsingType(name){ return state.schedules.filter(s=> s.type===name); }
+function clientNamesForSchedules(scheds){
+  const names = new Set();
+  scheds.forEach(s=>{ if(s.cardId){ const c=getCard(s.cardId); if(c){ const cl=getClient(c.clientId); if(cl) names.add(cl.name); } } });
+  return [...names];
+}
+function renameModuleEverywhere(oldName, newName){
+  if(oldName===newName) return;
+  state.schedules.forEach(s=>{ if(Array.isArray(s.modules) && s.modules.includes(oldName)){ s.modules = s.modules.map(m=> m===oldName?newName:m); } });
+}
+function renameTypeEverywhere(oldName, newName){
+  if(oldName===newName) return;
+  state.schedules.forEach(s=>{ if(s.type===oldName) s.type = newName; });
+}
 function scheduleConflict(analystId, date, start, end, excludeId){
   const s0=timeToMin(start), e0=timeToMin(end);
   return state.schedules.some(s=> s.id!==excludeId && s.analystId===analystId && s.date===date && s.status!=='nao_realizada' && !(e0<=timeToMin(s.startTime) || s0>=timeToMin(s.endTime)));
@@ -1074,19 +1097,45 @@ function renderSettingsView(){
     }
     html += '<div style="margin-top:12px;"><button class="btn btn-primary btn-sm" data-action="open-modal" data-modal="product-new">+ Novo produto</button></div></div>';
   } else if(ui.settingsTab==='modulos'){
-    html += '<div class="section-card"><h3>Módulos do sistema</h3>';
-    if(state.modules.length){
-      html += '<div class="list-plain" style="margin-bottom:14px;">';
-      state.modules.forEach(m=> html += '<span class="item-x">'+esc(m)+'<button data-action="delete-module" data-name="'+esc(m)+'">✕</button></span>');
-      html += '</div><button class="btn btn-sm btn-danger" data-action="clear-modules" style="margin-bottom:14px;">Limpar todos</button>';
-    } else {
+    html += '<div class="section-card"><h3>Módulos do sistema — cadastro</h3>';
+    if(!state.modules.length){
       html += '<p class="hint" style="margin-top:-2px;">Nenhum módulo cadastrado ainda.</p>';
+    } else {
+      html += '<table><thead><tr><th>Módulo</th><th>Agendamentos vinculados</th><th></th></tr></thead><tbody>';
+      state.modules.forEach(m=>{
+        const linked = schedulesUsingModule(m.name);
+        const clientNames = clientNamesForSchedules(linked);
+        const canDelete = linked.length===0;
+        html += '<tr><td style="font-weight:700;">'+esc(m.name)+'</td>'
+          + '<td>'+(linked.length ? (linked.length+' agendamento(s)'+(clientNames.length? ' — '+clientNames.map(esc).join(', '):'')) : '<span class="hint">Nenhum</span>')+'</td>'
+          + '<td><div class="row-actions">'
+            + '<button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="module-edit" data-id="'+m.id+'">Editar</button>'
+            + '<button class="btn btn-sm btn-danger" data-action="delete-module" data-id="'+m.id+'" '+(canDelete?'':'disabled title="Não é possível excluir: há agendamento(s) usando este módulo."')+'>Excluir</button>'
+            + '</div></td></tr>';
+      });
+      html += '</tbody></table>';
     }
-    html += '<form class="inline-add" data-form="add-module"><input type="text" name="name" placeholder="Nome do módulo" required><button class="btn btn-primary btn-sm" type="submit">Adicionar</button></form></div>';
+    html += '<div style="margin-top:12px;"><button class="btn btn-primary btn-sm" data-action="open-modal" data-modal="module-new">+ Novo módulo</button></div></div>';
   } else if(ui.settingsTab==='tipos'){
-    html += '<div class="section-card"><h3>Tipos de agenda</h3><div class="list-plain" style="margin-bottom:14px;">';
-    state.agendaTypes.forEach(t=> html += '<span class="item-x">'+esc(t)+'<button data-action="delete-type" data-name="'+esc(t)+'">✕</button></span>');
-    html += '</div><form class="inline-add" data-form="add-type"><input type="text" name="name" placeholder="Nome do tipo" required><button class="btn btn-primary btn-sm" type="submit">Adicionar</button></form></div>';
+    html += '<div class="section-card"><h3>Tipos de agenda — cadastro</h3>';
+    if(!state.agendaTypes.length){
+      html += '<p class="hint" style="margin-top:-2px;">Nenhum tipo cadastrado ainda.</p>';
+    } else {
+      html += '<table><thead><tr><th>Tipo</th><th>Agendamentos vinculados</th><th></th></tr></thead><tbody>';
+      state.agendaTypes.forEach(t=>{
+        const linked = schedulesUsingType(t.name);
+        const clientNames = clientNamesForSchedules(linked);
+        const canDelete = linked.length===0;
+        html += '<tr><td style="font-weight:700;">'+esc(t.name)+'</td>'
+          + '<td>'+(linked.length ? (linked.length+' agendamento(s)'+(clientNames.length? ' — '+clientNames.map(esc).join(', '):'')) : '<span class="hint">Nenhum</span>')+'</td>'
+          + '<td><div class="row-actions">'
+            + '<button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="type-edit" data-id="'+t.id+'">Editar</button>'
+            + '<button class="btn btn-sm btn-danger" data-action="delete-type" data-id="'+t.id+'" '+(canDelete?'':'disabled title="Não é possível excluir: há agendamento(s) usando este tipo."')+'>Excluir</button>'
+            + '</div></td></tr>';
+      });
+      html += '</tbody></table>';
+    }
+    html += '<div style="margin-top:12px;"><button class="btn btn-primary btn-sm" data-action="open-modal" data-modal="type-new">+ Novo tipo</button></div></div>';
   } else if(ui.settingsTab==='nuvem'){
     html += '<div class="section-card"><h3>Sincronização na nuvem</h3>';
     const hasDefault = !!(DEFAULT_CLOUD_CONFIG.url && DEFAULT_CLOUD_CONFIG.anonKey);
@@ -1145,6 +1194,18 @@ function renderModal(){
       + '<div class="field"><label>Nome do produto</label><input type="text" name="name" value="'+esc(p?p.name:'')+'" required></div>'
       + '<div class="field"><label>Cor</label><input type="color" name="color" value="'+(p?p.color:colorForIndex(state.productTags.length))+'"></div>'
       + '<div class="form-actions"><button type="submit" class="btn btn-primary">Salvar</button></div></form>';
+  } else if(m.type==='module-new' || m.type==='module-edit'){
+    const md = m.type==='module-edit' ? byId(state.modules, m.id) : null;
+    inner = '<div class="modal-header"><h3>'+(md?'Editar módulo':'Novo módulo')+'</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
+      + '<form data-form="module" data-id="'+(md?md.id:'')+'">'
+      + '<div class="field"><label>Nome do módulo</label><input type="text" name="name" value="'+esc(md?md.name:'')+'" required></div>'
+      + '<div class="form-actions"><button type="submit" class="btn btn-primary">Salvar</button></div></form>';
+  } else if(m.type==='type-new' || m.type==='type-edit'){
+    const tp = m.type==='type-edit' ? byId(state.agendaTypes, m.id) : null;
+    inner = '<div class="modal-header"><h3>'+(tp?'Editar tipo':'Novo tipo')+'</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
+      + '<form data-form="agenda-type" data-id="'+(tp?tp.id:'')+'">'
+      + '<div class="field"><label>Nome do tipo</label><input type="text" name="name" value="'+esc(tp?tp.name:'')+'" required></div>'
+      + '<div class="form-actions"><button type="submit" class="btn btn-primary">Salvar</button></div></form>';
   } else if(m.type==='list-new'){
     inner = '<div class="modal-header"><h3>Nova lista</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
       + '<form data-form="list-new" data-board="'+m.board+'"><div class="field"><label>Nome da lista</label><input type="text" name="name" required></div>'
@@ -1186,7 +1247,7 @@ function renderScheduleForm(m){
     date: draft ? draft.date : (editing ? editing.date : (m.prefillDate || todayISO())),
     startTime: draft ? draft.startTime : (editing ? editing.startTime : (m.prefillStart || '09:00')),
     endTime: draft ? draft.endTime : (editing ? editing.endTime : (m.prefillEnd || '10:00')),
-    type: draft ? draft.type : (editing ? editing.type : (state.agendaTypes[0]||'')),
+    type: draft ? draft.type : (editing ? editing.type : (state.agendaTypes[0] ? state.agendaTypes[0].name : '')),
     modules: draft ? (draft.modules||[]) : (editing ? (editing.modules||[]) : []),
     trainedUsers: draft ? (draft.trainedUsers||'') : (editing ? (editing.trainedUsers||'') : ''),
     notes: draft ? (draft.notes||'') : (editing ? editing.notes : '')
@@ -1213,12 +1274,12 @@ function renderScheduleForm(m){
     + '<div class="field"><label>Fim</label><input type="time" name="endTime" value="'+esc(eff.endTime)+'"></div>'
     + '</div>';
   html += '<div class="field"><label>Tipo</label><select name="type">';
-  state.agendaTypes.forEach(t=> html += '<option value="'+esc(t)+'" '+(eff.type===t?'selected':'')+'>'+esc(t)+'</option>');
+  state.agendaTypes.forEach(t=> html += '<option value="'+esc(t.name)+'" '+(eff.type===t.name?'selected':'')+'>'+esc(t.name)+'</option>');
   html += '</select></div>';
   html += '<div class="field"><label>Módulo(s) do sistema</label><div class="check-grid">';
   state.modules.forEach(mod=>{
-    const checked = eff.modules.includes(mod) ? 'checked':'';
-    html += '<label class="check-pill"><input type="checkbox" name="modules" value="'+esc(mod)+'" '+checked+'>'+esc(mod)+'</label>';
+    const checked = eff.modules.includes(mod.name) ? 'checked':'';
+    html += '<label class="check-pill"><input type="checkbox" name="modules" value="'+esc(mod.name)+'" '+checked+'>'+esc(mod.name)+'</label>';
   });
   html += '</div>';
   if(!readOnly){
@@ -1312,7 +1373,7 @@ document.addEventListener('click', function(e){
     const name = (input.value||'').trim();
     if(!name){ input.focus(); return; }
     const values = captureFormValues(form);
-    if(!state.modules.includes(name)) state.modules.push(name);
+    if(!state.modules.some(m=>m.name===name)) state.modules.push({id:uid('md'), name});
     values.modules = (values.modules||[]).concat(name);
     ui.modal.values = values;
     render();
@@ -1352,12 +1413,31 @@ document.addEventListener('click', function(e){
       showConfirm('Excluir este produto do cadastro?', function(){ state.productTags = state.productTags.filter(t=>t.id!==tagId); });
     }
   }
-  else if(a==='delete-module'){ state.modules = state.modules.filter(m=>m!==el.dataset.name); render(); }
-  else if(a==='clear-modules'){ showConfirm('Remover todos os módulos cadastrados da lista?', function(){ state.modules = []; }); }
+  else if(a==='delete-module'){
+    const id = el.dataset.id;
+    const mod = byId(state.modules, id);
+    if(!mod) return;
+    const linked = schedulesUsingModule(mod.name);
+    if(linked.length){
+      showAlert('Não é possível excluir: este módulo está sendo usado em '+linked.length+' agendamento(s). Remova-o desses agendamentos antes de excluir.');
+    } else {
+      showConfirm('Excluir este módulo do cadastro?', function(){ state.modules = state.modules.filter(m=>m.id!==id); });
+    }
+  }
   else if(a==='cloud-disconnect'){ showConfirm('Desconectar da nuvem? O app volta a salvar só neste navegador (os dados na nuvem continuam existindo).', function(){ disconnectCloud(); }); }
   else if(a==='force-save'){ forceSaveNow(); }
   else if(a==='cloud-reconnect-default'){ connectCloud(DEFAULT_CLOUD_CONFIG.url, DEFAULT_CLOUD_CONFIG.anonKey); }
-  else if(a==='delete-type'){ state.agendaTypes = state.agendaTypes.filter(t=>t!==el.dataset.name); render(); }
+  else if(a==='delete-type'){
+    const id = el.dataset.id;
+    const tp = byId(state.agendaTypes, id);
+    if(!tp) return;
+    const linked = schedulesUsingType(tp.name);
+    if(linked.length){
+      showAlert('Não é possível excluir: este tipo está sendo usado em '+linked.length+' agendamento(s). Remova-o desses agendamentos antes de excluir.');
+    } else {
+      showConfirm('Excluir este tipo do cadastro?', function(){ state.agendaTypes = state.agendaTypes.filter(t=>t.id!==id); });
+    }
+  }
   else if(a==='settings-tab'){ ui.settingsTab = el.dataset.tab; render(); }
   else if(a==='cal-nav'){ const dir=el.dataset.dir; if(dir==='0') ui.calStart=startOfWeekISO(todayISO()); else ui.calStart = addDaysISO(ui.calStart, 7*parseInt(dir,10)); render(); }
   else if(a==='cal-grid-click'){
@@ -1516,13 +1596,27 @@ document.addEventListener('submit', async function(e){
     else{ state.productTags.push({id:uid('pt'), name, color}); }
     ui.modal=null; render();
   }
-  else if(type==='add-module'){
-    const name = fd.get('name').trim(); if(name && !state.modules.includes(name)) state.modules.push(name);
-    render();
+  else if(type==='module'){
+    const name = fd.get('name').trim();
+    const id = form.dataset.id;
+    if(id){
+      const md = byId(state.modules, id);
+      if(md){ renameModuleEverywhere(md.name, name); md.name = name; }
+    } else if(name && !state.modules.some(m=>m.name===name)){
+      state.modules.push({id:uid('md'), name});
+    }
+    ui.modal=null; render();
   }
-  else if(type==='add-type'){
-    const name = fd.get('name').trim(); if(name && !state.agendaTypes.includes(name)) state.agendaTypes.push(name);
-    render();
+  else if(type==='agenda-type'){
+    const name = fd.get('name').trim();
+    const id = form.dataset.id;
+    if(id){
+      const tp = byId(state.agendaTypes, id);
+      if(tp){ renameTypeEverywhere(tp.name, name); tp.name = name; }
+    } else if(name && !state.agendaTypes.some(t=>t.name===name)){
+      state.agendaTypes.push({id:uid('at'), name});
+    }
+    ui.modal=null; render();
   }
   else if(type==='cloud-config'){
     const url = fd.get('url').trim();
