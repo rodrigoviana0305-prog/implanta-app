@@ -313,6 +313,7 @@ var cloudStatus = cloudConfig ? 'connecting' : 'local'; // 'local' | 'connecting
 var cloudErrorMsg = '';
 var saveStatus = 'idle'; // 'idle' | 'pending' | 'saving' | 'saved' | 'error'
 var saveTimer = null;
+var lastKnownUpdatedAt = null; // updated_at of the cloud row as of our last successful read/write
 
 var state = loadLocalState();
 
@@ -325,20 +326,32 @@ function persist(){
     saveTimer = setTimeout(cloudSave, 800);
   }
 }
+function sameInstant(a, b){
+  if(!a || !b) return false;
+  const ta = new Date(a).getTime(), tb = new Date(b).getTime();
+  if(isNaN(ta) || isNaN(tb)) return false;
+  return Math.abs(ta - tb) < 1000; // treat sub-second formatting/precision differences as "the same moment"
+}
 async function cloudSave(){
   if(!sbClient) return;
   saveStatus = 'saving';
   updateSaveStatusLine();
   try{
-    // Merge with whatever is currently in the cloud before overwriting, so an addition made
-    // in another tab/computer (that saved between our last load and now) isn't wiped out.
-    const { data: fresh, error: fetchErr } = await sbClient.from('app_state').select('data').eq('id', 1).maybeSingle();
+    const { data: fresh, error: fetchErr } = await sbClient.from('app_state').select('data, updated_at').eq('id', 1).maybeSingle();
     if(fetchErr) throw fetchErr;
-    if(fresh && fresh.data){
+    // Only merge if someone else has actually saved since our last read/write - merging on every
+    // save is what caused deletions (of a module, an analyst, anything) to keep reappearing, since
+    // the just-deleted item still existed in the cloud copy being merged back in. When nothing has
+    // changed remotely, we're the single source of truth and can just overwrite outright.
+    // Comparing timestamps as exact strings was fragile (Postgres can format the same instant
+    // slightly differently than what we sent), so this compares them as actual points in time.
+    if(fresh && fresh.updated_at && !sameInstant(fresh.updated_at, lastKnownUpdatedAt) && fresh.data){
       state = mergeStates(normalizeState(fresh.data), state);
     }
-    const { error } = await sbClient.from('app_state').update({data: state}).eq('id', 1);
+    const nowIso = new Date().toISOString();
+    const { error } = await sbClient.from('app_state').update({data: state, updated_at: nowIso}).eq('id', 1);
     if(error) throw error;
+    lastKnownUpdatedAt = nowIso;
     saveStatus = 'saved';
   }catch(e){
     console.warn('Falha ao salvar na nuvem', e);
@@ -346,12 +359,12 @@ async function cloudSave(){
   }
   updateSaveStatusLine();
 }
-/* Merges two full state blobs by id, per entity array: items are unioned, and when the same id
-   exists on both sides, the "local" (this session's) version wins. This means a brand-new item
-   added elsewhere (different id) is preserved instead of being overwritten - the main cause of
-   "my additions keep disappearing" when more than one tab/computer is connected at once.
-   Trade-off: it can't tell a genuine remote deletion from "remote just hasn't seen it yet", so an
-   item deleted from another tab that this session still holds locally can reappear. */
+/* Best-effort merge, used only when the cloud row changed since we last read it (a genuine
+   concurrent edit from another tab/computer). Unions each entity array by id (same id on both
+   sides: local wins); modules/agendaTypes (plain strings) are unioned directly. This can't tell a
+   real remote deletion apart from "hasn't synced yet", so in that specific overlap window a
+   deletion made on the other side could reappear - but this path is now only hit on an actual
+   detected conflict, not on every save, so it no longer blocks ordinary deletes. */
 function mergeStates(remote, local){
   const merged = Object.assign({}, local);
   ['analysts','boards','clients','cards','schedules','productTags'].forEach(key=>{
@@ -415,16 +428,19 @@ async function boot(){
   if(cloudConfig && window.supabase){
     try{
       sbClient = window.supabase.createClient(cloudConfig.url, cloudConfig.anonKey);
-      const { data, error } = await sbClient.from('app_state').select('data').eq('id', 1).maybeSingle();
+      const { data, error } = await sbClient.from('app_state').select('data, updated_at').eq('id', 1).maybeSingle();
       if(error) throw error;
       if(data && data.data){
         state = normalizeState(data.data);
+        lastKnownUpdatedAt = data.updated_at || null;
       } else {
         // First time connecting this project: seed the cloud with whatever is already stored locally,
         // so existing work isn't lost when turning cloud sync on.
         state = loadLocalState();
-        const ins = await sbClient.from('app_state').insert({id:1, data: state});
+        const nowIso = new Date().toISOString();
+        const ins = await sbClient.from('app_state').insert({id:1, data: state, updated_at: nowIso});
         if(ins.error) throw ins.error;
+        lastKnownUpdatedAt = nowIso;
       }
       cloudStatus = 'connected';
     }catch(e){
