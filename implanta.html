@@ -1,0 +1,1525 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Implanta — Gestão de Implantação</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+:root{
+  --bg:#ECEEED; --bg-soft:#E2E5E3; --surface:#FFFFFF; --surface-2:#F5F6F5;
+  --border:#D8DCDA; --ink:#181D1A; --ink-soft:#5A635D; --ink-faint:#8B948D;
+  --brand:#2F5D50; --brand-dark:#1F423A; --brand-soft:#DCE8E3;
+  --gold:#B9812E; --gold-soft:#F3E3C6;
+  --danger:#A73E27; --danger-soft:#F3DCD4;
+  --ok:#2F5D50; --ok-soft:#DCE8E3;
+  --radius-s:6px; --radius-m:10px; --radius-l:16px;
+  --shadow-1:0 1px 2px rgba(24,29,26,.08),0 1px 1px rgba(24,29,26,.04);
+  --shadow-2:0 12px 32px rgba(24,29,26,.18);
+  --font-head:'Manrope',sans-serif; --font-body:'Inter',sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#14181A; --bg-soft:#1A1F21; --surface:#1F2528; --surface-2:#242B2E;
+    --border:#343C3F; --ink:#EDEFEE; --ink-soft:#AEB6B2; --ink-faint:#78827E;
+    --brand:#5FA48D; --brand-dark:#4A8B75; --brand-soft:#1F332C;
+    --gold:#D9A85C; --gold-soft:#392E1A;
+    --danger:#DB8770; --danger-soft:#3A241C;
+    --ok:#5FA48D; --ok-soft:#1F332C;
+    --shadow-1:0 1px 2px rgba(0,0,0,.4); --shadow-2:0 16px 40px rgba(0,0,0,.55);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#14181A; --bg-soft:#1A1F21; --surface:#1F2528; --surface-2:#242B2E;
+  --border:#343C3F; --ink:#EDEFEE; --ink-soft:#AEB6B2; --ink-faint:#78827E;
+  --brand:#5FA48D; --brand-dark:#4A8B75; --brand-soft:#1F332C;
+  --gold:#D9A85C; --gold-soft:#392E1A;
+  --danger:#DB8770; --danger-soft:#3A241C;
+  --ok:#5FA48D; --ok-soft:#1F332C;
+  --shadow-1:0 1px 2px rgba(0,0,0,.4); --shadow-2:0 16px 40px rgba(0,0,0,.55);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;height:100%;}
+body{
+  background:var(--bg); color:var(--ink); font-family:var(--font-body);
+  font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased;
+}
+button, input, select, textarea{ font-family:inherit; font-size:14px; color:inherit; }
+button{ cursor:pointer; }
+h1,h2,h3,h4{ font-family:var(--font-head); margin:0; color:var(--ink); }
+::-webkit-scrollbar{ height:10px; width:10px; }
+::-webkit-scrollbar-thumb{ background:var(--border); border-radius:8px; }
+::-webkit-scrollbar-track{ background:transparent; }
+
+.shell{ display:flex; height:100vh; width:100%; overflow:hidden; }
+
+/* ---------- Sidebar ---------- */
+.sidebar{
+  width:230px; flex:0 0 230px; background:var(--brand-dark); color:#EFF4F1;
+  display:flex; flex-direction:column; padding:18px 14px; gap:18px; overflow-y:auto;
+}
+.brand{ display:flex; align-items:center; gap:10px; padding:0 4px; }
+.brand-mark{ width:30px;height:30px;border-radius:9px;background:var(--gold); display:flex;align-items:center;justify-content:center; font-family:var(--font-head); font-weight:800; color:#241a06; font-size:15px; flex:0 0 auto;}
+.brand-name{ font-family:var(--font-head); font-weight:800; font-size:17px; letter-spacing:.2px; }
+.side-section{ display:flex; flex-direction:column; gap:3px; }
+.side-label{ font-size:11px; color:#B9CCC3; font-weight:600; padding:6px 8px 2px; display:flex; justify-content:space-between; align-items:center; }
+.side-item{
+  display:flex; align-items:center; gap:9px; padding:8px 9px; border-radius:8px; border:none;
+  background:transparent; color:#E4EEE9; text-align:left; width:100%; font-size:13.5px; font-weight:500;
+}
+.side-item:hover{ background:rgba(255,255,255,.08); }
+.side-item.active{ background:rgba(255,255,255,.16); color:#fff; }
+.side-dot{ width:9px;height:9px;border-radius:50%; flex:0 0 auto; box-shadow:0 0 0 2px rgba(255,255,255,.25) inset; }
+.side-badge{ margin-left:auto; background:var(--gold); color:#241a06; font-size:11px; font-weight:800; border-radius:20px; padding:1px 7px; }
+.side-add{ display:flex; align-items:center; gap:6px; padding:7px 8px; border-radius:8px; border:1px dashed rgba(255,255,255,.3); background:transparent; color:#CFE0D8; font-size:13px; width:100%; }
+.side-add:hover{ background:rgba(255,255,255,.06); }
+.side-spacer{ flex:1; }
+.side-foot{ font-size:11px; color:#9FB6AC; padding:6px 8px; line-height:1.5; }
+
+/* ---------- Main / Topbar ---------- */
+.main{ flex:1; display:flex; flex-direction:column; min-width:0; }
+.topbar{
+  display:flex; align-items:center; gap:14px; padding:14px 22px; background:var(--surface);
+  border-bottom:1px solid var(--border); flex:0 0 auto;
+}
+.topbar h2{ font-size:19px; }
+.topbar .sub{ color:var(--ink-soft); font-size:12.5px; margin-top:1px; }
+.topbar-title{ display:flex; flex-direction:column; gap:1px; min-width:0; }
+.topbar-right{ margin-left:auto; display:flex; align-items:center; gap:10px; position:relative; }
+.search-box{
+  display:flex; align-items:center; gap:7px; background:var(--surface-2); border:1px solid var(--border);
+  border-radius:8px; padding:7px 11px; min-width:200px;
+}
+.search-box input{ border:none; background:transparent; outline:none; width:100%; color:var(--ink); }
+.icon-btn{
+  width:36px;height:36px;border-radius:9px;border:1px solid var(--border); background:var(--surface-2);
+  display:flex;align-items:center;justify-content:center; position:relative; flex:0 0 auto;
+}
+.icon-btn:hover{ background:var(--bg-soft); }
+.notif-dot{ position:absolute; top:-4px; right:-4px; background:var(--danger); color:#fff; font-size:10px; font-weight:800; border-radius:20px; min-width:16px; height:16px; display:flex;align-items:center;justify-content:center; padding:0 3px; }
+.view{ flex:1; overflow:auto; padding:20px 22px 40px; }
+
+/* ---------- Buttons ---------- */
+.btn{ border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--ink); padding:8px 14px; font-weight:600; font-size:13.5px; display:inline-flex; align-items:center; gap:7px; white-space:nowrap;}
+.btn:hover{ background:var(--surface-2); }
+.btn-primary{ background:var(--brand); border-color:var(--brand); color:#fff; }
+.btn-primary:hover{ background:var(--brand-dark); }
+.btn-gold{ background:var(--gold); border-color:var(--gold); color:#241a06; }
+.btn-gold:hover{ filter:brightness(0.95); }
+.btn-danger{ background:var(--danger-soft); border-color:var(--danger); color:var(--danger); }
+.btn-danger:hover{ background:var(--danger); color:#fff; }
+.btn-ghost{ background:transparent; border-color:transparent; }
+.btn-ghost:hover{ background:var(--surface-2); }
+.btn-sm{ padding:5px 10px; font-size:12.5px; border-radius:7px; }
+.btn:disabled{ opacity:.5; cursor:not-allowed; }
+
+/* ---------- Board / Lists / Cards ---------- */
+.board-lists{ display:flex; gap:14px; align-items:flex-start; overflow-x:auto; padding-bottom:16px; min-height:60vh; }
+.list-col{ background:var(--bg-soft); border-radius:var(--radius-m); width:270px; flex:0 0 270px; display:flex; flex-direction:column; max-height:calc(100vh - 190px); }
+.list-head{ display:flex; align-items:center; gap:8px; padding:11px 12px 7px; }
+.list-head .name{ font-weight:700; font-size:13.5px; flex:1; }
+.list-head .count{ font-size:11.5px; color:var(--ink-faint); background:var(--surface); border-radius:20px; padding:1px 8px; }
+.list-cards{ flex:1; overflow-y:auto; padding:2px 10px; display:flex; flex-direction:column; gap:9px; min-height:40px; }
+.list-cards.drag-over{ background:var(--brand-soft); border-radius:8px; }
+.card-mini{ background:var(--surface); border-radius:9px; padding:10px 11px; box-shadow:var(--shadow-1); cursor:grab; border:1px solid transparent; display:flex; flex-direction:column; gap:6px; }
+.card-mini:hover{ border-color:var(--border); }
+.card-mini.dragging{ opacity:.4; }
+.chip-row{ display:flex; flex-wrap:wrap; gap:4px; }
+.chip{ font-size:10.5px; font-weight:700; padding:2px 7px; border-radius:20px; color:#fff; letter-spacing:.2px; }
+.card-title{ font-weight:700; font-size:13.5px; color:var(--ink); }
+.card-meta{ display:flex; align-items:center; gap:8px; font-size:11.5px; color:var(--ink-soft); }
+.balance-pill{ font-weight:700; padding:1px 7px; border-radius:20px; background:var(--ok-soft); color:var(--ok); }
+.balance-pill.neg{ background:var(--danger-soft); color:var(--danger); }
+.pending-flag{ color:var(--danger); font-weight:700; display:flex; align-items:center; gap:3px; }
+.add-card-btn{ margin:4px 10px 10px; padding:8px 10px; border-radius:8px; background:transparent; border:1px dashed var(--border); color:var(--ink-soft); text-align:left; font-size:13px; }
+.add-card-btn:hover{ background:var(--surface); color:var(--ink); }
+.list-add-col{ width:230px; flex:0 0 230px; }
+.list-add-col button{ width:100%; padding:11px; border-radius:var(--radius-m); border:1.5px dashed var(--border); background:transparent; color:var(--ink-soft); font-weight:600; }
+.list-add-col button:hover{ background:var(--surface); }
+
+.empty-state{ text-align:center; padding:70px 20px; max-width:440px; margin:0 auto; }
+.empty-state h3{ font-size:20px; margin-bottom:8px; }
+.empty-state p{ color:var(--ink-soft); margin-bottom:20px; }
+
+/* ---------- Modals ---------- */
+.overlay{ position:fixed; inset:0; background:rgba(15,20,17,.5); display:flex; align-items:flex-start; justify-content:center; padding:5vh 16px; overflow-y:auto; z-index:100; }
+.overlay.card-overlay{ z-index:90; }
+.overlay.confirm-overlay{ z-index:300; }
+.modal{ background:var(--surface); border-radius:var(--radius-l); box-shadow:var(--shadow-2); width:100%; max-width:520px; padding:22px 24px 24px; }
+.modal.wide{ max-width:680px; }
+.modal-header{ display:flex; align-items:flex-start; gap:10px; margin-bottom:14px; }
+.modal-header h3{ font-size:18px; flex:1; }
+.modal-close{ background:none;border:none;font-size:20px;color:var(--ink-faint); line-height:1; padding:2px 4px;}
+.modal-close:hover{ color:var(--ink); }
+.field{ margin-bottom:13px; display:flex; flex-direction:column; gap:5px; }
+.field label{ font-size:12.5px; font-weight:700; color:var(--ink-soft); }
+.field input[type=text], .field input[type=date], .field input[type=time], .field input[type=number], .field input[type=email], .field input[type=tel], .field select, .field textarea{
+  border:1px solid var(--border); border-radius:8px; padding:9px 10px; background:var(--surface-2); color:var(--ink); outline:none; width:100%;
+}
+.field input:focus, .field select:focus, .field textarea:focus{ border-color:var(--brand); background:var(--surface); }
+.field textarea{ resize:vertical; min-height:60px; }
+.field-row{ display:flex; gap:10px; }
+.field-row .field{ flex:1; }
+.check-grid{ display:flex; flex-wrap:wrap; gap:8px; }
+.check-pill{ display:flex; align-items:center; gap:6px; border:1px solid var(--border); border-radius:20px; padding:5px 11px; font-size:12.5px; background:var(--surface-2); }
+.check-pill input{ accent-color:var(--brand); }
+.form-actions{ display:flex; justify-content:flex-end; gap:8px; margin-top:16px; }
+.error-msg{ background:var(--danger-soft); color:var(--danger); border-radius:8px; padding:8px 11px; font-size:12.5px; font-weight:600; margin-bottom:12px; white-space:pre-line; }
+input[type=color]{ width:38px; height:32px; padding:2px; border:1px solid var(--border); border-radius:7px; background:var(--surface-2); }
+
+/* ---------- Card modal ---------- */
+.card-modal-top{ display:flex; align-items:flex-start; gap:12px; }
+.card-modal-meta{ font-size:12.5px; color:var(--ink-soft); display:flex; gap:14px; flex-wrap:wrap; margin-top:4px; }
+.tabs{ display:flex; gap:4px; border-bottom:1px solid var(--border); margin:16px 0 16px; }
+.tab-btn{ background:none; border:none; padding:9px 4px; margin-right:16px; font-weight:700; color:var(--ink-faint); border-bottom:2px solid transparent; }
+.tab-btn.active{ color:var(--brand); border-color:var(--brand); }
+.balance-box{ display:flex; gap:10px; margin-bottom:16px; }
+.balance-item{ flex:1; background:var(--surface-2); border-radius:10px; padding:11px 13px; text-align:center; }
+.balance-item .num{ font-family:var(--font-head); font-weight:800; font-size:19px; }
+.balance-item .lbl{ font-size:11px; color:var(--ink-soft); margin-top:2px; }
+.sched-row{ display:flex; align-items:center; gap:10px; padding:10px 11px; border:1px solid var(--border); border-radius:9px; margin-bottom:8px; background:var(--surface-2); }
+.sched-row.due{ border-color:var(--danger); background:var(--danger-soft); }
+.sched-main{ flex:1; min-width:0; }
+.sched-time{ font-weight:700; font-size:13px; }
+.sched-sub{ font-size:11.5px; color:var(--ink-soft); margin-top:2px; }
+.badge{ font-size:10.5px; font-weight:800; padding:2px 8px; border-radius:20px; text-transform:uppercase; letter-spacing:.3px; }
+.badge.pendente{ background:var(--gold-soft); color:var(--gold); }
+.badge.concluida{ background:var(--ok-soft); color:var(--ok); }
+.badge.nao_realizada{ background:var(--danger-soft); color:var(--danger); }
+.hist-row{ padding:9px 0; border-bottom:1px solid var(--border); font-size:13px; }
+.hist-row .ts{ font-size:11px; color:var(--ink-faint); margin-top:2px; }
+.row-actions{ display:flex; gap:5px; flex:0 0 auto; }
+
+/* ---------- Calendar ---------- */
+.cal-toolbar{ display:flex; align-items:center; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+.cal-toolbar .grow{ flex:1; }
+.cal-tg-outer{ border:1px solid var(--border); border-radius:10px; overflow-x:auto; overflow-y:hidden; background:var(--surface); }
+.cal-tg-inner{ min-width:680px; }
+.cal-tg-headerrow{ display:grid; grid-template-columns:56px repeat(7,1fr); border-bottom:1px solid var(--border); background:var(--surface); }
+.cal-tg-daycol-head{ padding:8px 6px; text-align:center; border-left:1px solid var(--border); }
+.cal-tg-daycol-head .wd{ font-size:10.5px; color:var(--ink-faint); font-weight:700; text-transform:uppercase; }
+.cal-tg-daycol-head .dt{ font-family:var(--font-head); font-weight:800; font-size:14px; }
+.cal-tg-daycol-head.today .dt{ color:var(--brand); }
+.cal-tg-bodyscroll{ max-height:64vh; overflow-y:auto; }
+.cal-tg-bodyrow{ display:grid; grid-template-columns:56px repeat(7,1fr); position:relative; }
+.cal-tg-hourlabels{ position:relative; }
+.cal-tg-hourlabel{ position:absolute; right:8px; transform:translateY(-50%); font-size:10.5px; color:var(--ink-faint); white-space:nowrap; }
+.cal-tg-daycol{ position:relative; border-left:1px solid var(--border); cursor:pointer; background-image:repeating-linear-gradient(to bottom, var(--border) 0, var(--border) 1px, transparent 1px, transparent var(--hour-px)); }
+.cal-tg-daycol:hover{ background-color:var(--surface-2); }
+.cal-tg-daycol.drag-over{ background-color:var(--brand-soft); }
+.cal-tg-event{ position:absolute; border-radius:6px; padding:3px 6px; font-size:11px; overflow:hidden; border-left:3px solid var(--brand); background:var(--brand-soft); cursor:pointer; line-height:1.3; }
+.cal-tg-event[draggable="true"]{ cursor:grab; }
+.cal-tg-event.dragging{ opacity:.4; }
+.cal-tg-event:hover{ filter:brightness(0.97); }
+.cal-tg-event.due{ background:var(--danger-soft); border-left-color:var(--danger); }
+.cal-tg-event .t{ font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cal-tg-now{ position:absolute; left:0; right:0; height:0; border-top:2px solid var(--danger); z-index:5; pointer-events:none; }
+.cal-tg-now::before{ content:''; position:absolute; left:-4px; top:-4px; width:8px; height:8px; border-radius:50%; background:var(--danger); }
+.notif-panel{ position:absolute; top:44px; right:0; width:330px; background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow-2); padding:8px; z-index:50; max-height:400px; overflow-y:auto; }
+.notif-item{ padding:9px 10px; border-radius:8px; }
+.notif-item:hover{ background:var(--surface-2); }
+.notif-empty{ padding:20px; text-align:center; color:var(--ink-soft); font-size:13px; }
+
+/* ---------- Tables ---------- */
+table{ width:100%; border-collapse:collapse; background:var(--surface); border-radius:10px; overflow:hidden; }
+th,td{ text-align:left; padding:10px 12px; border-bottom:1px solid var(--border); font-size:13px; }
+th{ background:var(--surface-2); font-size:11.5px; text-transform:uppercase; letter-spacing:.3px; color:var(--ink-soft); font-weight:700; }
+tr:last-child td{ border-bottom:none; }
+.section-card{ background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px 18px; margin-bottom:18px; }
+.section-card h3{ font-size:15px; margin-bottom:12px; }
+.settings-tabs{ display:flex; gap:6px; margin-bottom:16px; flex-wrap:wrap; }
+.inline-add{ display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
+.inline-add input[type=text]{ border:1px solid var(--border); border-radius:8px; padding:8px 10px; background:var(--surface-2); }
+.tag-list{ display:flex; flex-wrap:wrap; gap:8px; }
+.tag-list .chip-x{ display:flex; align-items:center; gap:6px; }
+.tag-list .chip-x button{ background:rgba(255,255,255,.35); border:none; border-radius:50%; width:15px;height:15px; font-size:10px; line-height:1; color:inherit; }
+.list-plain{ display:flex; flex-wrap:wrap; gap:8px; }
+.list-plain .item-x{ display:flex; align-items:center; gap:6px; background:var(--surface-2); border:1px solid var(--border); padding:5px 10px; border-radius:20px; font-size:12.5px; }
+.list-plain .item-x button{ background:none;border:none;color:var(--ink-faint); font-weight:700; }
+.hint{ font-size:12px; color:var(--ink-faint); margin-top:8px; }
+@media (max-width:820px){
+  .sidebar{ display:none; }
+}
+</style>
+</head>
+<body>
+<div id="app"><div style="min-height:100vh;display:flex;align-items:center;justify-content:center;color:#5A635D;font-family:'Inter',sans-serif;">Carregando...</div></div>
+
+<script>
+/* ============================= STATE ============================= */
+const STORAGE_KEY = 'implanta_v1';
+const PALETTE = ['#3E8E7E','#C99A2E','#7B4B94','#3E74B0','#B15577','#6E7B3B','#A05A2C','#52616B'];
+
+function defaultState(){
+  return {
+    analysts: [],
+    boards: [],
+    clients: [],
+    cards: [],
+    schedules: [],
+    productTags: [
+      {id:uid('pt'), name:'PDV', color:'#3E8E7E'},
+      {id:uid('pt'), name:'Frota', color:'#C99A2E'},
+      {id:uid('pt'), name:'Financeiro', color:'#7B4B94'},
+      {id:uid('pt'), name:'Estoque', color:'#3E74B0'}
+    ],
+    modules: [],
+    agendaTypes: ['Treinamento','Reunião','Visita','Interna']
+  };
+}
+function uid(p){ return p+'_'+Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4); }
+function normalizeState(raw){
+  let s = raw;
+  if(!s || typeof s!=='object') s = defaultState();
+  ['analysts','boards','clients','cards','schedules','productTags','modules','agendaTypes'].forEach(k=>{ if(!Array.isArray(s[k])) s[k]=defaultState()[k]; });
+  return s;
+}
+function loadLocalState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return normalizeState(raw ? JSON.parse(raw) : defaultState());
+  }catch(e){ return defaultState(); }
+}
+
+/* ---- Cloud (Supabase) config: optional. When configured, data is stored in a
+   Postgres table instead of (only) localStorage, so it can be shared across
+   devices/browsers. See the "Nuvem" tab in Configurações to set it up. ---- */
+const CLOUD_CONFIG_KEY = 'implanta_cloud_config_v1';
+function loadCloudConfig(){ try{ const raw=localStorage.getItem(CLOUD_CONFIG_KEY); return raw?JSON.parse(raw):null; }catch(e){ return null; } }
+var cloudConfig = loadCloudConfig();
+var sbClient = null;
+var cloudStatus = cloudConfig ? 'connecting' : 'local'; // 'local' | 'connecting' | 'connected' | 'error'
+var cloudErrorMsg = '';
+var saveStatus = 'idle'; // 'idle' | 'pending' | 'saving' | 'saved' | 'error'
+var saveTimer = null;
+
+var state = loadLocalState();
+
+function persist(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){ console.warn('Falha ao salvar localmente', e); }
+  if(cloudStatus==='connected' && sbClient){
+    saveStatus = 'pending';
+    updateSaveStatusLine();
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(cloudSave, 800);
+  }
+}
+async function cloudSave(){
+  if(!sbClient) return;
+  saveStatus = 'saving';
+  updateSaveStatusLine();
+  try{
+    const { error } = await sbClient.from('app_state').update({data: state}).eq('id', 1);
+    if(error) throw error;
+    saveStatus = 'saved';
+  }catch(e){
+    console.warn('Falha ao salvar na nuvem', e);
+    saveStatus = 'error';
+  }
+  updateSaveStatusLine();
+}
+function updateSaveStatusLine(){
+  const el = document.getElementById('save-status-line');
+  if(!el) return;
+  if(cloudStatus!=='connected'){ el.textContent = 'Dados salvos neste navegador.'; return; }
+  if(saveStatus==='pending' || saveStatus==='saving') el.innerHTML = '☁ Salvando...';
+  else if(saveStatus==='error') el.innerHTML = '⚠ Falha ao salvar na nuvem (tentando de novo na próxima alteração)';
+  else el.innerHTML = '☁ Sincronizado com a nuvem';
+}
+async function connectCloud(url, anonKey){
+  cloudConfig = {url, anonKey};
+  localStorage.setItem(CLOUD_CONFIG_KEY, JSON.stringify(cloudConfig));
+  cloudStatus = 'connecting'; cloudErrorMsg=''; render();
+  await boot();
+}
+function disconnectCloud(){
+  cloudConfig = null; sbClient = null; cloudStatus = 'local'; cloudErrorMsg='';
+  localStorage.removeItem(CLOUD_CONFIG_KEY);
+  render();
+}
+async function boot(){
+  if(cloudConfig && window.supabase){
+    try{
+      sbClient = window.supabase.createClient(cloudConfig.url, cloudConfig.anonKey);
+      const { data, error } = await sbClient.from('app_state').select('data').eq('id', 1).maybeSingle();
+      if(error) throw error;
+      if(data && data.data){
+        state = normalizeState(data.data);
+      } else {
+        // First time connecting this project: seed the cloud with whatever is already stored locally,
+        // so existing work isn't lost when turning cloud sync on.
+        state = loadLocalState();
+        const ins = await sbClient.from('app_state').insert({id:1, data: state});
+        if(ins.error) throw ins.error;
+      }
+      cloudStatus = 'connected';
+    }catch(e){
+      console.warn('Falha ao conectar à nuvem', e);
+      cloudStatus = 'error';
+      const detail = (e && (e.message || e.error_description || e.hint || e.details)) || 'erro desconhecido';
+      cloudErrorMsg = 'Não foi possível conectar ao banco na nuvem. Usando os dados salvos neste navegador por enquanto.\nDetalhe técnico: '+detail;
+      sbClient = null;
+      state = loadLocalState();
+    }
+  } else {
+    state = loadLocalState();
+  }
+  render();
+}
+
+var ui = {
+  view: 'board',
+  currentBoardId: state.boards[0] ? state.boards[0].id : null,
+  search: '',
+  showNotif: false,
+  openCardId: null,
+  cardTab: 'info',
+  cardDraft: null,
+  confirmDialog: null,
+  cardErr: '',
+  modal: null, // {type, payload}
+  calAnalyst: 'all',
+  calStart: startOfWeekISO(todayISO()),
+  settingsTab: 'analistas',
+  formErr: ''
+};
+
+/* ============================= HELPERS ============================= */
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function todayISO(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function addDaysISO(iso,n){ const [y,m,d]=iso.split('-').map(Number); const dt=new Date(y,m-1,d); dt.setDate(dt.getDate()+n); return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0'); }
+function startOfWeekISO(iso){ const [y,m,d]=iso.split('-').map(Number); const dt=new Date(y,m-1,d); const wd=(dt.getDay()+6)%7; dt.setDate(dt.getDate()-wd); return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0'); }
+function fmtDateBR(iso){ if(!iso) return '—'; const [y,m,d]=iso.split('-'); return d+'/'+m+'/'+y; }
+const WD_NAMES = ['seg','ter','qua','qui','sex','sáb','dom'];
+function weekdayShort(iso){ const [y,m,d]=iso.split('-').map(Number); const dt=new Date(y,m-1,d); return WD_NAMES[(dt.getDay()+6)%7]; }
+function fmtDT(ts){ const d=new Date(ts); return d.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}); }
+function timeToMin(t){ if(!t) return 0; const [h,m]=t.split(':').map(Number); return h*60+(m||0); }
+function minToHM(min){ const sign = min<0?'-':''; min=Math.abs(Math.round(min)); const h=Math.floor(min/60), m=min%60; return sign + h + 'h' + (m>0? String(m).padStart(2,'0')+'m':''); }
+function byId(arr,id){ return arr.find(x=>x.id===id); }
+function captureFormValues(form){
+  const fd = new FormData(form);
+  const multiNames = new Set();
+  form.querySelectorAll('input[type=checkbox]').forEach(cb=> multiNames.add(cb.name));
+  const values = {};
+  multiNames.forEach(n=> values[n] = fd.getAll(n));
+  for(const [k,v] of fd.entries()){ if(!multiNames.has(k)) values[k] = v; }
+  return values;
+}
+
+function getBoard(id){ return byId(state.boards,id); }
+function getAnalyst(id){ return byId(state.analysts,id); }
+function getClient(id){ return byId(state.clients,id); }
+function getCard(id){ return byId(state.cards,id); }
+function boardOfAnalyst(analystId){ return state.boards.find(b=>b.analystId===analystId); }
+function cardsInBoard(boardId){ return state.cards.filter(c=>c.boardId===boardId); }
+function schedulesForCard(cardId){ return state.schedules.filter(s=>s.cardId===cardId).sort((a,b)=> (a.date+a.startTime).localeCompare(b.date+b.startTime)); }
+function cardUsedMinutes(card){ return state.schedules.filter(s=>s.cardId===card.id && s.status==='concluida').reduce((sum,s)=> sum + (s.deductMinutes!=null ? s.deductMinutes : (timeToMin(s.endTime)-timeToMin(s.startTime))), 0); }
+function cardBalanceHours(card){ return (card.contractedHours||0) - cardUsedMinutes(card)/60; }
+function clientHasCardInBoard(clientId, boardId){ return state.cards.some(c=>c.clientId===clientId && c.boardId===boardId); }
+function cardsUsingProduct(tagId){ return state.cards.filter(c=> (c.productTags||[]).includes(tagId)); }
+function scheduleConflict(analystId, date, start, end, excludeId){
+  const s0=timeToMin(start), e0=timeToMin(end);
+  return state.schedules.some(s=> s.id!==excludeId && s.analystId===analystId && s.date===date && s.status!=='nao_realizada' && !(e0<=timeToMin(s.startTime) || s0>=timeToMin(s.endTime)));
+}
+function scheduleIsDue(s){ if(s.status!=='pendente') return false; const end=new Date(s.date+'T'+(s.endTime||'00:00')+':00'); return end.getTime() < Date.now(); }
+function pendingConfirmations(analystId){ return state.schedules.filter(s=> scheduleIsDue(s) && (!analystId || s.analystId===analystId)); }
+function addHistory(card, text){ card.history = card.history||[]; card.history.unshift({ts:Date.now(), text}); }
+function colorForIndex(i){ return PALETTE[i % PALETTE.length]; }
+
+/* ============================= MUTATIONS ============================= */
+function createAnalyst(name, color){
+  const analyst = {id:uid('an'), name, color: color || colorForIndex(state.analysts.length)};
+  state.analysts.push(analyst);
+  const board = {id:uid('bd'), name:'Quadro — '+name, analystId:analyst.id, lists:[
+    {id:uid('ls'), name:'Fila / Cadastro'},
+    {id:uid('ls'), name:'Em implantação'},
+    {id:uid('ls'), name:'Treinamento'},
+    {id:uid('ls'), name:'Concluído'}
+  ]};
+  state.boards.push(board);
+  return {analyst, board};
+}
+function deleteAnalyst(id){
+  const board = boardOfAnalyst(id);
+  if(board){
+    const cardIds = cardsInBoard(board.id).map(c=>c.id);
+    state.schedules = state.schedules.filter(s=> !cardIds.includes(s.cardId) && s.analystId!==id);
+    state.cards = state.cards.filter(c=> c.boardId!==board.id);
+    state.boards = state.boards.filter(b=> b.id!==board.id);
+  }
+  state.analysts = state.analysts.filter(a=>a.id!==id);
+}
+function createClient(data){ const c = {id:uid('cl'), name:data.name, contact:data.contact||'', email:data.email||'', phone:data.phone||'', segment:data.segment||'', city:data.city||'', clientType:data.clientType||'novo', createdAt:Date.now()}; state.clients.push(c); return c; }
+function updateClient(id, patch){ const c=getClient(id); if(c) Object.assign(c, patch); }
+function deleteClient(id){
+  state.cards = state.cards.filter(c=>{ if(c.clientId===id){ state.schedules = state.schedules.filter(s=>s.cardId!==c.id); return false; } return true; });
+  state.clients = state.clients.filter(c=>c.id!==id);
+}
+function createCard(boardId, listId, clientId, extra){
+  const card = Object.assign({id:uid('cd'), boardId, listId, clientId, contractedHours:0, startDate:todayISO(), productTags:[], history:[{ts:Date.now(), text:'Card criado'}]}, extra||{});
+  state.cards.push(card);
+  return card;
+}
+function updateCard(id, patch, historyText){ const c=getCard(id); if(!c) return; Object.assign(c, patch); if(historyText) addHistory(c, historyText); }
+function moveCard(cardId, boardId, listId){
+  const c=getCard(cardId); if(!c) return;
+  const fromBoard = getBoard(c.boardId), fromList = fromBoard ? byId(fromBoard.lists, c.listId) : null;
+  const toBoard = getBoard(boardId), toList = toBoard ? byId(toBoard.lists, listId) : null;
+  if(c.boardId===boardId && c.listId===listId) return;
+  c.boardId = boardId; c.listId = listId;
+  let text = '';
+  if(fromBoard && toBoard && fromBoard.id!==toBoard.id){ text = 'Movido de "'+esc(fromBoard.name)+'" para "'+esc(toBoard.name)+'"'; if(toList) text += ' — lista "'+esc(toList.name)+'"'; }
+  else if(toList){ text = 'Estágio alterado para "'+esc(toList.name)+'"'; }
+  addHistory(c, text);
+}
+function deleteCard(id){ state.schedules = state.schedules.filter(s=>s.cardId!==id); state.cards = state.cards.filter(c=>c.id!==id); }
+function createSchedule(data){
+  const s = Object.assign({id:uid('sc'), status:'pendente', deductMinutes:null, modules:[], notes:''}, data);
+  state.schedules.push(s);
+  return s;
+}
+function updateSchedule(id, patch){ const s=byId(state.schedules,id); if(s) Object.assign(s, patch); }
+function completeSchedule(id, deductMinutes, note){
+  const s=byId(state.schedules,id); if(!s) return;
+  s.status='concluida'; s.deductMinutes=deductMinutes; if(note) s.notes = note;
+  if(s.cardId){ const c=getCard(s.cardId); if(c) addHistory(c, 'Agenda concluída ('+fmtDateBR(s.date)+' '+s.startTime+'–'+s.endTime+') — '+minToHM(deductMinutes)+' abatido(s)'); }
+}
+function markNotDone(id){
+  const s=byId(state.schedules,id); if(!s) return;
+  s.status='nao_realizada';
+  if(s.cardId){ const c=getCard(s.cardId); if(c) addHistory(c, 'Agenda marcada como não realizada ('+fmtDateBR(s.date)+' '+s.startTime+'–'+s.endTime+')'); }
+}
+function revertToPending(id){
+  const s=byId(state.schedules,id); if(!s || s.status==='pendente') return;
+  const wasConcluida = s.status==='concluida';
+  const deducted = s.deductMinutes;
+  s.status='pendente'; s.deductMinutes=null;
+  if(s.cardId){
+    const c=getCard(s.cardId);
+    if(c){
+      if(wasConcluida) addHistory(c, 'Conclusão revertida ('+fmtDateBR(s.date)+' '+s.startTime+'–'+s.endTime+') — '+minToHM(deducted||0)+' estornado(s)');
+      else addHistory(c, 'Agenda revertida para pendente ('+fmtDateBR(s.date)+' '+s.startTime+'–'+s.endTime+')');
+    }
+  }
+}
+function deleteSchedule(id){ state.schedules = state.schedules.filter(s=>s.id!==id); }
+function addList(boardId, name){ const b=getBoard(boardId); if(b) b.lists.push({id:uid('ls'), name}); }
+function deleteListFromBoard(boardId, listId){
+  const b=getBoard(boardId); if(!b) return;
+  const hasCards = state.cards.some(c=>c.boardId===boardId && c.listId===listId);
+  if(hasCards){ showAlert('Mova ou remova os cards desta lista antes de excluí-la.'); return; }
+  b.lists = b.lists.filter(l=>l.id!==listId);
+}
+
+/* ============================= RENDER ROOT ============================= */
+function render(){
+  persist();
+  const app = document.getElementById('app');
+  app.innerHTML = renderShell();
+  if(ui._focus){
+    const el = document.getElementById(ui._focus.id);
+    if(el){ el.focus(); try{ el.setSelectionRange(ui._focus.pos, ui._focus.pos); }catch(e){} }
+  }
+}
+
+function renderShell(){
+  return '<div class="shell">'
+    + '<aside class="sidebar">'+renderSidebar()+'</aside>'
+    + '<main class="main">'
+      + '<header class="topbar">'+renderTopbar()+'</header>'
+      + '<div class="view">'+renderView()+'</div>'
+    + '</main>'
+    + '</div>'
+    + (ui.modal ? renderModal() : '')
+    + (ui.confirmDialog ? renderConfirmDialog() : '');
+}
+
+/* ============================= SIDEBAR ============================= */
+function renderSidebar(){
+  let html = '<div class="brand"><div class="brand-mark">IM</div><div class="brand-name">Implanta</div></div>';
+  html += '<div class="side-section"><div class="side-label"><span>Quadros</span></div>';
+  state.analysts.forEach(a=>{
+    const board = boardOfAnalyst(a.id);
+    const pend = pendingConfirmations(a.id).length;
+    const active = ui.view==='board' && ui.currentBoardId===board.id;
+    html += '<button class="side-item'+(active?' active':'')+'" data-action="open-board" data-id="'+board.id+'">'
+      + '<span class="side-dot" style="background:'+a.color+'"></span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+esc(a.name)+'</span>'
+      + (pend? '<span class="side-badge">'+pend+'</span>' : '')
+      + '</button>';
+  });
+  html += '<button class="side-add" data-action="open-modal" data-modal="analyst-new">+ Novo analista</button>';
+  html += '</div>';
+
+  const totalPend = pendingConfirmations(null).length;
+  html += '<div class="side-section">';
+  html += navItem('calendar','🗓','Agenda', totalPend);
+  html += navItem('reports','📊','Relatórios');
+  html += navItem('clients','👥','Clientes');
+  html += navItem('settings','⚙️','Configurações');
+  html += '</div>';
+  html += '<div class="side-spacer"></div>';
+  html += '<div class="side-foot" id="save-status-line">'+(cloudStatus==='connected' ? '☁ Sincronizado com a nuvem' : 'Dados salvos neste navegador.')+'</div>';
+  return html;
+}
+function navItem(view, icon, label, badge){
+  const active = ui.view===view;
+  return '<button class="side-item'+(active?' active':'')+'" data-action="goto-view" data-view="'+view+'">'
+    + '<span>'+icon+'</span><span style="flex:1;">'+label+'</span>'
+    + (badge? '<span class="side-badge">'+badge+'</span>' : '')
+    + '</button>';
+}
+
+/* ============================= TOPBAR ============================= */
+function renderTopbar(){
+  const totalPend = pendingConfirmations(null).length;
+  let left = '';
+  if(ui.view==='board'){
+    const board = getBoard(ui.currentBoardId);
+    const analyst = board ? getAnalyst(board.analystId) : null;
+    left = '<div class="topbar-title"><h2>'+esc(board? board.name : 'Nenhum quadro')+'</h2>'
+      + (analyst? '<div class="sub">Analista responsável: '+esc(analyst.name)+'</div>' : '')+'</div>'
+      + '<div class="search-box" style="margin-left:8px;"><span>🔎</span><input id="search-input" placeholder="Buscar cliente..." value="'+esc(ui.search)+'"></div>'
+      + (board? '<button class="btn btn-primary" data-action="open-modal" data-modal="card-new" data-board="'+board.id+'">+ Novo cliente</button>' : '');
+  } else if(ui.view==='calendar'){
+    left = '<div class="topbar-title"><h2>Agenda</h2><div class="sub">Visualize por analista ou em conjunto</div></div>';
+  } else if(ui.view==='reports'){
+    left = '<div class="topbar-title"><h2>Relatórios</h2></div>';
+  } else if(ui.view==='clients'){
+    left = '<div class="topbar-title"><h2>Clientes</h2><div class="sub">Base de cadastro</div></div>'
+      + '<button class="btn btn-primary" data-action="open-modal" data-modal="client-new">+ Novo cliente</button>';
+  } else if(ui.view==='settings'){
+    left = '<div class="topbar-title"><h2>Configurações</h2></div>';
+  }
+  let right = '<div class="icon-btn" data-action="toggle-notif" title="Notificações">🔔'+(totalPend? '<span class="notif-dot">'+totalPend+'</span>':'')+'</div>';
+  if(ui.showNotif) right += renderNotifPanel();
+  return left + '<div class="topbar-right">'+right+'</div>';
+}
+function renderNotifPanel(){
+  const items = pendingConfirmations(null);
+  let html = '<div class="notif-panel">';
+  if(!items.length){ html += '<div class="notif-empty">Nenhuma confirmação pendente.</div>'; }
+  else{
+    items.sort((a,b)=> (a.date+a.startTime).localeCompare(b.date+b.startTime));
+    items.forEach(s=>{
+      const analyst = getAnalyst(s.analystId);
+      const client = s.clientId ? getClient(s.clientId) : null;
+      html += '<div class="notif-item">'
+        + '<div style="font-weight:700;font-size:13px;">'+esc(client? client.name : 'Interno')+' · '+esc(s.type)+'</div>'
+        + '<div style="font-size:11.5px;color:var(--ink-soft);margin:2px 0 6px;">'+fmtDateBR(s.date)+' '+s.startTime+'–'+s.endTime+' · '+esc(analyst? analyst.name:'')+'</div>'
+        + '<div class="row-actions">'
+          + '<button class="btn btn-sm btn-primary" data-action="open-modal" data-modal="confirm-complete" data-id="'+s.id+'">Confirmar</button>'
+          + '<button class="btn btn-sm btn-ghost" data-action="mark-not-done" data-id="'+s.id+'">Não realizada</button>'
+        + '</div></div>';
+    });
+  }
+  html += '</div>';
+  return html;
+}
+
+/* ============================= VIEW ROUTER ============================= */
+function renderView(){
+  if(!state.analysts.length && ui.view!=='settings' && ui.view!=='clients'){
+    return '<div class="empty-state"><h3>Comece cadastrando um analista</h3>'
+      + '<p>Cada analista tem seu próprio quadro, no estilo Trello, com os clientes em implantação sob sua responsabilidade.</p>'
+      + '<button class="btn btn-primary" data-action="open-modal" data-modal="analyst-new">+ Cadastrar analista</button></div>';
+  }
+  switch(ui.view){
+    case 'board': return renderBoardView();
+    case 'calendar': return renderCalendarView();
+    case 'reports': return renderReportsView();
+    case 'clients': return renderClientsView();
+    case 'settings': return renderSettingsView();
+    default: return '';
+  }
+}
+
+/* ============================= BOARD VIEW ============================= */
+function renderBoardView(){
+  const board = getBoard(ui.currentBoardId) || state.boards[0];
+  if(!board) return '<div class="empty-state"><h3>Nenhum quadro selecionado</h3></div>';
+  ui.currentBoardId = board.id;
+  const q = ui.search.trim().toLowerCase();
+  let html = '<div class="board-lists">';
+  board.lists.forEach((list, idx)=>{
+    let cards = cardsInBoard(board.id).filter(c=>c.listId===list.id);
+    if(q){ cards = cards.filter(c=>{ const cl=getClient(c.clientId); return cl && cl.name.toLowerCase().includes(q); }); }
+    html += '<div class="list-col">'
+      + '<div class="list-head"><span class="name">'+esc(list.name)+'</span><span class="count">'+cards.length+'</span>'
+      + '<button class="icon-btn btn-sm" style="width:26px;height:26px;" data-action="delete-list" data-board="'+board.id+'" data-list="'+list.id+'" title="Excluir lista">✕</button></div>'
+      + '<div class="list-cards" data-list-id="'+list.id+'" data-board-id="'+board.id+'">';
+    cards.forEach(c=> html += renderCardMini(c, idx));
+    html += '</div>'
+      + '<button class="add-card-btn" data-action="open-modal" data-modal="card-new" data-board="'+board.id+'" data-list="'+list.id+'">+ Adicionar cliente</button>'
+      + '</div>';
+  });
+  html += '<div class="list-col list-add-col"><button data-action="open-modal" data-modal="list-new" data-board="'+board.id+'">+ Nova lista</button></div>';
+  html += '</div>';
+  return html;
+}
+function renderCardMini(card, listIdx){
+  const client = getClient(card.clientId);
+  const balance = cardBalanceHours(card);
+  const due = pendingConfirmations(null).some(s=>s.cardId===card.id);
+  let chips = '';
+  (card.productTags||[]).forEach(tid=>{ const t=byId(state.productTags,tid); if(t) chips += '<span class="chip" style="background:'+t.color+'">'+esc(t.name)+'</span>'; });
+  return '<div class="card-mini" draggable="true" data-card-id="'+card.id+'" data-action="open-card">'
+    + (chips? '<div class="chip-row">'+chips+'</div>' : '')
+    + '<div class="card-title">'+esc(client? client.name : '(cliente removido)')+'</div>'
+    + '<div class="card-meta"><span class="balance-pill'+(balance<0?' neg':'')+'">'+minToHM(balance*60)+' saldo</span>'
+    + (due? '<span class="pending-flag">● confirmar</span>' : '')
+    + '</div></div>';
+}
+
+/* ============================= CARD MODAL CONTENT ============================= */
+function renderCardModalContent(card){
+  const client = getClient(card.clientId);
+  const board = getBoard(card.boardId);
+  const analyst = board ? getAnalyst(board.analystId) : null;
+  const used = cardUsedMinutes(card)/60;
+  const balance = cardBalanceHours(card);
+  let html = '<div class="modal-header"><div style="flex:1;">'
+    + '<h3>'+esc(client? client.name : '(cliente removido)')+'</h3>'
+    + '<div class="card-modal-meta"><span>Analista: '+esc(analyst?analyst.name:'—')+'</span><span>Início: '+fmtDateBR(card.startDate)+'</span></div>'
+    + '</div><button class="modal-close" data-action="close-card">✕</button></div>';
+
+  html += '<div class="tabs">'
+    + tabBtn('info','Informações') + tabBtn('agenda','Agenda ('+schedulesForCard(card.id).length+')') + tabBtn('history','Histórico')
+    + '</div>';
+
+  if(ui.cardTab==='info'){
+    const draft = (ui.cardDraft && ui.cardDraft.cardId===card.id) ? ui.cardDraft.values : null;
+    const effHours = draft ? draft.contractedHours : card.contractedHours;
+    const effStart = draft ? draft.startDate : card.startDate;
+    const effTags = draft ? (draft.productTags||[]) : (card.productTags||[]);
+    const effMove = draft ? draft.moveTo : (card.boardId+'::'+card.listId);
+    html += '<div class="balance-box">'
+      + balanceItem(card.contractedHours+'h','Contratadas')
+      + balanceItem(minToHM(used*60),'Usadas')
+      + balanceItem(minToHM(balance*60), 'Saldo');
+    html += '</div>';
+    html += '<form data-form="card-info" data-card="'+card.id+'">';
+    html += '<div class="field-row">'
+      + '<div class="field"><label>Total de horas contratadas</label><input type="number" min="0" step="0.5" name="contractedHours" value="'+esc(effHours)+'"></div>'
+      + '<div class="field"><label>Início da implantação</label><input type="date" name="startDate" value="'+esc(effStart)+'"></div>'
+      + '</div>';
+    html += '<div class="field"><label>Produtos contratados</label><div class="check-grid">';
+    state.productTags.forEach(t=>{
+      const checked = effTags.includes(t.id) ? 'checked' : '';
+      html += '<label class="check-pill" style="border-color:'+t.color+'55;"><input type="checkbox" name="productTags" value="'+t.id+'" '+checked+'><span style="color:'+t.color+';font-weight:700;">'+esc(t.name)+'</span></label>';
+    });
+    html += '</div>';
+    html += '<div style="display:flex;gap:6px;margin-top:9px;">'
+      + '<input type="text" class="quick-add-input" data-for="product" placeholder="Novo produto...">'
+      + '<input type="color" class="quick-add-color" data-for="product" value="'+colorForIndex(state.productTags.length)+'">'
+      + '<button type="button" class="btn btn-sm btn-primary" data-action="quick-add-product">+ Adicionar</button>'
+      + '</div>';
+    html += '</div>';
+    html += '<div class="field"><label>Mover para</label><select name="moveTo">';
+    state.boards.forEach(b=>{
+      const a=getAnalyst(b.analystId);
+      b.lists.forEach(l=>{
+        const val = b.id+'::'+l.id;
+        const sel = (val===effMove) ? 'selected' : '';
+        html += '<option value="'+val+'" '+sel+'>'+esc(a?a.name:b.name)+' — '+esc(l.name)+'</option>';
+      });
+    });
+    html += '</select></div>';
+    html += '<div class="form-actions"><button type="button" class="btn btn-danger" data-action="delete-card" data-id="'+card.id+'">Excluir card</button><span style="flex:1;"></span><button type="submit" class="btn btn-primary">Salvar</button></div>';
+    html += '</form>';
+  } else if(ui.cardTab==='agenda'){
+    html += '<button class="btn btn-primary btn-sm" style="margin-bottom:12px;" data-action="open-modal" data-modal="schedule-new" data-card="'+card.id+'">+ Nova agenda</button>';
+    const scheds = schedulesForCard(card.id);
+    if(!scheds.length) html += '<p class="hint">Nenhum agendamento para este cliente ainda.</p>';
+    scheds.forEach(s=> html += renderSchedRow(s));
+  } else {
+    const hist = card.history||[];
+    if(!hist.length) html += '<p class="hint">Sem histórico.</p>';
+    hist.forEach(h=> html += '<div class="hist-row">'+esc(h.text)+'<div class="ts">'+fmtDT(h.ts)+'</div></div>');
+  }
+  return html;
+}
+function tabBtn(key,label){ return '<button class="tab-btn'+(ui.cardTab===key?' active':'')+'" data-action="card-tab" data-tab="'+key+'">'+label+'</button>'; }
+function balanceItem(num,lbl){ return '<div class="balance-item"><div class="num">'+num+'</div><div class="lbl">'+lbl+'</div></div>'; }
+function renderSchedRow(s){
+  const due = scheduleIsDue(s);
+  const modules = (s.modules||[]).join(', ');
+  let actions = '';
+  if(s.status==='pendente'){
+    actions = '<button class="btn btn-sm btn-primary" data-action="open-modal" data-modal="confirm-complete" data-id="'+s.id+'">Concluir</button>'
+      + '<button class="btn btn-sm btn-ghost" data-action="mark-not-done" data-id="'+s.id+'">Não realizada</button>'
+      + '<button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="schedule-edit" data-id="'+s.id+'">Editar</button>';
+  } else {
+    actions = '<button class="btn btn-sm btn-ghost" data-action="revert-to-pending" data-id="'+s.id+'">'+(s.status==='concluida'?'Reverter conclusão':'Reverter p/ pendente')+'</button>'
+      + '<button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="schedule-edit" data-id="'+s.id+'">Editar</button>';
+  }
+  actions += '<button class="btn btn-sm btn-ghost" data-action="delete-schedule" data-id="'+s.id+'">🗑</button>';
+  return '<div class="sched-row'+(due?' due':'')+'">'
+    + '<div class="sched-main"><div class="sched-time">'+fmtDateBR(s.date)+' · '+s.startTime+'–'+s.endTime+' <span class="badge '+s.status+'">'+statusLabel(s.status)+'</span></div>'
+    + '<div class="sched-sub">'+esc(s.type)+(modules? ' · '+esc(modules) : '')+(s.status==='concluida'? ' · '+minToHM(s.deductMinutes)+' abatido':'')+'</div>'
+    + (s.trainedUsers? '<div class="sched-sub">👤 '+esc(s.trainedUsers)+'</div>' : '')
+    + '</div>'
+    + '<div class="row-actions">'+actions+'</div></div>';
+}
+function statusLabel(st){ return st==='pendente'?'Pendente': st==='concluida'?'Concluída':'Não realizada'; }
+
+/* ============================= CALENDAR VIEW (day/time grid, Google Calendar style) ============================= */
+function calcCalTimeRange(scheds){
+  let minH = 7, maxH = 21;
+  scheds.forEach(s=>{
+    const sh = Math.floor(timeToMin(s.startTime)/60);
+    const eh = Math.ceil(timeToMin(s.endTime)/60);
+    if(sh < minH) minH = Math.max(0, sh-1);
+    if(eh > maxH) maxH = Math.min(24, eh+1);
+  });
+  return {startHour:minH, endHour:maxH};
+}
+function layoutDayEvents(scheds){
+  const items = scheds.map(s=>({ s, start:timeToMin(s.startTime), end:Math.max(timeToMin(s.endTime), timeToMin(s.startTime)+15) }))
+    .sort((a,b)=> a.start-b.start || a.end-b.end);
+  const clusters = [];
+  let current = [], clusterEnd = -1;
+  items.forEach(it=>{
+    if(current.length && it.start >= clusterEnd){ clusters.push(current); current = []; }
+    current.push(it);
+    clusterEnd = Math.max(clusterEnd, it.end);
+  });
+  if(current.length) clusters.push(current);
+  const result = [];
+  clusters.forEach(cluster=>{
+    const lanes = [];
+    cluster.forEach(it=>{
+      let laneIdx = lanes.findIndex(endT=> it.start >= endT);
+      if(laneIdx===-1){ laneIdx = lanes.length; lanes.push(it.end); } else { lanes[laneIdx] = it.end; }
+      it.lane = laneIdx;
+    });
+    const totalLanes = lanes.length;
+    cluster.forEach(it=> result.push({sched:it.s, start:it.start, end:it.end, lane:it.lane, lanes:totalLanes}));
+  });
+  return result;
+}
+function renderCalendarView(){
+  let html = '<div class="cal-toolbar">'
+    + '<select id="cal-analyst-filter" data-action="cal-filter">'
+      + '<option value="all"'+(ui.calAnalyst==='all'?' selected':'')+'>Todos os analistas</option>';
+  state.analysts.forEach(a=> html += '<option value="'+a.id+'"'+(ui.calAnalyst===a.id?' selected':'')+'>'+esc(a.name)+'</option>');
+  html += '</select>'
+    + '<button class="btn btn-sm" data-action="cal-nav" data-dir="-1">‹ Semana anterior</button>'
+    + '<button class="btn btn-sm" data-action="cal-nav" data-dir="0">Hoje</button>'
+    + '<button class="btn btn-sm" data-action="cal-nav" data-dir="1">Próxima semana ›</button>'
+    + '<span class="grow"></span>'
+    + '<button class="btn btn-primary" data-action="open-modal" data-modal="schedule-new">+ Novo agendamento</button>'
+    + '</div>';
+
+  const days = [];
+  for(let i=0;i<7;i++) days.push(addDaysISO(ui.calStart, i));
+  let weekScheds = [];
+  days.forEach(d=>{ weekScheds = weekScheds.concat(state.schedules.filter(s=>s.date===d && (ui.calAnalyst==='all' || s.analystId===ui.calAnalyst))); });
+  const {startHour, endHour} = calcCalTimeRange(weekScheds);
+  const pxPerHour = 48;
+  const pxPerMin = pxPerHour/60;
+  const gridHeight = (endHour-startHour)*pxPerHour;
+  const today = todayISO();
+
+  html += '<div class="cal-tg-outer"><div class="cal-tg-inner">';
+  html += '<div class="cal-tg-headerrow"><div></div>';
+  days.forEach(d=>{
+    html += '<div class="cal-tg-daycol-head'+(d===today?' today':'')+'"><div class="wd">'+weekdayShort(d)+'</div><div class="dt">'+fmtDateBR(d).slice(0,5)+'</div></div>';
+  });
+  html += '</div>';
+
+  html += '<div class="cal-tg-bodyscroll"><div class="cal-tg-bodyrow" style="height:'+gridHeight+'px;">';
+  html += '<div class="cal-tg-hourlabels" style="height:'+gridHeight+'px;">';
+  for(let h=startHour; h<=endHour; h++){
+    html += '<div class="cal-tg-hourlabel" style="top:'+((h-startHour)*pxPerHour)+'px;">'+String(h).padStart(2,'0')+':00</div>';
+  }
+  html += '</div>';
+
+  const now = new Date();
+  const nowMin = now.getHours()*60+now.getMinutes();
+
+  days.forEach(d=>{
+    const scheds = state.schedules.filter(s=>s.date===d && (ui.calAnalyst==='all' || s.analystId===ui.calAnalyst));
+    const laidOut = layoutDayEvents(scheds);
+    html += '<div class="cal-tg-daycol" data-action="cal-grid-click" data-date="'+d+'" data-start-hour="'+startHour+'" data-px-per-hour="'+pxPerHour+'" style="height:'+gridHeight+'px;--hour-px:'+pxPerHour+'px;">';
+    laidOut.forEach(item=>{
+      const s = item.sched;
+      const analyst = getAnalyst(s.analystId);
+      const client = s.clientId? getClient(s.clientId) : null;
+      const due = scheduleIsDue(s);
+      const top = (item.start - startHour*60)*pxPerMin;
+      const height = Math.max((item.end-item.start)*pxPerMin, 20);
+      const widthPct = 100/item.lanes;
+      const leftPct = item.lane*widthPct;
+      const borderColor = ui.calAnalyst==='all' && analyst ? analyst.color : 'var(--brand)';
+      const draggable = s.status==='pendente';
+      html += '<div class="cal-tg-event'+(due?' due':'')+'" draggable="'+(draggable?'true':'false')+'" data-draggable="'+(draggable?'1':'0')+'" style="top:'+top+'px;height:'+height+'px;left:'+leftPct+'%;width:calc('+widthPct+'% - 4px);border-left-color:'+borderColor+';" data-action="open-modal" data-modal="schedule-edit" data-id="'+s.id+'" title="'+esc(s.startTime+'–'+s.endTime+' · '+(client?client.name:'Interno')+' · '+s.type)+(draggable? ' (arraste para reagendar)':'')+'">'
+        + '<div class="t">'+s.startTime+' '+esc(client?client.name:'Interno')+'</div>'
+        + (height>34? '<div style="opacity:.8;">'+esc(s.type)+(ui.calAnalyst==='all'&&analyst? ' · '+esc(analyst.name):'')+'</div>' : '')
+        + '</div>';
+    });
+    if(d===today && nowMin>=startHour*60 && nowMin<=endHour*60){
+      html += '<div class="cal-tg-now" style="top:'+((nowMin-startHour*60)*pxPerMin)+'px;"></div>';
+    }
+    html += '</div>';
+  });
+  html += '</div></div>';
+  html += '</div></div>';
+  return html;
+}
+
+/* ============================= REPORTS VIEW ============================= */
+function renderReportsView(){
+  let html = '';
+  // 1. Saldo de horas por cliente
+  html += '<div class="section-card"><h3>Saldo de horas por cliente</h3><table><thead><tr><th>Cliente</th><th>Analista</th><th>Contratadas</th><th>Usadas</th><th>Saldo</th></tr></thead><tbody>';
+  if(!state.cards.length) html += '<tr><td colspan="5" class="hint">Nenhum cliente em implantação ainda.</td></tr>';
+  state.cards.forEach(c=>{
+    const client=getClient(c.clientId), board=getBoard(c.boardId), analyst=board?getAnalyst(board.analystId):null;
+    const used = cardUsedMinutes(c)/60, bal = cardBalanceHours(c);
+    html += '<tr><td>'+esc(client?client.name:'—')+'</td><td>'+esc(analyst?analyst.name:'—')+'</td><td>'+c.contractedHours+'h</td><td>'+minToHM(used*60)+'</td><td style="color:'+(bal<0?'var(--danger)':'var(--ok)')+';font-weight:700;">'+minToHM(bal*60)+'</td></tr>';
+  });
+  html += '</tbody></table></div>';
+
+  // 2. Módulos treinados por cliente
+  html += '<div class="section-card"><h3>Módulos treinados por cliente</h3><table><thead><tr><th>Cliente</th><th>Módulos treinados</th><th>Usuários treinados</th></tr></thead><tbody>';
+  const anyTrained = state.cards.some(c=> state.schedules.some(s=>s.cardId===c.id && s.status==='concluida' && s.type==='Treinamento'));
+  if(!anyTrained) html += '<tr><td colspan="3" class="hint">Nenhum treinamento concluído registrado ainda.</td></tr>';
+  state.cards.forEach(c=>{
+    const trainSchedules = state.schedules.filter(s=>s.cardId===c.id && s.status==='concluida' && s.type==='Treinamento');
+    const mods = new Set();
+    const users = new Set();
+    trainSchedules.forEach(s=>{
+      (s.modules||[]).forEach(m=>mods.add(m));
+      (s.trainedUsers||'').split(',').map(u=>u.trim()).filter(Boolean).forEach(u=>users.add(u));
+    });
+    if(mods.size || users.size){
+      const client=getClient(c.clientId);
+      html += '<tr><td>'+esc(client?client.name:'—')+'</td>'
+        + '<td>'+([...mods].map(m=>'<span class="chip" style="background:var(--brand);margin-right:4px;">'+esc(m)+'</span>').join('')||'<span class="hint">—</span>')+'</td>'
+        + '<td>'+([...users].map(esc).join(', ')||'<span class="hint">—</span>')+'</td></tr>';
+    }
+  });
+  html += '</tbody></table></div>';
+
+  // 3. Horas por analista
+  html += '<div class="section-card"><h3>Horas realizadas por analista</h3><table><thead><tr><th>Analista</th><th>Sessões concluídas</th><th>Total de horas</th></tr></thead><tbody>';
+  if(!state.analysts.length) html += '<tr><td colspan="3" class="hint">Nenhum analista cadastrado.</td></tr>';
+  state.analysts.forEach(a=>{
+    const scheds = state.schedules.filter(s=>s.analystId===a.id && s.status==='concluida');
+    const totalMin = scheds.reduce((sum,s)=> sum + (s.deductMinutes||0), 0);
+    html += '<tr><td>'+esc(a.name)+'</td><td>'+scheds.length+'</td><td>'+minToHM(totalMin)+'</td></tr>';
+  });
+  html += '</tbody></table></div>';
+
+  // 4. Analista x Clientes
+  html += '<div class="section-card"><h3>Analista × Clientes</h3><table><thead><tr><th>Analista</th><th>Clientes em implantação</th></tr></thead><tbody>';
+  if(!state.analysts.length) html += '<tr><td colspan="2" class="hint">Nenhum analista cadastrado.</td></tr>';
+  state.analysts.forEach(a=>{
+    const board = boardOfAnalyst(a.id);
+    const cards = board ? cardsInBoard(board.id) : [];
+    const names = cards.map(c=>{ const cl=getClient(c.clientId); const list = board.lists.find(l=>l.id===c.listId); return (cl?cl.name:'—')+' <span style="color:var(--ink-faint);">('+esc(list?list.name:'')+')</span>'; });
+    html += '<tr><td>'+esc(a.name)+'</td><td>'+(names.length? names.join(', ') : '<span class="hint">Nenhum</span>')+'</td></tr>';
+  });
+  html += '</tbody></table></div>';
+  return html;
+}
+
+/* ============================= CLIENTS VIEW ============================= */
+function renderClientsView(){
+  let html = '<div class="section-card"><table><thead><tr><th>Nome</th><th>Tipo</th><th>Segmento</th><th>Cidade</th><th>Contato</th><th>E-mail</th><th>Telefone</th><th>Cards</th><th></th></tr></thead><tbody>';
+  if(!state.clients.length) html += '<tr><td colspan="9" class="hint">Nenhum cliente cadastrado ainda.</td></tr>';
+  state.clients.forEach(cl=>{
+    const cardCount = state.cards.filter(c=>c.clientId===cl.id).length;
+    const isNovo = (cl.clientType||'novo')==='novo';
+    const typeBadge = '<span class="badge" style="background:'+(isNovo?'var(--gold-soft)':'var(--brand-soft)')+';color:'+(isNovo?'var(--gold)':'var(--brand)')+';">'+(isNovo?'Novo':'Base')+'</span>';
+    html += '<tr><td style="font-weight:700;">'+esc(cl.name)+'</td><td>'+typeBadge+'</td><td>'+esc(cl.segment||'—')+'</td><td>'+esc(cl.city||'—')+'</td><td>'+esc(cl.contact||'—')+'</td><td>'+esc(cl.email||'—')+'</td><td>'+esc(cl.phone||'—')+'</td><td>'+cardCount+'</td>'
+      + '<td><div class="row-actions"><button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="client-edit" data-id="'+cl.id+'">Editar</button><button class="btn btn-sm btn-danger" data-action="delete-client" data-id="'+cl.id+'">Excluir</button></div></td></tr>';
+  });
+  html += '</tbody></table></div>';
+  return html;
+}
+
+/* ============================= SETTINGS VIEW ============================= */
+function renderSettingsView(){
+  let html = '<div class="settings-tabs">';
+  [['analistas','Analistas'],['produtos','Produtos'],['modulos','Módulos do sistema'],['tipos','Tipos de agenda'],['nuvem','Nuvem']].forEach(([k,l])=>{
+    html += '<button class="btn btn-sm'+(ui.settingsTab===k?' btn-primary':'')+'" data-action="settings-tab" data-tab="'+k+'">'+l+'</button>';
+  });
+  html += '</div>';
+
+  if(ui.settingsTab==='analistas'){
+    html += '<div class="section-card"><h3>Analistas</h3><table><thead><tr><th></th><th>Nome</th><th>Quadro</th><th></th></tr></thead><tbody>';
+    state.analysts.forEach(a=>{
+      const board = boardOfAnalyst(a.id);
+      html += '<tr><td><span class="side-dot" style="background:'+a.color+';display:inline-block;"></span></td><td>'+esc(a.name)+'</td><td>'+esc(board?board.name:'—')+'</td>'
+        + '<td><div class="row-actions"><button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="analyst-edit" data-id="'+a.id+'">Editar</button><button class="btn btn-sm btn-danger" data-action="delete-analyst" data-id="'+a.id+'">Excluir</button></div></td></tr>';
+    });
+    html += '</tbody></table><div style="margin-top:12px;"><button class="btn btn-primary btn-sm" data-action="open-modal" data-modal="analyst-new">+ Novo analista</button></div></div>';
+  } else if(ui.settingsTab==='produtos'){
+    html += '<div class="section-card"><h3>Produtos contratados — cadastro</h3>';
+    if(!state.productTags.length){
+      html += '<p class="hint" style="margin-top:-2px;">Nenhum produto cadastrado ainda.</p>';
+    } else {
+      html += '<table><thead><tr><th></th><th>Produto</th><th>Clientes vinculados</th><th></th></tr></thead><tbody>';
+      state.productTags.forEach(t=>{
+        const linkedCards = cardsUsingProduct(t.id);
+        const names = linkedCards.map(c=>{ const cl=getClient(c.clientId); return esc(cl?cl.name:'—'); });
+        const canDelete = linkedCards.length===0;
+        html += '<tr><td><span class="side-dot" style="background:'+t.color+';display:inline-block;"></span></td>'
+          + '<td style="font-weight:700;">'+esc(t.name)+'</td>'
+          + '<td>'+(names.length? names.join(', ') : '<span class="hint">Nenhum</span>')+'</td>'
+          + '<td><div class="row-actions">'
+            + '<button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="product-edit" data-id="'+t.id+'">Editar</button>'
+            + '<button class="btn btn-sm btn-danger" data-action="delete-product" data-id="'+t.id+'" '+(canDelete?'':'disabled title="Não é possível excluir: há cliente(s) vinculado(s) a este produto."')+'>Excluir</button>'
+            + '</div></td></tr>';
+      });
+      html += '</tbody></table>';
+    }
+    html += '<div style="margin-top:12px;"><button class="btn btn-primary btn-sm" data-action="open-modal" data-modal="product-new">+ Novo produto</button></div></div>';
+  } else if(ui.settingsTab==='modulos'){
+    html += '<div class="section-card"><h3>Módulos do sistema</h3>';
+    if(state.modules.length){
+      html += '<div class="list-plain" style="margin-bottom:14px;">';
+      state.modules.forEach(m=> html += '<span class="item-x">'+esc(m)+'<button data-action="delete-module" data-name="'+esc(m)+'">✕</button></span>');
+      html += '</div><button class="btn btn-sm btn-danger" data-action="clear-modules" style="margin-bottom:14px;">Limpar todos</button>';
+    } else {
+      html += '<p class="hint" style="margin-top:-2px;">Nenhum módulo cadastrado ainda.</p>';
+    }
+    html += '<form class="inline-add" data-form="add-module"><input type="text" name="name" placeholder="Nome do módulo" required><button class="btn btn-primary btn-sm" type="submit">Adicionar</button></form></div>';
+  } else if(ui.settingsTab==='tipos'){
+    html += '<div class="section-card"><h3>Tipos de agenda</h3><div class="list-plain" style="margin-bottom:14px;">';
+    state.agendaTypes.forEach(t=> html += '<span class="item-x">'+esc(t)+'<button data-action="delete-type" data-name="'+esc(t)+'">✕</button></span>');
+    html += '</div><form class="inline-add" data-form="add-type"><input type="text" name="name" placeholder="Nome do tipo" required><button class="btn btn-primary btn-sm" type="submit">Adicionar</button></form></div>';
+  } else if(ui.settingsTab==='nuvem'){
+    html += '<div class="section-card"><h3>Sincronização na nuvem</h3>';
+    if(cloudStatus==='connected'){
+      html += '<p class="hint" style="margin-top:-2px;">☁ Conectado. Os dados deste app são salvos em um banco de dados na nuvem (Supabase) e ficam disponíveis em qualquer navegador ou dispositivo que use a mesma URL e chave.</p>'
+        + '<button class="btn btn-danger btn-sm" data-action="cloud-disconnect" style="margin-top:10px;">Desconectar (voltar a salvar só neste navegador)</button>';
+    } else {
+      if(cloudStatus==='error') html += '<div class="error-msg">'+esc(cloudErrorMsg)+'</div>';
+      html += '<p class="hint" style="margin-top:-2px;">Por padrão, os dados ficam salvos só neste navegador. Para acessar de outros computadores/dispositivos com os mesmos dados, conecte a um banco de dados gratuito no Supabase.</p>'
+        + '<form data-form="cloud-config">'
+        + '<div class="field"><label>Project URL</label><input type="text" name="url" placeholder="https://xxxxx.supabase.co" value="'+esc(cloudConfig?cloudConfig.url:'')+'" required></div>'
+        + '<div class="field"><label>Anon public key</label><input type="text" name="anonKey" placeholder="eyJhbGci..." value="'+esc(cloudConfig?cloudConfig.anonKey:'')+'" required></div>'
+        + '<div class="form-actions"><span style="flex:1;"></span><button type="submit" class="btn btn-primary">Conectar</button></div>'
+        + '</form>'
+        + '<p class="hint">Veja o passo a passo de como criar o banco gratuito e obter esses dados na conversa com o Claude que gerou este app.</p>';
+    }
+    html += '</div>';
+  }
+  return html;
+}
+
+/* ============================= MODALS ============================= */
+function renderModal(){
+  const m = ui.modal;
+  let inner = '';
+  if(m.type==='analyst-new' || m.type==='analyst-edit'){
+    const a = m.type==='analyst-edit' ? getAnalyst(m.id) : null;
+    inner = '<div class="modal-header"><h3>'+(a?'Editar analista':'Novo analista')+'</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
+      + '<form data-form="analyst" data-id="'+(a?a.id:'')+'">'
+      + '<div class="field"><label>Nome</label><input type="text" name="name" value="'+esc(a?a.name:'')+'" required></div>'
+      + '<div class="field"><label>Cor</label><input type="color" name="color" value="'+(a?a.color:colorForIndex(state.analysts.length))+'"></div>'
+      + '<div class="form-actions"><button type="submit" class="btn btn-primary">Salvar</button></div></form>';
+  } else if(m.type==='client-new' || m.type==='client-edit'){
+    const c = m.type==='client-edit' ? getClient(m.id) : null;
+    const ctype = c ? (c.clientType||'novo') : 'novo';
+    inner = '<div class="modal-header"><h3>'+(c?'Editar cliente':'Novo cliente')+'</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
+      + '<form data-form="client" data-id="'+(c?c.id:'')+'" data-then="'+(m.then||'')+'">'
+      + '<div class="field"><label>Nome</label><input type="text" name="name" value="'+esc(c?c.name:'')+'" required></div>'
+      + '<div class="field-row"><div class="field"><label>Segmento</label><input type="text" name="segment" value="'+esc(c?c.segment:'')+'" placeholder="Ex: Varejo, Alimentício..."></div><div class="field"><label>Cidade</label><input type="text" name="city" value="'+esc(c?c.city:'')+'"></div></div>'
+      + '<div class="field"><label>Tipo de cliente</label><select name="clientType">'
+        + '<option value="novo" '+(ctype==='novo'?'selected':'')+'>Cliente novo</option>'
+        + '<option value="base" '+(ctype==='base'?'selected':'')+'>Cliente da base</option>'
+        + '</select></div>'
+      + '<div class="field"><label>Contato (pessoa)</label><input type="text" name="contact" value="'+esc(c?c.contact:'')+'"></div>'
+      + '<div class="field-row"><div class="field"><label>E-mail</label><input type="email" name="email" value="'+esc(c?c.email:'')+'"></div><div class="field"><label>Telefone</label><input type="tel" name="phone" value="'+esc(c?c.phone:'')+'"></div></div>'
+      + '<div class="form-actions"><button type="submit" class="btn btn-primary">Salvar</button></div></form>';
+  } else if(m.type==='product-new' || m.type==='product-edit'){
+    const p = m.type==='product-edit' ? byId(state.productTags, m.id) : null;
+    inner = '<div class="modal-header"><h3>'+(p?'Editar produto':'Novo produto')+'</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
+      + '<form data-form="product" data-id="'+(p?p.id:'')+'">'
+      + '<div class="field"><label>Nome do produto</label><input type="text" name="name" value="'+esc(p?p.name:'')+'" required></div>'
+      + '<div class="field"><label>Cor</label><input type="color" name="color" value="'+(p?p.color:colorForIndex(state.productTags.length))+'"></div>'
+      + '<div class="form-actions"><button type="submit" class="btn btn-primary">Salvar</button></div></form>';
+  } else if(m.type==='list-new'){
+    inner = '<div class="modal-header"><h3>Nova lista</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
+      + '<form data-form="list-new" data-board="'+m.board+'"><div class="field"><label>Nome da lista</label><input type="text" name="name" required></div>'
+      + '<div class="form-actions"><button type="submit" class="btn btn-primary">Criar</button></div></form>';
+  } else if(m.type==='card-new'){
+    const board = getBoard(m.board);
+    inner = '<div class="modal-header"><h3>Novo cliente no quadro</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
+      + '<form data-form="card-new" data-board="'+m.board+'" data-list="'+(m.list||board.lists[0].id)+'">'
+      + '<div class="field"><label>Cliente</label><select name="clientId"><option value="">— Criar novo cliente —</option>';
+    state.clients.forEach(cl=> inner += '<option value="'+cl.id+'">'+esc(cl.name)+'</option>');
+    inner += '</select></div>'
+      + '<div class="field" id="new-client-name-field"><label>Nome do novo cliente</label><input type="text" name="newClientName" placeholder="Obrigatório se não selecionar um cliente acima"></div>'
+      + '<div class="field-row"><div class="field"><label>Horas contratadas</label><input type="number" min="0" step="0.5" name="contractedHours" value="0"></div><div class="field"><label>Início da implantação</label><input type="date" name="startDate" value="'+todayISO()+'"></div></div>'
+      + '<div class="form-actions"><button type="submit" class="btn btn-primary">Criar card</button></div></form>';
+  } else if(m.type==='schedule-new' || m.type==='schedule-edit'){
+    inner = renderScheduleForm(m);
+  } else if(m.type==='confirm-complete'){
+    const s = byId(state.schedules, m.id);
+    const dur = timeToMin(s.endTime)-timeToMin(s.startTime);
+    inner = '<div class="modal-header"><h3>Confirmar conclusão</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
+      + '<p class="hint" style="margin-top:-6px;">'+fmtDateBR(s.date)+' · '+s.startTime+'–'+s.endTime+' · '+esc(s.type)+'</p>'
+      + '<form data-form="confirm-complete" data-id="'+s.id+'">'
+      + '<div class="field"><label>Minutos a abater do saldo</label><input type="number" min="0" name="deductMinutes" value="'+dur+'"></div>'
+      + '<div class="field"><label>Observação (opcional)</label><textarea name="notes"></textarea></div>'
+      + '<div class="form-actions"><button type="submit" class="btn btn-primary">Confirmar conclusão</button></div></form>';
+  }
+  return '<div class="overlay"><div class="modal'+(m.type&&m.type.startsWith('schedule')?' wide':'')+'">'+inner+'</div></div>';
+}
+
+function renderScheduleForm(m){
+  const editing = m.type==='schedule-edit' ? byId(state.schedules, m.id) : null;
+  const readOnly = false;
+  const cardCtx = m.card ? getCard(m.card) : (editing && editing.cardId ? getCard(editing.cardId) : null);
+  const fixedAnalystId = cardCtx ? getBoard(cardCtx.boardId).analystId : (editing ? editing.analystId : '');
+  const draft = m.values || null;
+  const eff = {
+    clientId: draft ? (draft.clientId||'') : (editing ? editing.clientId||'' : ''),
+    analystId: draft ? (draft.analystId || fixedAnalystId) : (fixedAnalystId || m.prefillAnalyst || ''),
+    date: draft ? draft.date : (editing ? editing.date : (m.prefillDate || todayISO())),
+    startTime: draft ? draft.startTime : (editing ? editing.startTime : (m.prefillStart || '09:00')),
+    endTime: draft ? draft.endTime : (editing ? editing.endTime : (m.prefillEnd || '10:00')),
+    type: draft ? draft.type : (editing ? editing.type : (state.agendaTypes[0]||'')),
+    modules: draft ? (draft.modules||[]) : (editing ? (editing.modules||[]) : []),
+    trainedUsers: draft ? (draft.trainedUsers||'') : (editing ? (editing.trainedUsers||'') : ''),
+    notes: draft ? (draft.notes||'') : (editing ? editing.notes : '')
+  };
+  let html = '<div class="modal-header"><h3>'+(editing?'Editar agendamento':'Novo agendamento')+'</h3><button class="modal-close" data-action="close-modal">✕</button></div>';
+  if(editing) html += '<p class="hint" style="margin-top:-8px;">Status: <span class="badge '+editing.status+'">'+statusLabel(editing.status)+'</span>'+(editing.status==='concluida'? ' · '+minToHM(editing.deductMinutes)+' abatido(s)':'')+'</p>';
+  if(ui.formErr){ html += '<div class="error-msg">'+esc(ui.formErr)+'</div>'; }
+  html += '<form data-form="schedule" data-id="'+(editing?editing.id:'')+'" data-card="'+(cardCtx?cardCtx.id:'')+'">';
+
+  if(cardCtx){
+    const client = getClient(cardCtx.clientId);
+    html += '<div class="field"><label>Cliente</label><input type="text" value="'+esc(client?client.name:'')+'" disabled></div>';
+  } else {
+    html += '<div class="field"><label>Cliente (opcional)</label><select name="clientId"><option value="">Interno / sem cliente</option>';
+    state.clients.forEach(cl=> html += '<option value="'+cl.id+'" '+(eff.clientId===cl.id?'selected':'')+'>'+esc(cl.name)+'</option>');
+    html += '</select></div>';
+  }
+  html += '<div class="field"><label>Analista</label><select name="analystId" '+(cardCtx?'disabled':'')+'>';
+  state.analysts.forEach(a=> html += '<option value="'+a.id+'" '+((eff.analystId===a.id)?'selected':'')+'>'+esc(a.name)+'</option>');
+  html += '</select></div>';
+  html += '<div class="field-row">'
+    + '<div class="field"><label>Data</label><input type="date" name="date" value="'+esc(eff.date)+'"></div>'
+    + '<div class="field"><label>Início</label><input type="time" name="startTime" value="'+esc(eff.startTime)+'"></div>'
+    + '<div class="field"><label>Fim</label><input type="time" name="endTime" value="'+esc(eff.endTime)+'"></div>'
+    + '</div>';
+  html += '<div class="field"><label>Tipo</label><select name="type">';
+  state.agendaTypes.forEach(t=> html += '<option value="'+esc(t)+'" '+(eff.type===t?'selected':'')+'>'+esc(t)+'</option>');
+  html += '</select></div>';
+  html += '<div class="field"><label>Módulo(s) do sistema</label><div class="check-grid">';
+  state.modules.forEach(mod=>{
+    const checked = eff.modules.includes(mod) ? 'checked':'';
+    html += '<label class="check-pill"><input type="checkbox" name="modules" value="'+esc(mod)+'" '+checked+'>'+esc(mod)+'</label>';
+  });
+  html += '</div>';
+  if(!readOnly){
+    html += '<div style="display:flex;gap:6px;margin-top:9px;">'
+      + '<input type="text" class="quick-add-input" data-for="module" placeholder="Novo módulo...">'
+      + '<button type="button" class="btn btn-sm btn-primary" data-action="quick-add-module">+ Adicionar</button>'
+      + '</div>';
+  }
+  html += '</div>';
+  html += '<div class="field"><label>Usuários treinados</label><textarea name="trainedUsers" placeholder="Nomes das pessoas que receberam o treinamento, separados por vírgula">'+esc(eff.trainedUsers)+'</textarea><span class="hint" style="margin-top:2px;">Para identificar quem do cliente participou do treinamento.</span></div>';
+  html += '<div class="field"><label>Observações</label><textarea name="notes">'+esc(eff.notes)+'</textarea></div>';
+  if(!readOnly){
+    let quick = '';
+    if(editing && editing.status==='pendente'){
+      quick = '<button type="button" class="btn btn-sm btn-primary" data-action="open-modal" data-modal="confirm-complete" data-id="'+editing.id+'">Concluir agora</button>'
+        + '<button type="button" class="btn btn-sm btn-ghost" data-action="mark-not-done" data-id="'+editing.id+'">Não realizada</button>';
+    } else if(editing){
+      quick = '<button type="button" class="btn btn-sm btn-ghost" data-action="revert-to-pending" data-id="'+editing.id+'">'+(editing.status==='concluida'?'Reverter conclusão':'Reverter p/ pendente')+'</button>';
+    }
+    html += '<div class="form-actions">'+quick+(editing?'<button type="button" class="btn btn-danger" data-action="delete-schedule" data-id="'+editing.id+'">Excluir</button>':'')+'<span style="flex:1;"></span><button type="submit" class="btn btn-primary">Salvar agendamento</button></div>';
+  }
+  html += '</form>';
+  return html;
+}
+
+/* ============================= EVENT HANDLING ============================= */
+function closeModal(){ ui.modal=null; ui.formErr=''; render(); }
+function showConfirm(message, onConfirm){ ui.confirmDialog = {message, onConfirm, alertOnly:false}; render(); }
+function showAlert(message){ ui.confirmDialog = {message, onConfirm:null, alertOnly:true}; render(); }
+function renderConfirmDialog(){
+  const d = ui.confirmDialog;
+  const buttons = d.alertOnly
+    ? '<button class="btn btn-primary" data-action="confirm-ok">OK</button>'
+    : '<button class="btn btn-ghost" data-action="confirm-cancel">Cancelar</button><button class="btn btn-primary" data-action="confirm-ok">Confirmar</button>';
+  return '<div class="overlay confirm-overlay"><div class="modal" style="max-width:420px;">'
+    + '<p style="margin:4px 0 18px;white-space:pre-line;">'+esc(d.message)+'</p>'
+    + '<div class="form-actions">'+buttons+'</div>'
+    + '</div></div>';
+}
+
+document.addEventListener('click', function(e){
+  let needsRender = false;
+  const notifPanelClick = e.target.closest('.notif-panel');
+  const bellClick = e.target.closest('[data-action="toggle-notif"]');
+  if(ui.showNotif && !notifPanelClick && !bellClick){ ui.showNotif=false; needsRender = true; }
+
+  if(e.target.classList && e.target.classList.contains('overlay')){
+    if(e.target.classList.contains('card-overlay')){ ui.openCardId=null; render(); return; }
+    if(e.target.classList.contains('confirm-overlay')){ ui.confirmDialog=null; render(); return; }
+    closeModal(); return;
+  }
+  const el = e.target.closest('[data-action]');
+  if(!el){ if(needsRender) render(); return; }
+  const a = el.dataset.action;
+
+  if(a==='goto-view'){ ui.view = el.dataset.view; ui.showNotif=false; render(); }
+  else if(a==='open-board'){ ui.view='board'; ui.currentBoardId = el.dataset.id; ui.search=''; render(); }
+  else if(a==='open-modal'){
+    const type = el.dataset.modal;
+    ui.formErr='';
+    ui.modal = {type, id:el.dataset.id, board:el.dataset.board, list:el.dataset.list, card:el.dataset.card};
+    render();
+  }
+  else if(a==='close-modal' || a==='close-modal-bg'){ closeModal(); }
+  else if(a==='confirm-ok'){ const d=ui.confirmDialog; ui.confirmDialog=null; if(d && d.onConfirm) d.onConfirm(); render(); }
+  else if(a==='confirm-cancel'){ ui.confirmDialog=null; render(); }
+  else if(a==='close-card'){ ui.openCardId=null; ui.cardDraft=null; render(); }
+  else if(a==='toggle-notif'){ ui.showNotif = !ui.showNotif; render(); }
+  else if(a==='open-card'){ const holder = el.closest('[data-card-id]'); if(holder){ if(ui.cardDraft && ui.cardDraft.cardId!==holder.dataset.cardId) ui.cardDraft=null; ui.openCardId = holder.dataset.cardId; ui.cardTab='info'; render(); } }
+  else if(a==='card-tab'){ ui.cardTab = el.dataset.tab; render(); }
+  else if(a==='delete-card'){
+    const id = el.dataset.id;
+    showConfirm('Excluir este card e seus agendamentos vinculados?', function(){ deleteCard(id); ui.openCardId=null; ui.cardDraft=null; ui.modal=null; });
+  }
+  else if(a==='quick-add-product'){
+    const form = el.closest('form[data-form="card-info"]');
+    const input = form.querySelector('.quick-add-input[data-for="product"]');
+    const colorInput = form.querySelector('.quick-add-color[data-for="product"]');
+    const name = (input.value||'').trim();
+    if(!name){ input.focus(); return; }
+    const values = captureFormValues(form);
+    const newTag = {id:uid('pt'), name, color: colorInput ? colorInput.value : colorForIndex(state.productTags.length)};
+    state.productTags.push(newTag);
+    values.productTags = (values.productTags||[]).concat(newTag.id);
+    ui.cardDraft = {cardId: form.dataset.card, values};
+    render();
+  }
+  else if(a==='quick-add-module'){
+    const form = el.closest('form[data-form="schedule"]');
+    const input = form.querySelector('.quick-add-input[data-for="module"]');
+    const name = (input.value||'').trim();
+    if(!name){ input.focus(); return; }
+    const values = captureFormValues(form);
+    if(!state.modules.includes(name)) state.modules.push(name);
+    values.modules = (values.modules||[]).concat(name);
+    ui.modal.values = values;
+    render();
+  }
+  else if(a==='delete-list'){ deleteListFromBoard(el.dataset.board, el.dataset.list); render(); }
+  else if(a==='delete-analyst'){
+    const id = el.dataset.id;
+    showConfirm('Excluir este analista, seu quadro e todos os cards/agendamentos vinculados?', function(){
+      deleteAnalyst(id);
+      if(ui.currentBoardId && !getBoard(ui.currentBoardId)) ui.currentBoardId = state.boards[0]?state.boards[0].id:null;
+    });
+  }
+  else if(a==='delete-client'){
+    const id = el.dataset.id;
+    showConfirm('Excluir este cliente e seus cards vinculados?', function(){ deleteClient(id); });
+  }
+  else if(a==='delete-schedule'){
+    const id = el.dataset.id;
+    showConfirm('Excluir este agendamento?', function(){ deleteSchedule(id); ui.modal=null; });
+  }
+  else if(a==='mark-not-done'){ markNotDone(el.dataset.id); render(); }
+  else if(a==='revert-to-pending'){
+    const id = el.dataset.id;
+    const s = byId(state.schedules, id);
+    const msg = s && s.status==='concluida'
+      ? 'Reverter a conclusão desta agenda? O saldo de horas será estornado e ela voltará para pendente.'
+      : 'Reverter esta agenda para pendente?';
+    showConfirm(msg, function(){ revertToPending(id); ui.modal=null; });
+  }
+  else if(a==='delete-product'){
+    const tagId = el.dataset.id;
+    const linked = cardsUsingProduct(tagId);
+    if(linked.length){
+      const names = linked.map(c=>{ const cl=getClient(c.clientId); return cl?cl.name:'—'; });
+      showAlert('Não é possível excluir: este produto está vinculado a '+linked.length+' cliente(s) — '+names.join(', ')+'. Remova o produto desses clientes antes de excluí-lo.');
+    } else {
+      showConfirm('Excluir este produto do cadastro?', function(){ state.productTags = state.productTags.filter(t=>t.id!==tagId); });
+    }
+  }
+  else if(a==='delete-module'){ state.modules = state.modules.filter(m=>m!==el.dataset.name); render(); }
+  else if(a==='clear-modules'){ showConfirm('Remover todos os módulos cadastrados da lista?', function(){ state.modules = []; }); }
+  else if(a==='cloud-disconnect'){ showConfirm('Desconectar da nuvem? O app volta a salvar só neste navegador (os dados na nuvem continuam existindo).', function(){ disconnectCloud(); }); }
+  else if(a==='delete-type'){ state.agendaTypes = state.agendaTypes.filter(t=>t!==el.dataset.name); render(); }
+  else if(a==='settings-tab'){ ui.settingsTab = el.dataset.tab; render(); }
+  else if(a==='cal-nav'){ const dir=el.dataset.dir; if(dir==='0') ui.calStart=startOfWeekISO(todayISO()); else ui.calStart = addDaysISO(ui.calStart, 7*parseInt(dir,10)); render(); }
+  else if(a==='cal-grid-click'){
+    const rect = el.getBoundingClientRect();
+    const offsetY = e.clientY - rect.top;
+    const startHour = parseFloat(el.dataset.startHour);
+    const pxPerHour = parseFloat(el.dataset.pxPerHour);
+    let minutesFromStart = (offsetY/pxPerHour)*60;
+    minutesFromStart = Math.round(minutesFromStart/30)*30;
+    let totalMin = Math.max(0, Math.min(24*60-30, startHour*60 + minutesFromStart));
+    const pad = n=>String(n).padStart(2,'0');
+    const startH = Math.floor(totalMin/60), startM = totalMin%60;
+    const endTotal = Math.min(24*60, totalMin+60);
+    const endH = Math.floor(endTotal/60), endM = endTotal%60;
+    ui.formErr = '';
+    ui.modal = {
+      type:'schedule-new',
+      prefillDate: el.dataset.date,
+      prefillStart: pad(startH)+':'+pad(startM),
+      prefillEnd: pad(endH===24?23:endH)+':'+pad(endH===24?59:endM),
+      prefillAnalyst: ui.calAnalyst!=='all' ? ui.calAnalyst : undefined
+    };
+    render();
+  }
+  else { render(); }
+});
+
+document.addEventListener('change', function(e){
+  if(e.target.id==='cal-analyst-filter'){ ui.calAnalyst = e.target.value; render(); }
+  else if(e.target.matches('select[name="moveTo"]')){
+    const cardId = e.target.closest('form').dataset.card;
+    const [boardId,listId] = e.target.value.split('::');
+    moveCard(cardId, boardId, listId);
+    render();
+  }
+  else if(e.target.matches('select[name="clientId"]') && e.target.closest('#modal-holder')){
+    // for card-new modal: toggle new-client-name requirement visually (no-op needed, submit handles logic)
+  }
+});
+
+document.addEventListener('input', function(e){
+  if(e.target.id==='search-input'){
+    ui.search = e.target.value;
+    ui._focus = {id:'search-input', pos: e.target.selectionStart};
+    render();
+  }
+});
+
+document.addEventListener('keydown', function(e){
+  if(e.key==='Enter' && e.target.classList && e.target.classList.contains('quick-add-input')){
+    e.preventDefault();
+    const btn = e.target.parentElement.querySelector('button[data-action]');
+    if(btn) btn.click();
+  }
+});
+
+document.addEventListener('submit', async function(e){
+  const form = e.target.closest('form[data-form]');
+  if(!form) return;
+  e.preventDefault();
+  const type = form.dataset.form;
+  const fd = new FormData(form);
+
+  if(type==='analyst'){
+    const name = fd.get('name').trim(); const color = fd.get('color');
+    const id = form.dataset.id;
+    if(id){ const a=getAnalyst(id); if(a){ a.name=name; a.color=color; const b=boardOfAnalyst(id); if(b) b.name='Quadro — '+name; } }
+    else { createAnalyst(name, color); }
+    ui.modal=null; render();
+  }
+  else if(type==='client'){
+    const data = {name: fd.get('name').trim(), contact: fd.get('contact').trim(), email: fd.get('email').trim(), phone: fd.get('phone').trim(), segment: fd.get('segment').trim(), city: fd.get('city').trim(), clientType: fd.get('clientType')||'novo'};
+    const id = form.dataset.id;
+    if(id) updateClient(id, data); else createClient(data);
+    ui.modal=null; render();
+  }
+  else if(type==='list-new'){
+    addList(form.dataset.board, fd.get('name').trim());
+    ui.modal=null; render();
+  }
+  else if(type==='card-new'){
+    let clientId = fd.get('clientId');
+    if(!clientId){
+      const newName = (fd.get('newClientName')||'').trim();
+      if(!newName){ showAlert('Selecione um cliente existente ou informe o nome do novo cliente.'); return; }
+      clientId = createClient({name:newName}).id;
+    }
+    const card = createCard(form.dataset.board, form.dataset.list, clientId, {
+      contractedHours: parseFloat(fd.get('contractedHours'))||0,
+      startDate: fd.get('startDate')||todayISO()
+    });
+    ui.modal=null; render();
+  }
+  else if(type==='card-info'){
+    const cardId = form.dataset.card;
+    const card = getCard(cardId);
+    const newHours = parseFloat(fd.get('contractedHours'))||0;
+    const newStart = fd.get('startDate');
+    const newTags = fd.getAll('productTags');
+    let histTexts = [];
+    if(newHours !== card.contractedHours) histTexts.push('Horas contratadas alteradas de '+card.contractedHours+'h para '+newHours+'h');
+    if(newStart !== card.startDate) histTexts.push('Data de início alterada para '+fmtDateBR(newStart));
+    card.contractedHours = newHours; card.startDate = newStart; card.productTags = newTags;
+    histTexts.forEach(t=> addHistory(card, t));
+    const moveVal = fd.get('moveTo');
+    if(moveVal){ const [b,l] = moveVal.split('::'); moveCard(cardId, b, l); }
+    ui.cardDraft = null;
+    render();
+  }
+  else if(type==='schedule'){
+    const cardId = form.dataset.card || null;
+    const card = cardId ? getCard(cardId) : null;
+    const analystId = card ? getBoard(card.boardId).analystId : fd.get('analystId');
+    const clientId = card ? card.clientId : (fd.get('clientId') || null);
+    const date = fd.get('date'), startTime = fd.get('startTime'), endTime = fd.get('endTime');
+    if(timeToMin(endTime) <= timeToMin(startTime)){ ui.formErr = 'O horário de término deve ser depois do início.'; render(); return; }
+    const id = form.dataset.id;
+    if(scheduleConflict(analystId, date, startTime, endTime, id||null)){
+      ui.formErr = 'O analista já possui um agendamento nesse horário. Escolha outro horário.';
+      render(); return;
+    }
+    ui.formErr = '';
+    const data = { analystId, clientId, cardId, date, startTime, endTime, type: fd.get('type'), modules: fd.getAll('modules'), trainedUsers: fd.get('trainedUsers')||'', notes: fd.get('notes')||'' };
+    let sched;
+    if(id){ updateSchedule(id, data); sched = byId(state.schedules, id); }
+    else{ sched = createSchedule(data); }
+    ui.modal = null;
+    if(!sched.cardId && sched.clientId){
+      const board = boardOfAnalyst(sched.analystId);
+      if(board){
+        const existingCard = state.cards.find(c=>c.clientId===sched.clientId && c.boardId===board.id);
+        if(existingCard){
+          sched.cardId = existingCard.id;
+        } else {
+          const client = getClient(sched.clientId);
+          showConfirm('O cliente "'+client.name+'" ainda não tem um card no quadro deste analista. Deseja criar agora?', function(){
+            const newCard = createCard(board.id, board.lists[0].id, sched.clientId, {});
+            sched.cardId = newCard.id;
+          });
+          return;
+        }
+      }
+    }
+    render();
+  }
+  else if(type==='confirm-complete'){
+    const minutes = parseInt(fd.get('deductMinutes'),10)||0;
+    completeSchedule(form.dataset.id, minutes, fd.get('notes'));
+    ui.modal=null; render();
+  }
+  else if(type==='product'){
+    const name = fd.get('name').trim();
+    const color = fd.get('color');
+    const id = form.dataset.id;
+    if(id){ const p=byId(state.productTags,id); if(p){ p.name=name; p.color=color; } }
+    else{ state.productTags.push({id:uid('pt'), name, color}); }
+    ui.modal=null; render();
+  }
+  else if(type==='add-module'){
+    const name = fd.get('name').trim(); if(name && !state.modules.includes(name)) state.modules.push(name);
+    render();
+  }
+  else if(type==='add-type'){
+    const name = fd.get('name').trim(); if(name && !state.agendaTypes.includes(name)) state.agendaTypes.push(name);
+    render();
+  }
+  else if(type==='cloud-config'){
+    const url = fd.get('url').trim();
+    const anonKey = fd.get('anonKey').trim();
+    await connectCloud(url, anonKey);
+  }
+});
+
+/* Drag and drop for cards, and for pending schedules on the calendar grid */
+document.addEventListener('dragstart', function(e){
+  const card = e.target.closest('.card-mini');
+  if(card){ e.dataTransfer.setData('text/plain', card.dataset.cardId); e.dataTransfer.effectAllowed='move'; setTimeout(()=>card.classList.add('dragging'),0); return; }
+  const evt = e.target.closest('.cal-tg-event');
+  if(evt && evt.dataset.draggable==='1'){
+    const rect = evt.getBoundingClientRect();
+    const grabOffset = e.clientY - rect.top;
+    e.dataTransfer.setData('text/plain', 'sched:'+evt.dataset.id+':'+grabOffset);
+    e.dataTransfer.effectAllowed='move';
+    setTimeout(()=>evt.classList.add('dragging'),0);
+  }
+});
+document.addEventListener('dragend', function(e){
+  const card = e.target.closest('.card-mini'); if(card) card.classList.remove('dragging');
+  const evt = e.target.closest('.cal-tg-event'); if(evt) evt.classList.remove('dragging');
+});
+document.addEventListener('dragover', function(e){
+  const list = e.target.closest('.list-cards'); if(list){ e.preventDefault(); list.classList.add('drag-over'); return; }
+  const daycol = e.target.closest('.cal-tg-daycol'); if(daycol){ e.preventDefault(); daycol.classList.add('drag-over'); }
+});
+document.addEventListener('dragleave', function(e){
+  const list = e.target.closest('.list-cards'); if(list){ list.classList.remove('drag-over'); }
+  const daycol = e.target.closest('.cal-tg-daycol'); if(daycol){ daycol.classList.remove('drag-over'); }
+});
+document.addEventListener('drop', function(e){
+  const list = e.target.closest('.list-cards');
+  if(list){
+    e.preventDefault(); list.classList.remove('drag-over');
+    const payload = e.dataTransfer.getData('text/plain');
+    if(payload && !payload.startsWith('sched:')){ moveCard(payload, list.dataset.boardId, list.dataset.listId); render(); }
+    return;
+  }
+  const daycol = e.target.closest('.cal-tg-daycol');
+  if(daycol){
+    e.preventDefault(); daycol.classList.remove('drag-over');
+    const payload = e.dataTransfer.getData('text/plain');
+    if(payload && payload.startsWith('sched:')){
+      const parts = payload.split(':');
+      moveScheduleToGridPosition(parts[1], daycol, e.clientY, parseFloat(parts[2])||0);
+    }
+  }
+});
+function moveScheduleToGridPosition(schedId, daycolEl, clientY, grabOffset){
+  const s = byId(state.schedules, schedId);
+  if(!s || s.status!=='pendente') return;
+  const rect = daycolEl.getBoundingClientRect();
+  const startHour = parseFloat(daycolEl.dataset.startHour);
+  const pxPerHour = parseFloat(daycolEl.dataset.pxPerHour);
+  const dropTop = clientY - rect.top - grabOffset;
+  let minutesFromStart = Math.round(((dropTop/pxPerHour)*60)/15)*15;
+  const duration = timeToMin(s.endTime)-timeToMin(s.startTime);
+  let newStartTotal = Math.max(0, Math.min(24*60-duration, startHour*60 + minutesFromStart));
+  const pad = n=>String(n).padStart(2,'0');
+  const newStart = pad(Math.floor(newStartTotal/60))+':'+pad(newStartTotal%60);
+  const newEndTotal = newStartTotal+duration;
+  const newEnd = pad(Math.floor(newEndTotal/60))+':'+pad(newEndTotal%60);
+  const newDate = daycolEl.dataset.date;
+  if(newDate===s.date && newStart===s.startTime) return;
+  if(scheduleConflict(s.analystId, newDate, newStart, newEnd, s.id)){
+    showAlert('O analista já possui um agendamento nesse horário. Escolha outro horário ou dia.');
+    return;
+  }
+  const oldDate = s.date, oldStart = s.startTime, oldEnd = s.endTime;
+  s.date = newDate; s.startTime = newStart; s.endTime = newEnd;
+  if(s.cardId){
+    const c = getCard(s.cardId);
+    if(c) addHistory(c, 'Agenda reagendada de '+fmtDateBR(oldDate)+' '+oldStart+'–'+oldEnd+' para '+fmtDateBR(newDate)+' '+newStart+'–'+newEnd);
+  }
+  render();
+}
+
+/* Card detail overlay is rendered as an extra modal layer appended after main render */
+function renderCardDetailOverlay(){
+  const existing = document.getElementById('card-detail-overlay');
+  if(existing) existing.remove();
+  if(!ui.openCardId) return;
+  const card = getCard(ui.openCardId);
+  if(!card){ ui.openCardId=null; return; }
+  const wrap = document.createElement('div');
+  wrap.id = 'card-detail-overlay';
+  wrap.className = 'overlay card-overlay';
+  wrap.innerHTML = '<div class="modal wide">'+renderCardModalContent(card)+'</div>';
+  document.body.appendChild(wrap);
+}
+/* Re-render overlay after any global render if a card is open (keep it in sync) */
+const _origRender = render;
+render = function(){ _origRender(); if(ui.openCardId){ renderCardDetailOverlay(); } else { const ex=document.getElementById('card-detail-overlay'); if(ex) ex.remove(); } };
+
+/* Initial paint */
+boot();
+</script>
+</body>
+</html>
