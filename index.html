@@ -215,6 +215,8 @@ input[type=color]{ width:38px; height:32px; padding:2px; border:1px solid var(--
 .cal-tg-event.dragging{ opacity:.4; }
 .cal-tg-event:hover{ filter:brightness(0.97); }
 .cal-tg-event.due{ background:var(--danger-soft); border-left-color:var(--danger); }
+.cal-tg-event.internal{ background:var(--gold-soft); }
+.cal-tg-event.internal.due{ background:var(--danger-soft); }
 .cal-tg-event .t{ font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .cal-tg-now{ position:absolute; left:0; right:0; height:0; border-top:2px solid var(--danger); z-index:5; pointer-events:none; }
 .cal-tg-now::before{ content:''; position:absolute; left:-4px; top:-4px; width:8px; height:8px; border-radius:50%; background:var(--danger); }
@@ -240,8 +242,17 @@ tr:last-child td{ border-bottom:none; }
 .list-plain .item-x{ display:flex; align-items:center; gap:6px; background:var(--surface-2); border:1px solid var(--border); padding:5px 10px; border-radius:20px; font-size:12.5px; }
 .list-plain .item-x button{ background:none;border:none;color:var(--ink-faint); font-weight:700; }
 .hint{ font-size:12px; color:var(--ink-faint); margin-top:8px; }
+#print-report{ display:none; }
 @media (max-width:820px){
   .sidebar{ display:none; }
+}
+@media print{
+  body *{ visibility:hidden; }
+  #print-report, #print-report *{ visibility:visible; }
+  #print-report{ display:block; position:absolute; left:0; top:0; width:100%; padding:24px; color:#000; }
+  #print-report table{ width:100%; border-collapse:collapse; }
+  #print-report td{ padding:8px 10px; border-bottom:1px solid #ddd; }
+  .no-print{ display:none !important; }
 }
 </style>
 </head>
@@ -269,10 +280,10 @@ function defaultState(){
     modules: [],
     screens: [],
     agendaTypes: [
-      {id:uid('at'), name:'Treinamento'},
-      {id:uid('at'), name:'Reunião'},
-      {id:uid('at'), name:'Visita'},
-      {id:uid('at'), name:'Interna'}
+      {id:uid('at'), name:'Treinamento', isInternal:false},
+      {id:uid('at'), name:'Reunião', isInternal:false},
+      {id:uid('at'), name:'Visita', isInternal:false},
+      {id:uid('at'), name:'Interna', isInternal:true}
     ]
   };
 }
@@ -283,7 +294,12 @@ function normalizeState(raw){
   ['analysts','boards','clients','cards','schedules','productTags','modules','screens','agendaTypes'].forEach(k=>{ if(!Array.isArray(s[k])) s[k]=defaultState()[k]; });
   // Migrate modules/agendaTypes from old plain-string arrays to {id, name} objects, if needed.
   s.modules = s.modules.map(m=> (typeof m==='string') ? {id:uid('md'), name:m} : m);
-  s.agendaTypes = s.agendaTypes.map(t=> (typeof t==='string') ? {id:uid('at'), name:t} : t);
+  s.agendaTypes = s.agendaTypes.map(t=> {
+    if(typeof t==='string') return {id:uid('at'), name:t, isInternal: t==='Interna'};
+    if(t.isInternal===undefined) return Object.assign({}, t, {isInternal: t.name==='Interna'});
+    return t;
+  });
+  s = dedupeRegistries(s);
   return s;
 }
 function loadLocalState(){
@@ -370,22 +386,46 @@ async function cloudSave(){
 }
 /* Best-effort merge, used only when the cloud row changed since we last read it (a genuine
    concurrent edit from another tab/computer). Unions each entity array by id (same id on both
-   sides: local wins); modules/agendaTypes (plain strings) are unioned directly. This can't tell a
-   real remote deletion apart from "hasn't synced yet", so in that specific overlap window a
-   deletion made on the other side could reappear - but this path is now only hit on an actual
-   detected conflict, not on every save, so it no longer blocks ordinary deletes. */
+   sides: local wins). This can't tell a real remote deletion apart from "hasn't synced yet", so
+   in that specific overlap window a deletion made on the other side could reappear - but this
+   path is now only hit on an actual detected conflict, not on every save, so it no longer blocks
+   ordinary deletes. */
 function mergeStates(remote, local){
   const merged = Object.assign({}, local);
-  ['analysts','boards','clients','cards','schedules','productTags'].forEach(key=>{
+  ['analysts','boards','clients','cards','schedules','productTags','modules','agendaTypes','screens'].forEach(key=>{
     const byId = new Map();
     (remote[key]||[]).forEach(item=> byId.set(item.id, item));
     (local[key]||[]).forEach(item=> byId.set(item.id, item));
     merged[key] = [...byId.values()];
   });
-  ['modules','agendaTypes'].forEach(key=>{
-    merged[key] = [...new Set([...(remote[key]||[]), ...(local[key]||[])])];
+  return dedupeRegistries(merged);
+}
+/* One-time (idempotent) cleanup: collapses modules/agendaTypes/screens that ended up duplicated
+   by name (this happened for a while because of the object-vs-string merge bug above - safe to
+   run on already-clean data too, since it's a no-op then). Keeps the first occurrence of each
+   name and remaps any screen pointing at a removed duplicate module id to the surviving one, so
+   nothing gets orphaned. */
+function dedupeRegistries(s){
+  function dedupeWithRemap(arr){
+    const survivorByName = new Map();
+    const remap = new Map();
+    (arr||[]).forEach(item=>{
+      if(survivorByName.has(item.name)){ remap.set(item.id, survivorByName.get(item.name).id); }
+      else { survivorByName.set(item.name, item); }
+    });
+    return { deduped:[...survivorByName.values()], remap };
+  }
+  const modResult = dedupeWithRemap(s.modules);
+  s.modules = modResult.deduped;
+  (s.screens||[]).forEach(scr=>{ if(modResult.remap.has(scr.moduleId)) scr.moduleId = modResult.remap.get(scr.moduleId); });
+  s.agendaTypes = dedupeWithRemap(s.agendaTypes).deduped;
+  const seenScreens = new Map();
+  (s.screens||[]).forEach(scr=>{
+    const key = scr.name+'::'+scr.moduleId;
+    if(!seenScreens.has(key)) seenScreens.set(key, scr);
   });
-  return merged;
+  s.screens = [...seenScreens.values()];
+  return s;
 }
 function updateSaveStatusLine(){
   const el = document.getElementById('save-status-line');
@@ -478,6 +518,7 @@ var ui = {
   cardErr: '',
   modal: null, // {type, payload}
   calAnalyst: 'all',
+  calCategory: 'all',
   calStart: startOfWeekISO(todayISO()),
   settingsTab: 'analistas',
   formErr: ''
@@ -594,7 +635,7 @@ function moveCard(cardId, boardId, listId){
 }
 function deleteCard(id){ state.schedules = state.schedules.filter(s=>s.cardId!==id); state.cards = state.cards.filter(c=>c.id!==id); }
 function createSchedule(data){
-  const s = Object.assign({id:uid('sc'), status:'pendente', deductMinutes:null, modules:[], notes:''}, data);
+  const s = Object.assign({id:uid('sc'), status:'pendente', deductMinutes:null, modules:[], notes:'', category:'implantacao'}, data);
   state.schedules.push(s);
   return s;
 }
@@ -864,6 +905,7 @@ function renderSchedRow(s){
   const due = scheduleIsDue(s);
   const modules = (s.modules||[]).join(', ');
   const screens = (s.trainedScreens||[]).join(', ');
+  const isInterna = isInternalType(s.type);
   let actions = '';
   if(s.status==='pendente'){
     actions = '<button class="btn btn-sm btn-primary" data-action="open-modal" data-modal="confirm-complete" data-id="'+s.id+'">Concluir</button>'
@@ -873,9 +915,10 @@ function renderSchedRow(s){
     actions = '<button class="btn btn-sm btn-ghost" data-action="revert-to-pending" data-id="'+s.id+'">'+(s.status==='concluida'?'Reverter conclusão':'Reverter p/ pendente')+'</button>'
       + '<button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="schedule-edit" data-id="'+s.id+'">Editar</button>';
   }
+  if(s.status==='concluida') actions += '<button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="schedule-report" data-id="'+s.id+'">🖨 Relatório</button>';
   actions += '<button class="btn btn-sm btn-ghost" data-action="delete-schedule" data-id="'+s.id+'">🗑</button>';
   return '<div class="sched-row'+(due?' due':'')+'">'
-    + '<div class="sched-main"><div class="sched-time">'+fmtDateBR(s.date)+' · '+s.startTime+'–'+s.endTime+' <span class="badge '+s.status+'">'+statusLabel(s.status)+'</span></div>'
+    + '<div class="sched-main"><div class="sched-time">'+fmtDateBR(s.date)+' · '+s.startTime+'–'+s.endTime+' <span class="badge '+s.status+'">'+statusLabel(s.status)+'</span> <span class="badge" style="background:'+(isInterna?'var(--gold-soft)':'var(--brand-soft)')+';color:'+(isInterna?'var(--gold)':'var(--brand)')+';">'+(isInterna?'Interna':'Implantação')+'</span></div>'
     + '<div class="sched-sub">'+esc(s.type)+(modules? ' · '+esc(modules) : '')+(s.status==='concluida'? ' · '+minToHM(s.deductMinutes)+' abatido':'')+'</div>'
     + (screens? '<div class="sched-sub">🖥 '+esc(screens)+'</div>' : '')
     + (s.trainedUsers? '<div class="sched-sub">👤 '+esc(s.trainedUsers)+'</div>' : '')
@@ -919,12 +962,18 @@ function layoutDayEvents(scheds){
   });
   return result;
 }
+function isInternalType(typeName){ const t = state.agendaTypes.find(t=>t.name===typeName); return !!(t && t.isInternal); }
 function renderCalendarView(){
   let html = '<div class="cal-toolbar">'
     + '<select id="cal-analyst-filter" data-action="cal-filter">'
       + '<option value="all"'+(ui.calAnalyst==='all'?' selected':'')+'>Todos os analistas</option>';
   state.analysts.forEach(a=> html += '<option value="'+a.id+'"'+(ui.calAnalyst===a.id?' selected':'')+'>'+esc(a.name)+'</option>');
   html += '</select>'
+    + '<select id="cal-category-filter" data-action="cal-category-filter">'
+      + '<option value="all"'+(ui.calCategory==='all'?' selected':'')+'>Interna + Implantação</option>'
+      + '<option value="implantacao"'+(ui.calCategory==='implantacao'?' selected':'')+'>Somente Implantação</option>'
+      + '<option value="interna"'+(ui.calCategory==='interna'?' selected':'')+'>Somente Interna</option>'
+      + '</select>'
     + '<button class="btn btn-sm" data-action="cal-nav" data-dir="-1">‹ Semana anterior</button>'
     + '<button class="btn btn-sm" data-action="cal-nav" data-dir="0">Hoje</button>'
     + '<button class="btn btn-sm" data-action="cal-nav" data-dir="1">Próxima semana ›</button>'
@@ -932,10 +981,12 @@ function renderCalendarView(){
     + '<button class="btn btn-primary" data-action="open-modal" data-modal="schedule-new">+ Novo agendamento</button>'
     + '</div>';
 
+  function inCategory(s){ return ui.calCategory==='all' || (ui.calCategory==='interna') === isInternalType(s.type); }
+
   const days = [];
   for(let i=0;i<7;i++) days.push(addDaysISO(ui.calStart, i));
   let weekScheds = [];
-  days.forEach(d=>{ weekScheds = weekScheds.concat(state.schedules.filter(s=>s.date===d && (ui.calAnalyst==='all' || s.analystId===ui.calAnalyst))); });
+  days.forEach(d=>{ weekScheds = weekScheds.concat(state.schedules.filter(s=>s.date===d && (ui.calAnalyst==='all' || s.analystId===ui.calAnalyst) && inCategory(s))); });
   const {startHour, endHour} = calcCalTimeRange(weekScheds);
   const pxPerHour = 48;
   const pxPerMin = pxPerHour/60;
@@ -960,7 +1011,7 @@ function renderCalendarView(){
   const nowMin = now.getHours()*60+now.getMinutes();
 
   days.forEach(d=>{
-    const scheds = state.schedules.filter(s=>s.date===d && (ui.calAnalyst==='all' || s.analystId===ui.calAnalyst));
+    const scheds = state.schedules.filter(s=>s.date===d && (ui.calAnalyst==='all' || s.analystId===ui.calAnalyst) && inCategory(s));
     const laidOut = layoutDayEvents(scheds);
     html += '<div class="cal-tg-daycol" data-action="cal-grid-click" data-date="'+d+'" data-start-hour="'+startHour+'" data-px-per-hour="'+pxPerHour+'" style="height:'+gridHeight+'px;--hour-px:'+pxPerHour+'px;">';
     laidOut.forEach(item=>{
@@ -968,14 +1019,15 @@ function renderCalendarView(){
       const analyst = getAnalyst(s.analystId);
       const client = s.clientId? getClient(s.clientId) : null;
       const due = scheduleIsDue(s);
+      const internal = isInternalType(s.type);
       const top = (item.start - startHour*60)*pxPerMin;
       const height = Math.max((item.end-item.start)*pxPerMin, 20);
       const widthPct = 100/item.lanes;
       const leftPct = item.lane*widthPct;
       const borderColor = ui.calAnalyst==='all' && analyst ? analyst.color : 'var(--brand)';
       const draggable = s.status==='pendente';
-      html += '<div class="cal-tg-event'+(due?' due':'')+'" draggable="'+(draggable?'true':'false')+'" data-draggable="'+(draggable?'1':'0')+'" style="top:'+top+'px;height:'+height+'px;left:'+leftPct+'%;width:calc('+widthPct+'% - 4px);border-left-color:'+borderColor+';" data-action="open-modal" data-modal="schedule-edit" data-id="'+s.id+'" title="'+esc(s.startTime+'–'+s.endTime+' · '+(client?client.name:'Interno')+' · '+s.type)+(draggable? ' (arraste para reagendar)':'')+'">'
-        + '<div class="t">'+s.startTime+' '+esc(client?client.name:'Interno')+'</div>'
+      html += '<div class="cal-tg-event'+(due?' due':'')+(internal?' internal':'')+'" draggable="'+(draggable?'true':'false')+'" data-draggable="'+(draggable?'1':'0')+'" style="top:'+top+'px;height:'+height+'px;left:'+leftPct+'%;width:calc('+widthPct+'% - 4px);border-left-color:'+(internal?'var(--gold)':borderColor)+';" data-action="open-modal" data-modal="schedule-edit" data-id="'+s.id+'" title="'+esc((internal?'[Interna] ':'')+s.startTime+'–'+s.endTime+' · '+(client?client.name:'Interno')+' · '+s.type)+(draggable? ' (arraste para reagendar)':'')+'">'
+        + '<div class="t">'+(internal?'🏠 ':'')+s.startTime+' '+esc(client?client.name:'Interno')+'</div>'
         + (height>34? '<div style="opacity:.8;">'+esc(s.type)+(ui.calAnalyst==='all'&&analyst? ' · '+esc(analyst.name):'')+'</div>' : '')
         + '</div>';
     });
@@ -1044,6 +1096,19 @@ function renderReportsView(){
     const cards = board ? cardsInBoard(board.id) : [];
     const names = cards.map(c=>{ const cl=getClient(c.clientId); const list = board.lists.find(l=>l.id===c.listId); return (cl?cl.name:'—')+' <span style="color:var(--ink-faint);">('+esc(list?list.name:'')+')</span>'; });
     html += '<tr><td>'+esc(a.name)+'</td><td>'+(names.length? names.join(', ') : '<span class="hint">Nenhum</span>')+'</td></tr>';
+  });
+  html += '</tbody></table></div>';
+
+  // 5. Agendas internas vinculadas a cliente
+  const internalWithClient = state.schedules.filter(s=> isInternalType(s.type) && s.clientId);
+  html += '<div class="section-card"><h3>Agendas internas vinculadas a cliente</h3>'
+    + '<p class="hint" style="margin-top:-4px;">Agendas de tipo interno (não são atendimento direto) que ainda assim foram vinculadas a um cliente específico.</p>'
+    + '<table><thead><tr><th>Cliente</th><th>Analista</th><th>Data</th><th>Horário</th><th>Tipo</th><th>Observações</th></tr></thead><tbody>';
+  if(!internalWithClient.length) html += '<tr><td colspan="6" class="hint">Nenhuma agenda interna vinculada a cliente no momento.</td></tr>';
+  internalWithClient.sort((a,b)=> (b.date+b.startTime).localeCompare(a.date+a.startTime)).forEach(s=>{
+    const client = getClient(s.clientId);
+    const analyst = getAnalyst(s.analystId);
+    html += '<tr><td>'+esc(client?client.name:'—')+'</td><td>'+esc(analyst?analyst.name:'—')+'</td><td>'+fmtDateBR(s.date)+'</td><td>'+s.startTime+'–'+s.endTime+'</td><td>'+esc(s.type)+'</td><td>'+esc(s.notes||'—')+'</td></tr>';
   });
   html += '</tbody></table></div>';
   return html;
@@ -1161,12 +1226,13 @@ function renderSettingsView(){
     if(!state.agendaTypes.length){
       html += '<p class="hint" style="margin-top:-2px;">Nenhum tipo cadastrado ainda.</p>';
     } else {
-      html += '<table><thead><tr><th>Tipo</th><th>Agendamentos vinculados</th><th></th></tr></thead><tbody>';
+      html += '<table><thead><tr><th>Tipo</th><th>Categoria</th><th>Agendamentos vinculados</th><th></th></tr></thead><tbody>';
       state.agendaTypes.forEach(t=>{
         const linked = schedulesUsingType(t.name);
         const clientNames = clientNamesForSchedules(linked);
         const canDelete = linked.length===0;
         html += '<tr><td style="font-weight:700;">'+esc(t.name)+'</td>'
+          + '<td><span class="badge" style="background:'+(t.isInternal?'var(--gold-soft)':'var(--brand-soft)')+';color:'+(t.isInternal?'var(--gold)':'var(--brand)')+';">'+(t.isInternal?'Interna':'Implantação')+'</span></td>'
           + '<td>'+(linked.length ? (linked.length+' agendamento(s)'+(clientNames.length? ' — '+clientNames.map(esc).join(', '):'')) : '<span class="hint">Nenhum</span>')+'</td>'
           + '<td><div class="row-actions">'
             + '<button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="type-edit" data-id="'+t.id+'">Editar</button>'
@@ -1254,6 +1320,7 @@ function renderModal(){
     inner = '<div class="modal-header"><h3>'+(tp?'Editar tipo':'Novo tipo')+'</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
       + '<form data-form="agenda-type" data-id="'+(tp?tp.id:'')+'">'
       + '<div class="field"><label>Nome do tipo</label><input type="text" name="name" value="'+esc(tp?tp.name:'')+'" required></div>'
+      + '<div class="field"><label class="check-pill" style="width:fit-content;"><input type="checkbox" name="isInternal" '+(tp&&tp.isInternal?'checked':'')+'> É uma agenda interna (não é atendimento direto ao cliente)</label></div>'
       + '<div class="form-actions"><button type="submit" class="btn btn-primary">Salvar</button></div></form>';
   } else if(m.type==='list-new'){
     inner = '<div class="modal-header"><h3>Nova lista</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
@@ -1280,8 +1347,39 @@ function renderModal(){
       + '<div class="field"><label>Minutos a abater do saldo</label><input type="number" min="0" name="deductMinutes" value="'+dur+'"></div>'
       + '<div class="field"><label>Observação (opcional)</label><textarea name="notes"></textarea></div>'
       + '<div class="form-actions"><button type="submit" class="btn btn-primary">Confirmar conclusão</button></div></form>';
+  } else if(m.type==='schedule-report'){
+    inner = renderScheduleReportContent(m.id);
   }
   return '<div class="overlay"><div class="modal'+(m.type&&m.type.startsWith('schedule')?' wide':'')+'">'+inner+'</div></div>';
+}
+
+function renderScheduleReportContent(scheduleId){
+  const s = byId(state.schedules, scheduleId);
+  if(!s) return '<div class="modal-header"><h3>Agendamento não encontrado</h3><button class="modal-close" data-action="close-modal">✕</button></div>';
+  const client = s.clientId ? getClient(s.clientId) : null;
+  const analyst = getAnalyst(s.analystId);
+  const modules = (s.modules||[]).join(', ') || '—';
+  const screens = (s.trainedScreens||[]).join(', ') || '—';
+  const users = s.trainedUsers || '—';
+  const duration = s.deductMinutes!=null ? s.deductMinutes : (timeToMin(s.endTime)-timeToMin(s.startTime));
+  let html = '<div class="modal-header no-print"><h3>Relatório de atendimento</h3><button class="modal-close" data-action="close-modal">✕</button></div>';
+  html += '<div id="print-report">'
+    + '<h2 style="margin-bottom:2px;">Relatório de Atendimento</h2>'
+    + '<p class="hint" style="margin:0 0 16px;">Documento gerado em '+fmtDT(Date.now())+'</p>'
+    + '<table><tbody>'
+    + '<tr><td style="font-weight:700;white-space:nowrap;">Cliente</td><td>'+esc(client?client.name:'Interno / sem cliente')+'</td></tr>'
+    + '<tr><td style="font-weight:700;">Analista responsável</td><td>'+esc(analyst?analyst.name:'—')+'</td></tr>'
+    + '<tr><td style="font-weight:700;">Data</td><td>'+fmtDateBR(s.date)+'</td></tr>'
+    + '<tr><td style="font-weight:700;">Horário</td><td>'+s.startTime+' – '+s.endTime+' ('+minToHM(duration)+')</td></tr>'
+    + '<tr><td style="font-weight:700;">Tipo de agenda</td><td>'+esc(s.type)+'</td></tr>'
+    + '<tr><td style="font-weight:700;">Módulo(s) abordado(s)</td><td>'+esc(modules)+'</td></tr>'
+    + '<tr><td style="font-weight:700;">Tela(s) treinada(s)</td><td>'+esc(screens)+'</td></tr>'
+    + '<tr><td style="font-weight:700;">Usuário(s) treinado(s)</td><td>'+esc(users)+'</td></tr>'
+    + '<tr><td style="font-weight:700;vertical-align:top;">Observações</td><td>'+esc(s.notes||'—')+'</td></tr>'
+    + '</tbody></table>'
+    + '</div>';
+  html += '<div class="form-actions no-print"><span style="flex:1;"></span><button class="btn btn-primary" data-action="print-report">🖨 Imprimir / Salvar PDF</button></div>';
+  return html;
 }
 
 function renderScheduleForm(m){
@@ -1297,6 +1395,7 @@ function renderScheduleForm(m){
     startTime: draft ? draft.startTime : (editing ? editing.startTime : (m.prefillStart || '09:00')),
     endTime: draft ? draft.endTime : (editing ? editing.endTime : (m.prefillEnd || '10:00')),
     type: draft ? draft.type : (editing ? editing.type : (state.agendaTypes[0] ? state.agendaTypes[0].name : '')),
+    category: draft ? (draft.category||'implantacao') : (editing ? (editing.category||'implantacao') : 'implantacao'),
     modules: draft ? (draft.modules||[]) : (editing ? (editing.modules||[]) : []),
     trainedScreens: draft ? (draft.trainedScreens||[]) : (editing ? (editing.trainedScreens||[]) : []),
     trainedUsers: draft ? (draft.trainedUsers||'') : (editing ? (editing.trainedUsers||'') : ''),
@@ -1307,6 +1406,10 @@ function renderScheduleForm(m){
   if(ui.formErr){ html += '<div class="error-msg">'+esc(ui.formErr)+'</div>'; }
   html += '<form data-form="schedule" data-id="'+(editing?editing.id:'')+'" data-card="'+(cardCtx?cardCtx.id:'')+'">';
 
+  html += '<div class="field"><label>Categoria da agenda</label><select name="category">'
+    + '<option value="implantacao" '+(eff.category==='implantacao'?'selected':'')+'>Implantação</option>'
+    + '<option value="interna" '+(eff.category==='interna'?'selected':'')+'>Interna</option>'
+    + '</select><span class="hint" style="margin-top:2px;">Interna = trabalho não faturável ao cliente (ex: reunião de equipe). Ainda assim dá pra vincular a um cliente, se for sobre um cliente específico.</span></div>';
   if(cardCtx){
     const client = getClient(cardCtx.clientId);
     html += '<div class="field"><label>Cliente</label><input type="text" value="'+esc(client?client.name:'')+'" disabled></div>';
@@ -1359,6 +1462,7 @@ function renderScheduleForm(m){
         + '<button type="button" class="btn btn-sm btn-ghost" data-action="mark-not-done" data-id="'+editing.id+'">Não realizada</button>';
     } else if(editing){
       quick = '<button type="button" class="btn btn-sm btn-ghost" data-action="revert-to-pending" data-id="'+editing.id+'">'+(editing.status==='concluida'?'Reverter conclusão':'Reverter p/ pendente')+'</button>';
+      if(editing.status==='concluida') quick += '<button type="button" class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="schedule-report" data-id="'+editing.id+'">🖨 Relatório</button>';
     }
     html += '<div class="form-actions">'+quick+(editing?'<button type="button" class="btn btn-danger" data-action="delete-schedule" data-id="'+editing.id+'">Excluir</button>':'')+'<span style="flex:1;"></span><button type="submit" class="btn btn-primary">Salvar agendamento</button></div>';
   }
@@ -1501,6 +1605,7 @@ document.addEventListener('click', function(e){
   }
   else if(a==='cloud-disconnect'){ showConfirm('Desconectar da nuvem? O app volta a salvar só neste navegador (os dados na nuvem continuam existindo).', function(){ disconnectCloud(); }); }
   else if(a==='force-save'){ forceSaveNow(); }
+  else if(a==='print-report'){ window.print(); }
   else if(a==='cloud-reconnect-default'){ connectCloud(DEFAULT_CLOUD_CONFIG.url, DEFAULT_CLOUD_CONFIG.anonKey); }
   else if(a==='delete-type'){
     const id = el.dataset.id;
@@ -1542,6 +1647,7 @@ document.addEventListener('click', function(e){
 
 document.addEventListener('change', function(e){
   if(e.target.id==='cal-analyst-filter'){ ui.calAnalyst = e.target.value; render(); }
+  else if(e.target.id==='cal-category-filter'){ ui.calCategory = e.target.value; render(); }
   else if(e.target.matches('select[name="moveTo"]')){
     const cardId = e.target.closest('form').dataset.card;
     const [boardId,listId] = e.target.value.split('::');
@@ -1641,7 +1747,7 @@ document.addEventListener('submit', async function(e){
       render(); return;
     }
     ui.formErr = '';
-    const data = { analystId, clientId, cardId, date, startTime, endTime, type: fd.get('type'), modules: fd.getAll('modules'), trainedScreens: fd.getAll('trainedScreens'), trainedUsers: fd.get('trainedUsers')||'', notes: fd.get('notes')||'' };
+    const data = { analystId, clientId, cardId, date, startTime, endTime, type: fd.get('type'), category: fd.get('category')||'implantacao', modules: fd.getAll('modules'), trainedScreens: fd.getAll('trainedScreens'), trainedUsers: fd.get('trainedUsers')||'', notes: fd.get('notes')||'' };
     let sched;
     if(id){ updateSchedule(id, data); sched = byId(state.schedules, id); }
     else{ sched = createSchedule(data); }
@@ -1680,10 +1786,14 @@ document.addEventListener('submit', async function(e){
   else if(type==='module'){
     const name = fd.get('name').trim();
     const id = form.dataset.id;
+    if(state.modules.some(m=>m.name===name && m.id!==id)){
+      showAlert('Já existe um módulo chamado "'+name+'". Escolha outro nome.');
+      return;
+    }
     if(id){
       const md = byId(state.modules, id);
       if(md){ renameModuleEverywhere(md.name, name); md.name = name; }
-    } else if(name && !state.modules.some(m=>m.name===name)){
+    } else if(name){
       state.modules.push({id:uid('md'), name});
     }
     ui.modal=null; render();
@@ -1692,22 +1802,31 @@ document.addEventListener('submit', async function(e){
     const name = fd.get('name').trim();
     const moduleId = fd.get('moduleId');
     const id = form.dataset.id;
+    if(state.screens.some(s=>s.name===name && s.moduleId===moduleId && s.id!==id)){
+      showAlert('Já existe uma tela chamada "'+name+'" cadastrada nesse módulo. Escolha outro nome.');
+      return;
+    }
     if(id){
       const scr = byId(state.screens, id);
       if(scr){ renameScreenEverywhere(scr.name, name); scr.name = name; scr.moduleId = moduleId; }
-    } else if(name && !state.screens.some(s=>s.name===name && s.moduleId===moduleId)){
+    } else if(name){
       state.screens.push({id:uid('scr'), name, moduleId});
     }
     ui.modal=null; render();
   }
   else if(type==='agenda-type'){
     const name = fd.get('name').trim();
+    const isInternal = fd.get('isInternal')==='on';
     const id = form.dataset.id;
+    if(state.agendaTypes.some(t=>t.name===name && t.id!==id)){
+      showAlert('Já existe um tipo de agenda chamado "'+name+'". Escolha outro nome.');
+      return;
+    }
     if(id){
       const tp = byId(state.agendaTypes, id);
-      if(tp){ renameTypeEverywhere(tp.name, name); tp.name = name; }
-    } else if(name && !state.agendaTypes.some(t=>t.name===name)){
-      state.agendaTypes.push({id:uid('at'), name});
+      if(tp){ renameTypeEverywhere(tp.name, name); tp.name = name; tp.isInternal = isInternal; }
+    } else if(name){
+      state.agendaTypes.push({id:uid('at'), name, isInternal});
     }
     ui.modal=null; render();
   }
