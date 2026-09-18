@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 :root{
   --bg:#ECEEED; --bg-soft:#E2E5E3; --surface:#FFFFFF; --surface-2:#F5F6F5;
@@ -224,6 +225,15 @@ input[type=color]{ width:38px; height:32px; padding:2px; border:1px solid var(--
 .notif-item{ padding:9px 10px; border-radius:8px; }
 .notif-item:hover{ background:var(--surface-2); }
 .notif-empty{ padding:20px; text-align:center; color:var(--ink-soft); font-size:13px; }
+.client-picker{ position:relative; }
+.client-picker-input-wrap{ display:flex; align-items:center; gap:7px; border:1px solid var(--border); border-radius:8px; padding:9px 10px; background:var(--surface-2); }
+.client-picker-input-wrap input{ border:none; background:transparent; outline:none; width:100%; color:var(--ink); }
+.client-picker-results{ position:absolute; top:100%; left:0; right:0; background:var(--surface); border:1px solid var(--border); border-radius:8px; margin-top:4px; box-shadow:var(--shadow-2); max-height:220px; overflow-y:auto; z-index:20; }
+.client-picker-result{ display:block; width:100%; text-align:left; padding:9px 11px; border:none; background:none; font-size:13px; color:var(--ink); border-bottom:1px solid var(--border); }
+.client-picker-result:last-child{ border-bottom:none; }
+.client-picker-result:hover{ background:var(--surface-2); }
+.client-picker-empty{ padding:12px; text-align:center; color:var(--ink-faint); font-size:12.5px; }
+.client-picker-selected{ display:flex; align-items:center; justify-content:space-between; gap:8px; border:1px solid var(--border); border-radius:8px; padding:9px 11px; background:var(--brand-soft); }
 
 /* ---------- Tables ---------- */
 table{ width:100%; border-collapse:collapse; background:var(--surface); border-radius:10px; overflow:hidden; }
@@ -243,8 +253,43 @@ tr:last-child td{ border-bottom:none; }
 .list-plain .item-x button{ background:none;border:none;color:var(--ink-faint); font-weight:700; }
 .hint{ font-size:12px; color:var(--ink-faint); margin-top:8px; }
 #print-report{ display:none; }
+.topbar-hamburger{ display:none; width:38px; height:38px; border-radius:9px; border:1px solid var(--border); background:var(--surface-2); align-items:center; justify-content:center; flex:0 0 auto; font-size:18px; }
+.sidebar-backdrop{ position:fixed; inset:0; background:rgba(15,20,17,.45); z-index:290; }
 @media (max-width:820px){
-  .sidebar{ display:none; }
+  .shell{ position:relative; }
+  .sidebar{
+    position:fixed; top:0; left:0; bottom:0; z-index:300; width:250px;
+    transform:translateX(-100%); transition:transform .22s ease; box-shadow:none;
+  }
+  .sidebar.open{ transform:translateX(0); box-shadow:var(--shadow-2); }
+  .topbar-hamburger{ display:flex; }
+  .topbar{ padding:12px 14px; gap:10px; flex-wrap:wrap; }
+  .topbar h2{ font-size:16px; }
+  .topbar-title{ min-width:0; overflow:hidden; }
+  .topbar-title h2{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .topbar-right{ margin-left:0; }
+  .search-box{ min-width:0; flex:1 1 140px; }
+  .view{ padding:14px 12px 32px; }
+  .field-row{ flex-direction:column; gap:13px; }
+  .modal{ max-width:calc(100vw - 24px); max-height:88vh; overflow-y:auto; padding:18px 16px 18px; }
+  .overlay{ padding:4vh 8px; }
+  .notif-panel{ width:min(320px, calc(100vw - 24px)); right:-6px; }
+  .row-actions{ gap:8px; flex-wrap:wrap; }
+  .btn-sm{ padding:7px 11px; }
+  .list-col{ width:230px; flex:0 0 230px; }
+  .list-add-col{ width:180px; flex:0 0 180px; }
+  .cal-tg-inner{ min-width:560px; }
+  .balance-box{ flex-wrap:wrap; }
+  .card-modal-meta{ gap:8px; }
+  .settings-tabs .btn{ padding:7px 10px; font-size:12.5px; }
+  .cal-toolbar .btn-sm{ padding:7px 10px; font-size:12px; }
+}
+@media (max-width:480px){
+  .list-col{ width:78vw; flex:0 0 78vw; }
+  .list-add-col{ width:60vw; flex:0 0 60vw; }
+  .balance-item{ min-width:88px; }
+  table{ font-size:12.5px; }
+  th, td{ padding:8px 9px; }
 }
 @media print{
   body *{ visibility:hidden; }
@@ -526,7 +571,9 @@ var ui = {
   view: 'board',
   currentBoardId: state.boards[0] ? state.boards[0].id : null,
   search: '',
+  clientSearch: '',
   showNotif: false,
+  sidebarOpen: false,
   openCardId: null,
   cardTab: 'info',
   cardDraft: null,
@@ -626,11 +673,65 @@ function deleteAnalyst(id){
   }
   state.analysts = state.analysts.filter(a=>a.id!==id);
 }
-function createClient(data){ const c = {id:uid('cl'), name:data.name, contact:data.contact||'', email:data.email||'', phone:data.phone||'', segment:data.segment||'', city:data.city||'', clientType:data.clientType||'novo', createdAt:Date.now()}; state.clients.push(c); return c; }
+function createClient(data){ const c = {id:uid('cl'), code:data.code||'', name:data.name, companyName:data.companyName||'', cnpj:data.cnpj||'', ie:data.ie||'', contact:data.contact||'', email:data.email||'', phone:data.phone||'', segment:data.segment||'', city:data.city||'', clientType:data.clientType||'novo', createdAt:Date.now()}; state.clients.push(c); return c; }
 function updateClient(id, patch){ const c=getClient(id); if(c) Object.assign(c, patch); }
 function deleteClient(id){
   state.cards = state.cards.filter(c=>{ if(c.clientId===id){ state.schedules = state.schedules.filter(s=>s.cardId!==c.id); return false; } return true; });
   state.clients = state.clients.filter(c=>c.id!==id);
+}
+/* ---- Excel/CSV client import ---- */
+function normalizeHeader(h){ return String(h||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim(); }
+const CLIENT_IMPORT_HEADER_MAP = {
+  'codigo':'code', 'cod':'code',
+  'nome fantasia':'name', 'nome':'name',
+  'razao social':'companyName',
+  'cnpj':'cnpj',
+  'ie':'ie', 'inscricao estadual':'ie',
+  'segmento':'segment',
+  'cidade':'city',
+  'telefone':'phone', 'fone':'phone',
+  'email':'email', 'e-mail':'email',
+  'contato':'contact',
+  'tipo de cliente':'clientType', 'tipo':'clientType'
+};
+function parseImportRow(row){
+  const out = {};
+  Object.keys(row).forEach(h=>{
+    const field = CLIENT_IMPORT_HEADER_MAP[normalizeHeader(h)];
+    if(field && out[field]===undefined) out[field] = row[h]!=null ? String(row[h]).trim() : '';
+  });
+  if(out.clientType){
+    out.clientType = normalizeHeader(out.clientType).includes('base') ? 'base' : 'novo';
+  }
+  return out;
+}
+function downloadClientTemplate(){
+  const headers = ['Código','Nome Fantasia','Razão Social','CNPJ','IE','Segmento','Cidade','Telefone','Email','Contato','Tipo de Cliente'];
+  const example = ['001','Bar da Ana','Bar da Ana Ltda','12.345.678/0001-90','1234567-89','Alimentício','Curitiba','(41) 99999-9999','contato@bardaana.com.br','Ana Silva','Novo'];
+  const csv = '\uFEFF'+headers.join(';')+'\n'+example.join(';');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'modelo_clientes.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+async function importClientsFromFile(file){
+  if(!window.XLSX){ showAlert('Não foi possível carregar a biblioteca de importação. Verifique sua conexão com a internet e tente de novo.'); return; }
+  const buf = await file.arrayBuffer();
+  const wb = window.XLSX.read(buf, {type:'array'});
+  const sheet = wb.Sheets[wb.SheetNames[0]];
+  const rows = window.XLSX.utils.sheet_to_json(sheet, {defval:''});
+  let created=0, updated=0, skipped=0;
+  rows.forEach(row=>{
+    const parsed = parseImportRow(row);
+    if(!parsed.name || (!parsed.code && !parsed.name)){ skipped++; return; }
+    const existing = parsed.code ? state.clients.find(c=>c.code && c.code===parsed.code) : null;
+    if(existing){ Object.assign(existing, parsed); updated++; }
+    else { createClient(parsed); created++; }
+  });
+  render();
+  showAlert('Importação concluída: '+created+' cliente(s) criado(s), '+updated+' atualizado(s)'+(skipped?', '+skipped+' linha(s) ignorada(s) por falta de nome':'')+'.');
 }
 function createCard(boardId, listId, clientId, extra){
   const card = Object.assign({id:uid('cd'), boardId, listId, clientId, contractedHours:0, startDate:todayISO(), productTags:[], history:[{ts:Date.now(), text:'Card criado'}]}, extra||{});
@@ -701,7 +802,8 @@ function render(){
 
 function renderShell(){
   return '<div class="shell">'
-    + '<aside class="sidebar">'+renderSidebar()+'</aside>'
+    + '<aside class="sidebar'+(ui.sidebarOpen?' open':'')+'">'+renderSidebar()+'</aside>'
+    + (ui.sidebarOpen ? '<div class="sidebar-backdrop" data-action="close-sidebar"></div>' : '')
     + '<main class="main">'
       + '<header class="topbar">'+renderTopbar()+'</header>'
       + '<div class="view">'+renderView()+'</div>'
@@ -749,6 +851,7 @@ function navItem(view, icon, label, badge){
 /* ============================= TOPBAR ============================= */
 function renderTopbar(){
   const totalPend = pendingConfirmations(null).length;
+  const hamburger = '<button class="topbar-hamburger" data-action="toggle-sidebar" title="Menu">☰</button>';
   let left = '';
   if(ui.view==='board'){
     const board = getBoard(ui.currentBoardId);
@@ -769,7 +872,7 @@ function renderTopbar(){
   }
   let right = '<div class="icon-btn" data-action="toggle-notif" title="Notificações">🔔'+(totalPend? '<span class="notif-dot">'+totalPend+'</span>':'')+'</div>';
   if(ui.showNotif) right += renderNotifPanel();
-  return left + '<div class="topbar-right">'+right+'</div>';
+  return hamburger + left + '<div class="topbar-right">'+right+'</div>';
 }
 function renderNotifPanel(){
   const items = pendingConfirmations(null);
@@ -1132,13 +1235,23 @@ function renderReportsView(){
 
 /* ============================= CLIENTS VIEW ============================= */
 function renderClientsView(){
-  let html = '<div class="section-card"><table><thead><tr><th>Nome</th><th>Tipo</th><th>Segmento</th><th>Cidade</th><th>Contato</th><th>E-mail</th><th>Telefone</th><th>Cards</th><th></th></tr></thead><tbody>';
-  if(!state.clients.length) html += '<tr><td colspan="9" class="hint">Nenhum cliente cadastrado ainda.</td></tr>';
-  state.clients.forEach(cl=>{
+  let html = '<div class="cal-toolbar" style="margin-bottom:14px;">'
+    + '<div class="search-box" style="min-width:260px;"><span>🔎</span><input id="client-search-input" placeholder="Buscar por nome, código ou CNPJ..." value="'+esc(ui.clientSearch)+'"></div>'
+    + '<span class="grow"></span>'
+    + '<input type="file" id="import-clients-file" accept=".xlsx,.xls,.csv" style="display:none;">'
+    + '<button class="btn btn-sm btn-ghost" data-action="download-client-template">Baixar modelo</button>'
+    + '<button class="btn btn-sm" data-action="import-clients-trigger">📥 Importar Excel</button>'
+    + '</div>';
+  const q = ui.clientSearch.trim().toLowerCase();
+  let clients = state.clients;
+  if(q){ clients = clients.filter(cl=> cl.name.toLowerCase().includes(q) || (cl.code||'').toLowerCase().includes(q) || (cl.cnpj||'').toLowerCase().includes(q) || (cl.companyName||'').toLowerCase().includes(q)); }
+  html += '<div class="section-card" style="overflow-x:auto;"><table><thead><tr><th>Código</th><th>Nome fantasia</th><th>Razão social</th><th>CNPJ</th><th>Tipo</th><th>Segmento</th><th>Cidade</th><th>Contato</th><th>E-mail</th><th>Telefone</th><th>Cards</th><th></th></tr></thead><tbody>';
+  if(!clients.length) html += '<tr><td colspan="12" class="hint">Nenhum cliente encontrado.</td></tr>';
+  clients.forEach(cl=>{
     const cardCount = state.cards.filter(c=>c.clientId===cl.id).length;
     const isNovo = (cl.clientType||'novo')==='novo';
     const typeBadge = '<span class="badge" style="background:'+(isNovo?'var(--gold-soft)':'var(--brand-soft)')+';color:'+(isNovo?'var(--gold)':'var(--brand)')+';">'+(isNovo?'Novo':'Base')+'</span>';
-    html += '<tr><td style="font-weight:700;">'+esc(cl.name)+'</td><td>'+typeBadge+'</td><td>'+esc(cl.segment||'—')+'</td><td>'+esc(cl.city||'—')+'</td><td>'+esc(cl.contact||'—')+'</td><td>'+esc(cl.email||'—')+'</td><td>'+esc(cl.phone||'—')+'</td><td>'+cardCount+'</td>'
+    html += '<tr><td>'+esc(cl.code||'—')+'</td><td style="font-weight:700;">'+esc(cl.name)+'</td><td>'+esc(cl.companyName||'—')+'</td><td>'+esc(cl.cnpj||'—')+'</td><td>'+typeBadge+'</td><td>'+esc(cl.segment||'—')+'</td><td>'+esc(cl.city||'—')+'</td><td>'+esc(cl.contact||'—')+'</td><td>'+esc(cl.email||'—')+'</td><td>'+esc(cl.phone||'—')+'</td><td>'+cardCount+'</td>'
       + '<td><div class="row-actions"><button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="client-edit" data-id="'+cl.id+'">Editar</button><button class="btn btn-sm btn-danger" data-action="delete-client" data-id="'+cl.id+'">Excluir</button></div></td></tr>';
   });
   html += '</tbody></table></div>';
@@ -1300,12 +1413,14 @@ function renderModal(){
     const ctype = c ? (c.clientType||'novo') : 'novo';
     inner = '<div class="modal-header"><h3>'+(c?'Editar cliente':'Novo cliente')+'</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
       + '<form data-form="client" data-id="'+(c?c.id:'')+'" data-then="'+(m.then||'')+'">'
-      + '<div class="field"><label>Nome</label><input type="text" name="name" value="'+esc(c?c.name:'')+'" required></div>'
-      + '<div class="field-row"><div class="field"><label>Segmento</label><input type="text" name="segment" value="'+esc(c?c.segment:'')+'" placeholder="Ex: Varejo, Alimentício..."></div><div class="field"><label>Cidade</label><input type="text" name="city" value="'+esc(c?c.city:'')+'"></div></div>'
-      + '<div class="field"><label>Tipo de cliente</label><select name="clientType">'
+      + '<div class="field-row"><div class="field"><label>Código</label><input type="text" name="code" value="'+esc(c?c.code:'')+'" placeholder="Código único do cliente"></div><div class="field"><label>Tipo de cliente</label><select name="clientType">'
         + '<option value="novo" '+(ctype==='novo'?'selected':'')+'>Cliente novo</option>'
         + '<option value="base" '+(ctype==='base'?'selected':'')+'>Cliente da base</option>'
-        + '</select></div>'
+        + '</select></div></div>'
+      + '<div class="field"><label>Nome fantasia</label><input type="text" name="name" value="'+esc(c?c.name:'')+'" required></div>'
+      + '<div class="field"><label>Razão social</label><input type="text" name="companyName" value="'+esc(c?c.companyName:'')+'"></div>'
+      + '<div class="field-row"><div class="field"><label>CNPJ</label><input type="text" name="cnpj" value="'+esc(c?c.cnpj:'')+'" placeholder="00.000.000/0000-00"></div><div class="field"><label>IE</label><input type="text" name="ie" value="'+esc(c?c.ie:'')+'"></div></div>'
+      + '<div class="field-row"><div class="field"><label>Segmento</label><input type="text" name="segment" value="'+esc(c?c.segment:'')+'" placeholder="Ex: Varejo, Alimentício..."></div><div class="field"><label>Cidade</label><input type="text" name="city" value="'+esc(c?c.city:'')+'"></div></div>'
       + '<div class="field"><label>Contato (pessoa)</label><input type="text" name="contact" value="'+esc(c?c.contact:'')+'"></div>'
       + '<div class="field-row"><div class="field"><label>E-mail</label><input type="email" name="email" value="'+esc(c?c.email:'')+'"></div><div class="field"><label>Telefone</label><input type="tel" name="phone" value="'+esc(c?c.phone:'')+'"></div></div>'
       + '<div class="form-actions"><button type="submit" class="btn btn-primary">Salvar</button></div></form>';
@@ -1344,13 +1459,18 @@ function renderModal(){
       + '<div class="form-actions"><button type="submit" class="btn btn-primary">Criar</button></div></form>';
   } else if(m.type==='card-new'){
     const board = getBoard(m.board);
+    const cdraft = m.values || {};
+    const cnClientId = cdraft.clientId || '';
+    const cnHours = cdraft.contractedHours!=null ? cdraft.contractedHours : 0;
+    const cnStart = cdraft.startDate || todayISO();
+    const cnNewName = cdraft.newClientName || '';
     inner = '<div class="modal-header"><h3>Novo cliente no quadro</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
       + '<form data-form="card-new" data-board="'+m.board+'" data-list="'+(m.list||board.lists[0].id)+'">'
-      + '<div class="field"><label>Cliente</label><select name="clientId"><option value="">— Criar novo cliente —</option>';
-    state.clients.forEach(cl=> inner += '<option value="'+cl.id+'">'+esc(cl.name)+'</option>');
-    inner += '</select></div>'
-      + '<div class="field" id="new-client-name-field"><label>Nome do novo cliente</label><input type="text" name="newClientName" placeholder="Obrigatório se não selecionar um cliente acima"></div>'
-      + '<div class="field-row"><div class="field"><label>Horas contratadas</label><input type="number" min="0" step="0.5" name="contractedHours" value="0"></div><div class="field"><label>Início da implantação</label><input type="date" name="startDate" value="'+todayISO()+'"></div></div>'
+      + '<div class="field"><label>Cliente</label>'+renderClientPicker('clientId', cnClientId, m.clientQuery)+'</div>';
+    if(!cnClientId){
+      inner += '<div class="field" id="new-client-name-field"><label>Nome do novo cliente</label><input type="text" name="newClientName" value="'+esc(cnNewName)+'" placeholder="Obrigatório se não selecionar um cliente acima"></div>';
+    }
+    inner += '<div class="field-row"><div class="field"><label>Horas contratadas</label><input type="number" min="0" step="0.5" name="contractedHours" value="'+esc(cnHours)+'"></div><div class="field"><label>Início da implantação</label><input type="date" name="startDate" value="'+esc(cnStart)+'"></div></div>'
       + '<div class="form-actions"><button type="submit" class="btn btn-primary">Criar card</button></div></form>';
   } else if(m.type==='schedule-new' || m.type==='schedule-edit'){
     inner = renderScheduleForm(m);
@@ -1398,6 +1518,28 @@ function renderScheduleReportContent(scheduleId){
   return html;
 }
 
+function renderClientPicker(fieldName, selectedClientId, query){
+  const selected = selectedClientId ? getClient(selectedClientId) : null;
+  let html = '<div class="client-picker" data-field="'+fieldName+'">';
+  if(selected){
+    html += '<div class="client-picker-selected"><span>🔍 '+esc(selected.name)+(selected.code?' <span class="hint" style="margin:0;">('+esc(selected.code)+')</span>':'')+'</span>'
+      + '<button type="button" class="btn btn-sm btn-ghost" data-action="client-picker-clear" data-field="'+fieldName+'">Trocar</button></div>'
+      + '<input type="hidden" name="'+fieldName+'" value="'+selected.id+'">';
+  } else {
+    const q = (query||'').trim().toLowerCase();
+    html += '<div class="client-picker-input-wrap"><span>🔍</span><input type="text" id="client-picker-input" class="client-picker-input" data-field="'+fieldName+'" placeholder="Buscar cliente por nome ou código..." value="'+esc(query||'')+'" autocomplete="off"></div>'
+      + '<input type="hidden" name="'+fieldName+'" value="">';
+    if(q){
+      const matches = state.clients.filter(c=> c.name.toLowerCase().includes(q) || (c.code||'').toLowerCase().includes(q) || (c.cnpj||'').toLowerCase().includes(q)).slice(0,8);
+      html += '<div class="client-picker-results">';
+      if(!matches.length) html += '<div class="client-picker-empty">Nenhum cliente encontrado.</div>';
+      matches.forEach(c=> html += '<button type="button" class="client-picker-result" data-action="client-picker-select" data-field="'+fieldName+'" data-id="'+c.id+'">'+esc(c.name)+(c.code?' <span class="hint" style="margin:0;">('+esc(c.code)+')</span>':'')+'</button>');
+      html += '</div>';
+    }
+  }
+  html += '</div>';
+  return html;
+}
 function renderScheduleForm(m){
   const editing = m.type==='schedule-edit' ? byId(state.schedules, m.id) : null;
   const readOnly = false;
@@ -1434,9 +1576,7 @@ function renderScheduleForm(m){
     const client = getClient(cardCtx.clientId);
     html += '<div class="field"><label>Cliente</label><input type="text" value="'+esc(client?client.name:'')+'" disabled></div>';
   } else {
-    html += '<div class="field"><label>Cliente (opcional)</label><select name="clientId"><option value="">Interno / sem cliente</option>';
-    state.clients.forEach(cl=> html += '<option value="'+cl.id+'" '+(eff.clientId===cl.id?'selected':'')+'>'+esc(cl.name)+'</option>');
-    html += '</select></div>';
+    html += '<div class="field"><label>Cliente (opcional — deixe em branco para agenda interna sem cliente)</label>'+renderClientPicker('clientId', eff.clientId, m.clientQuery)+'</div>';
     if(eff.clientId){
       const existingCards = state.cards.filter(c=>c.clientId===eff.clientId);
       if(existingCards.length){
@@ -1532,8 +1672,10 @@ document.addEventListener('click', function(e){
   if(!el){ if(needsRender) render(); return; }
   const a = el.dataset.action;
 
-  if(a==='goto-view'){ ui.view = el.dataset.view; ui.showNotif=false; render(); }
-  else if(a==='open-board'){ ui.view='board'; ui.currentBoardId = el.dataset.id; ui.search=''; render(); }
+  if(a==='goto-view'){ ui.view = el.dataset.view; ui.showNotif=false; ui.sidebarOpen=false; render(); }
+  else if(a==='open-board'){ ui.view='board'; ui.currentBoardId = el.dataset.id; ui.search=''; ui.sidebarOpen=false; render(); }
+  else if(a==='toggle-sidebar'){ ui.sidebarOpen = !ui.sidebarOpen; render(); }
+  else if(a==='close-sidebar'){ ui.sidebarOpen = false; render(); }
   else if(a==='open-modal'){
     const type = el.dataset.modal;
     ui.formErr='';
@@ -1563,6 +1705,22 @@ document.addEventListener('click', function(e){
     values.productTags = (values.productTags||[]).concat(newTag.id);
     ui.cardDraft = {cardId: form.dataset.card, values};
     render();
+  }
+  else if(a==='client-picker-select'){
+    const form = el.closest('form');
+    const field = el.dataset.field;
+    const values = captureFormValues(form);
+    values[field] = el.dataset.id;
+    if(field==='clientId'){ delete values.newClientName; delete values.linkCardId; }
+    if(ui.modal){ ui.modal.clientQuery = ''; ui.modal.values = values; render(); }
+  }
+  else if(a==='client-picker-clear'){
+    const form = el.closest('form');
+    const field = el.dataset.field;
+    const values = captureFormValues(form);
+    values[field] = '';
+    if(field==='clientId') delete values.linkCardId;
+    if(ui.modal){ ui.modal.clientQuery = ''; ui.modal.values = values; render(); }
   }
   else if(a==='quick-add-module'){
     const form = el.closest('form[data-form="schedule"]');
@@ -1637,6 +1795,8 @@ document.addEventListener('click', function(e){
   }
   else if(a==='cloud-disconnect'){ showConfirm('Desconectar da nuvem? O app volta a salvar só neste navegador (os dados na nuvem continuam existindo).', function(){ disconnectCloud(); }); }
   else if(a==='force-save'){ forceSaveNow(); }
+  else if(a==='import-clients-trigger'){ const el=document.getElementById('import-clients-file'); if(el) el.click(); }
+  else if(a==='download-client-template'){ downloadClientTemplate(); }
   else if(a==='print-report'){ window.print(); }
   else if(a==='cloud-reconnect-default'){ connectCloud(DEFAULT_CLOUD_CONFIG.url, DEFAULT_CLOUD_CONFIG.anonKey); }
   else if(a==='delete-type'){
@@ -1680,6 +1840,11 @@ document.addEventListener('click', function(e){
 document.addEventListener('change', function(e){
   if(e.target.id==='cal-analyst-filter'){ ui.calAnalyst = e.target.value; render(); }
   else if(e.target.id==='cal-category-filter'){ ui.calCategory = e.target.value; render(); }
+  else if(e.target.id==='import-clients-file'){
+    const file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if(file){ importClientsFromFile(file).catch(err=>{ showAlert('Erro ao importar o arquivo: '+(err && err.message ? err.message : err)); }); }
+  }
   else if(e.target.matches('select[name="moveTo"]')){
     const cardId = e.target.closest('form').dataset.card;
     const [boardId,listId] = e.target.value.split('::');
@@ -1720,6 +1885,21 @@ document.addEventListener('input', function(e){
     ui._focus = {id:'search-input', pos: e.target.selectionStart};
     render();
   }
+  else if(e.target.id==='client-search-input'){
+    ui.clientSearch = e.target.value;
+    ui._focus = {id:'client-search-input', pos: e.target.selectionStart};
+    render();
+  }
+  else if(e.target.id==='client-picker-input'){
+    const form = e.target.closest('form');
+    const values = captureFormValues(form);
+    if(ui.modal){
+      ui.modal.clientQuery = e.target.value;
+      ui.modal.values = values;
+      ui._focus = {id:'client-picker-input', pos: e.target.selectionStart};
+      render();
+    }
+  }
 });
 
 document.addEventListener('keydown', function(e){
@@ -1745,8 +1925,17 @@ document.addEventListener('submit', async function(e){
     ui.modal=null; render();
   }
   else if(type==='client'){
-    const data = {name: fd.get('name').trim(), contact: fd.get('contact').trim(), email: fd.get('email').trim(), phone: fd.get('phone').trim(), segment: fd.get('segment').trim(), city: fd.get('city').trim(), clientType: fd.get('clientType')||'novo'};
+    const data = {
+      code: fd.get('code').trim(), name: fd.get('name').trim(), companyName: fd.get('companyName').trim(),
+      cnpj: fd.get('cnpj').trim(), ie: fd.get('ie').trim(),
+      contact: fd.get('contact').trim(), email: fd.get('email').trim(), phone: fd.get('phone').trim(),
+      segment: fd.get('segment').trim(), city: fd.get('city').trim(), clientType: fd.get('clientType')||'novo'
+    };
     const id = form.dataset.id;
+    if(data.code && state.clients.some(c=>c.code===data.code && c.id!==id)){
+      showAlert('Já existe um cliente cadastrado com o código "'+data.code+'". Verifique o código informado.');
+      return;
+    }
     if(id) updateClient(id, data); else createClient(data);
     ui.modal=null; render();
   }
