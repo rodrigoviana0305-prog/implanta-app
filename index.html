@@ -474,14 +474,27 @@ function disconnectCloud(){
   render();
 }
 async function boot(){
+  let needsImmediateResave = false;
   if(cloudConfig && window.supabase){
     try{
       sbClient = window.supabase.createClient(cloudConfig.url, cloudConfig.anonKey);
       const { data, error } = await sbClient.from('app_state').select('data, updated_at').eq('id', 1).maybeSingle();
       if(error) throw error;
       if(data && data.data){
-        state = normalizeState(data.data);
+        const before = data.data;
+        const beforeCounts = {
+          modules: Array.isArray(before.modules) ? before.modules.length : 0,
+          agendaTypes: Array.isArray(before.agendaTypes) ? before.agendaTypes.length : 0,
+          screens: Array.isArray(before.screens) ? before.screens.length : 0
+        };
+        state = normalizeState(before);
         lastKnownUpdatedAt = data.updated_at || null;
+        // If normalizing/deduping actually removed something (duplicates from the earlier merge bug),
+        // push the cleaned-up version back right away instead of waiting for the user's next edit -
+        // otherwise the duplicates keep coming back from the still-dirty row on every future load.
+        if(state.modules.length < beforeCounts.modules || state.agendaTypes.length < beforeCounts.agendaTypes || state.screens.length < beforeCounts.screens){
+          needsImmediateResave = true;
+        }
       } else {
         // First time connecting this project: seed the cloud with whatever is already stored locally,
         // so existing work isn't lost when turning cloud sync on.
@@ -504,6 +517,9 @@ async function boot(){
     state = loadLocalState();
   }
   render();
+  if(needsImmediateResave && sbClient){
+    await cloudSave();
+  }
 }
 
 var ui = {
@@ -1388,17 +1404,21 @@ function renderScheduleForm(m){
   const cardCtx = m.card ? getCard(m.card) : (editing && editing.cardId ? getCard(editing.cardId) : null);
   const fixedAnalystId = cardCtx ? getBoard(cardCtx.boardId).analystId : (editing ? editing.analystId : '');
   const draft = m.values || null;
+  const effClientId = draft ? (draft.clientId||'') : (editing ? editing.clientId||'' : '');
+  const clientExistingCards = effClientId ? state.cards.filter(c=>c.clientId===effClientId) : [];
+  const defaultLinkCardId = editing ? (editing.cardId || '__new__') : (clientExistingCards.length ? clientExistingCards[0].id : '__new__');
   const eff = {
-    clientId: draft ? (draft.clientId||'') : (editing ? editing.clientId||'' : ''),
+    clientId: effClientId,
     analystId: draft ? (draft.analystId || fixedAnalystId) : (fixedAnalystId || m.prefillAnalyst || ''),
     date: draft ? draft.date : (editing ? editing.date : (m.prefillDate || todayISO())),
     startTime: draft ? draft.startTime : (editing ? editing.startTime : (m.prefillStart || '09:00')),
     endTime: draft ? draft.endTime : (editing ? editing.endTime : (m.prefillEnd || '10:00')),
-    type: draft ? draft.type : (editing ? editing.type : (state.agendaTypes[0] ? state.agendaTypes[0].name : '')),
+    type: draft ? draft.type : (editing ? editing.type : (state.agendaTypes.find(t=>!t.isInternal) ? state.agendaTypes.find(t=>!t.isInternal).name : (state.agendaTypes[0]?state.agendaTypes[0].name:''))),
     category: draft ? (draft.category||'implantacao') : (editing ? (editing.category||'implantacao') : 'implantacao'),
     modules: draft ? (draft.modules||[]) : (editing ? (editing.modules||[]) : []),
     trainedScreens: draft ? (draft.trainedScreens||[]) : (editing ? (editing.trainedScreens||[]) : []),
     trainedUsers: draft ? (draft.trainedUsers||'') : (editing ? (editing.trainedUsers||'') : ''),
+    linkCardId: draft ? (draft.linkCardId || defaultLinkCardId) : defaultLinkCardId,
     notes: draft ? (draft.notes||'') : (editing ? editing.notes : '')
   };
   let html = '<div class="modal-header"><h3>'+(editing?'Editar agendamento':'Novo agendamento')+'</h3><button class="modal-close" data-action="close-modal">✕</button></div>';
@@ -1417,6 +1437,18 @@ function renderScheduleForm(m){
     html += '<div class="field"><label>Cliente (opcional)</label><select name="clientId"><option value="">Interno / sem cliente</option>';
     state.clients.forEach(cl=> html += '<option value="'+cl.id+'" '+(eff.clientId===cl.id?'selected':'')+'>'+esc(cl.name)+'</option>');
     html += '</select></div>';
+    if(eff.clientId){
+      const existingCards = state.cards.filter(c=>c.clientId===eff.clientId);
+      if(existingCards.length){
+        html += '<div class="field"><label>Vincular ao card</label><select name="linkCardId">'
+          + '<option value="__new__" '+(eff.linkCardId==='__new__'?'selected':'')+'>+ Criar novo card no quadro deste analista</option>';
+        existingCards.forEach(c=>{
+          const b = getBoard(c.boardId); const an = b ? getAnalyst(b.analystId) : null; const list = b ? byId(b.lists, c.listId) : null;
+          html += '<option value="'+c.id+'" '+(eff.linkCardId===c.id?'selected':'')+'>Card no quadro de '+esc(an?an.name:'—')+(list?' — '+esc(list.name):'')+'</option>';
+        });
+        html += '</select><span class="hint" style="margin-top:2px;">Este cliente já tem card em outro quadro — escolha vincular a ele em vez de criar um novo, se for o mesmo atendimento.</span></div>';
+      }
+    }
   }
   html += '<div class="field"><label>Analista</label><select name="analystId" '+(cardCtx?'disabled':'')+'>';
   state.analysts.forEach(a=> html += '<option value="'+a.id+'" '+((eff.analystId===a.id)?'selected':'')+'>'+esc(a.name)+'</option>');
@@ -1427,7 +1459,7 @@ function renderScheduleForm(m){
     + '<div class="field"><label>Fim</label><input type="time" name="endTime" value="'+esc(eff.endTime)+'"></div>'
     + '</div>';
   html += '<div class="field"><label>Tipo</label><select name="type">';
-  state.agendaTypes.forEach(t=> html += '<option value="'+esc(t.name)+'" '+(eff.type===t.name?'selected':'')+'>'+esc(t.name)+'</option>');
+  state.agendaTypes.filter(t=> !!t.isInternal === (eff.category==='interna')).forEach(t=> html += '<option value="'+esc(t.name)+'" '+(eff.type===t.name?'selected':'')+'>'+esc(t.name)+'</option>');
   html += '</select></div>';
   html += '<div class="field"><label>Módulo(s) do sistema</label><div class="check-grid">';
   state.modules.forEach(mod=>{
@@ -1660,8 +1692,25 @@ document.addEventListener('change', function(e){
     const form = e.target.closest('form');
     if(ui.modal){ ui.modal.values = captureFormValues(form); render(); }
   }
-  else if(e.target.matches('select[name="clientId"]') && e.target.closest('#modal-holder')){
-    // for card-new modal: toggle new-client-name requirement visually (no-op needed, submit handles logic)
+  else if(e.target.matches('form[data-form="schedule"] select[name="category"]')){
+    // Switching between Implantação/Interna changes which Tipos are valid - reset the Tipo
+    // selection if the one currently chosen doesn't belong to the new category.
+    const form = e.target.closest('form');
+    const values = captureFormValues(form);
+    const newCategory = e.target.value;
+    const validTypes = state.agendaTypes.filter(t=> !!t.isInternal === (newCategory==='interna'));
+    if(!validTypes.some(t=>t.name===values.type)){ values.type = validTypes.length ? validTypes[0].name : ''; }
+    values.category = newCategory;
+    if(ui.modal){ ui.modal.values = values; render(); }
+  }
+  else if(e.target.matches('form[data-form="schedule"] select[name="clientId"]')){
+    // Changing the client changes which existing cards can be linked - clear any previous choice so
+    // the form recomputes a sensible default (the client's existing card, if there is exactly a
+    // history of one) for the newly selected client, without losing anything else already filled in.
+    const form = e.target.closest('form');
+    const values = captureFormValues(form);
+    delete values.linkCardId;
+    if(ui.modal){ ui.modal.values = values; render(); }
   }
 });
 
@@ -1735,8 +1784,8 @@ document.addEventListener('submit', async function(e){
     render();
   }
   else if(type==='schedule'){
-    const cardId = form.dataset.card || null;
-    const card = cardId ? getCard(cardId) : null;
+    const cardIdFromCtx = form.dataset.card || null;
+    const card = cardIdFromCtx ? getCard(cardIdFromCtx) : null;
     const analystId = card ? getBoard(card.boardId).analystId : fd.get('analystId');
     const clientId = card ? card.clientId : (fd.get('clientId') || null);
     const date = fd.get('date'), startTime = fd.get('startTime'), endTime = fd.get('endTime');
@@ -1747,27 +1796,36 @@ document.addEventListener('submit', async function(e){
       render(); return;
     }
     ui.formErr = '';
-    const data = { analystId, clientId, cardId, date, startTime, endTime, type: fd.get('type'), category: fd.get('category')||'implantacao', modules: fd.getAll('modules'), trainedScreens: fd.getAll('trainedScreens'), trainedUsers: fd.get('trainedUsers')||'', notes: fd.get('notes')||'' };
-    let sched;
-    if(id){ updateSchedule(id, data); sched = byId(state.schedules, id); }
-    else{ sched = createSchedule(data); }
-    ui.modal = null;
-    if(!sched.cardId && sched.clientId){
-      const board = boardOfAnalyst(sched.analystId);
-      if(board){
-        const existingCard = state.cards.find(c=>c.clientId===sched.clientId && c.boardId===board.id);
-        if(existingCard){
-          sched.cardId = existingCard.id;
+
+    // Resolve which card (if any) this schedule links to. When creating a standalone schedule for
+    // a client that already has card(s) - possibly under a different analyst's board - the user
+    // explicitly picks which one via "linkCardId", instead of the app assuming a new card is needed.
+    let resolvedCardId = cardIdFromCtx;
+    if(!resolvedCardId && clientId){
+      const linkChoice = fd.get('linkCardId');
+      if(linkChoice === '__new__'){
+        const board = boardOfAnalyst(analystId);
+        if(board){ const newCard = createCard(board.id, board.lists[0].id, clientId, {}); resolvedCardId = newCard.id; }
+      } else if(linkChoice){
+        resolvedCardId = linkChoice;
+      } else {
+        // The linkCardId field wasn't present in the submitted form (e.g. no client was selected
+        // yet when the modal first rendered) - fall back to checking for an existing card so a
+        // duplicate is never created silently.
+        const existing = state.cards.find(c=>c.clientId===clientId);
+        if(existing){
+          resolvedCardId = existing.id;
         } else {
-          const client = getClient(sched.clientId);
-          showConfirm('O cliente "'+client.name+'" ainda não tem um card no quadro deste analista. Deseja criar agora?', function(){
-            const newCard = createCard(board.id, board.lists[0].id, sched.clientId, {});
-            sched.cardId = newCard.id;
-          });
-          return;
+          const board = boardOfAnalyst(analystId);
+          if(board){ const newCard = createCard(board.id, board.lists[0].id, clientId, {}); resolvedCardId = newCard.id; }
         }
       }
     }
+
+    const data = { analystId, clientId, cardId: resolvedCardId, date, startTime, endTime, type: fd.get('type'), category: fd.get('category')||'implantacao', modules: fd.getAll('modules'), trainedScreens: fd.getAll('trainedScreens'), trainedUsers: fd.get('trainedUsers')||'', notes: fd.get('notes')||'' };
+    if(id){ updateSchedule(id, data); }
+    else{ createSchedule(data); }
+    ui.modal = null;
     render();
   }
   else if(type==='confirm-complete'){
