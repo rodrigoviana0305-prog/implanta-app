@@ -670,7 +670,7 @@ th{background:#F1F6F9;color:#607587;}
 .agenda-print-notes{
   background:#F7FAFC; border:1px solid var(--border); border-radius:10px;
   padding:14px 16px; font-size:13px; color:var(--ink); line-height:1.6;
-  white-space:pre-wrap; min-height:60px;
+  white-space:pre-wrap; min-height:60px; word-break:break-word;
 }
 
 .agenda-print-signatures{
@@ -696,17 +696,37 @@ th{background:#F1F6F9;color:#607587;}
   .agenda-print-title{ font-size:18px; }
 }
 
+/* Regras de impressão para o relatório de agenda (permite múltiplas páginas) */
 @media print{
   .agenda-print, .agenda-print *{ visibility:visible; }
   .agenda-print{
     box-shadow:none; border:none; border-radius:0; max-width:none;
-    position:absolute; inset:0; left:0; top:0; width:100%;
+    position:static; width:100%; margin:0; padding:0;
   }
   .agenda-print-header{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
   .agenda-print-summary-item,
   .agenda-print-status,
   .agenda-print-tag,
   .agenda-print-notes{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+
+  .agenda-print-notes{
+    white-space:pre-wrap;
+    word-break:break-word;
+    page-break-inside:auto;
+    break-inside:auto;
+  }
+  .agenda-print-signatures{
+    page-break-inside:avoid;
+    break-inside:avoid;
+  }
+  .agenda-print-summary-item,
+  .agenda-print-field,
+  .agenda-print-section-title,
+  .agenda-print-title,
+  .agenda-print-subtitle{
+    page-break-inside:avoid;
+    break-inside:avoid;
+  }
 }
 </style>
 </head>
@@ -881,7 +901,6 @@ function normalizeState(raw){
     else { copy.endDate = copy.date; }
     return copy;
   });
-  /* Migração dos cards: campos novos (módulos/telas previstas, data de conclusão, anexos) */
   s.cards = s.cards.map(c=>{
     const copy = Object.assign({}, c);
     if(!Array.isArray(copy.expectedModules)) copy.expectedModules = [];
@@ -1246,11 +1265,6 @@ function cardsUsingProduct(tagId){ return state.cards.filter(c=> (c.productTags|
 function schedulesUsingModule(name){ return state.schedules.filter(s=> (s.modules||[]).includes(name)); }
 function schedulesUsingType(name){ return state.schedules.filter(s=> s.type===name); }
 function screensForModule(moduleId){ return state.screens.filter(s=>s.moduleId===moduleId); }
-/* Seletor reutilizável de Módulos + Telas em guias (usado no card e na agenda).
-   moduleFieldName/screenFieldName: nomes dos checkboxes no <form> (ex: 'modules'/'trainedScreens'
-   na agenda, 'expectedModules'/'expectedScreens' no card).
-   moduleLabel/screenLabel: rótulos dos campos.
-   activeModuleId: guia atualmente ativa (mantida via UI, não afeta os dados selecionados). */
 function renderModuleScreenTabs(moduleFieldName, screenFieldName, selectedModuleNames, selectedScreenNames, moduleLabel, screenLabel, activeModuleId, contextKey){
   selectedModuleNames = selectedModuleNames || [];
   selectedScreenNames = selectedScreenNames || [];
@@ -1436,7 +1450,6 @@ function readableTextColor(hex){
   return yiq >= 150 ? '#111' : '#fff';
 }
 
-/* --- Helpers do card (progresso, saldo consolidado por cliente, etc) --- */
 function cardProgressPercent(card){
   const total = (card.contractedHours||0);
   if(!total) return 0;
@@ -1510,7 +1523,6 @@ async function handleCardAttachmentUpload(cardId, inputEl, form){
   if(rejected.length){
     showAlert('Alguns arquivos não foram anexados:\n\n'+rejected.join('\n'));
   }
-  /* Preserva o rascunho atual do formulário (outros campos não salvos) */
   if(ui.cardDraft && ui.cardDraft.cardId===cardId){
     const values = captureFormValues(form);
     ui.cardDraft = {cardId, values};
@@ -1522,14 +1534,12 @@ function openAttachmentInNewTab(att){
     const w = window.open();
     if(!w){ showAlert('Não foi possível abrir a visualização. Verifique o bloqueador de pop-ups.'); return; }
     if((att.type||'').includes('pdf') || /\.pdf$/i.test(att.name||'')){
-      /* Usa iframe para PDF */
       w.document.write('<title>'+esc(att.name)+'</title><iframe src="'+att.data+'" style="border:none;position:fixed;inset:0;width:100%;height:100%;"></iframe>');
       w.document.close();
     } else if((att.type||'').startsWith('image/')){
       w.document.write('<title>'+esc(att.name)+'</title><div style="margin:0;padding:0;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#222;"><img src="'+att.data+'" style="max-width:100%;max-height:100vh;" alt="'+esc(att.name)+'"></div>');
       w.document.close();
     } else {
-      /* Outros tipos: força o download */
       const a = document.createElement('a');
       a.href = att.data;
       a.download = att.name;
@@ -2143,7 +2153,6 @@ function renderForecastCompare(card){
 
   html += '<div class="compare-sections"><div class="compare-section-title">Módulos</div>'+renderCompareLists(expectedM, trained.modules, cmpM)+'</div>';
 
-  /* Telas agrupadas por módulo, em guias - mesmo padrão usado na seleção de Módulos/Telas. */
   html += '<div class="compare-sections"><div class="compare-section-title">Telas (por módulo)</div>';
   const screenNameToModuleId = new Map();
   state.screens.forEach(scr=> screenNameToModuleId.set(scr.name, scr.moduleId));
@@ -2417,12 +2426,11 @@ function renderCalendarView(){
   return html;
 }
 
-/* ============================= REPORTS VIEW (REDESENHADA) ============================= */
+/* ============================= REPORTS VIEW ============================= */
 function renderReportsView(){
   const today = new Date();
   const dataGeracao = today.toLocaleDateString('pt-BR', {day:'2-digit', month:'long', year:'numeric'});
 
-  /* ===== Cálculo dos KPIs ===== */
   const allCards = state.cards;
   const totalContratadas = allCards.reduce((s,c)=> s + (c.contractedHours||0), 0);
   const totalUsadas = allCards.reduce((s,c)=> s + cardUsedMinutes(c)/60, 0);
@@ -2434,7 +2442,6 @@ function renderReportsView(){
 
   let html = '';
 
-  /* ===== Cabeçalho corporativo ===== */
   html += '<div class="report-header">'
     + '<div class="report-header-left">'
     +   '<div class="report-eyebrow">Painel Gerencial</div>'
@@ -2446,7 +2453,6 @@ function renderReportsView(){
     + '</div>'
     + '</div>';
 
-  /* ===== KPIs ===== */
   html += '<div class="kpi-grid">';
   html += kpiCard('👥','Clientes ativos', clientesAtivos, 'em implantação', 'var(--brand)');
   html += kpiCard('⏱','Horas contratadas', totalContratadas.toFixed(1)+'h', usoPct.toFixed(0)+'% utilizado', 'var(--brand)');
@@ -2455,7 +2461,6 @@ function renderReportsView(){
   html += kpiCard('🔔','Confirmações pendentes', pendentes, pendentes ? 'requer atenção' : 'tudo em dia', pendentes ? 'var(--danger)' : 'var(--ok)');
   html += '</div>';
 
-  /* ===== Card: Saldo por cliente ===== */
   const rows = [];
   allCards.forEach(c=>{
     const client=getClient(c.clientId), board=getBoard(c.boardId), analyst=board?getAnalyst(board.analystId):null;
@@ -2514,7 +2519,6 @@ function renderReportsView(){
   }
   html += '</div>';
 
-  /* ===== Card: horas internas não abatidas ===== */
   const allUnlinked = state.schedules
     .filter(s=> isInternalType(s.type) && s.clientId && !s.cardId && s.status==='concluida')
     .sort((a,b)=> (b.date+(b.startTime||'')).localeCompare(a.date+(a.startTime||'')));
@@ -2545,7 +2549,6 @@ function renderReportsView(){
     html += '</tbody></table></div></div>';
   }
 
-  /* ===== Card: módulos treinados ===== */
   html += '<div class="report-section">';
   html += '<div class="report-section-head">'
     + '<div class="report-section-icon" style="background:#E7F5EE;color:var(--ok);">🎓</div>'
@@ -2581,7 +2584,6 @@ function renderReportsView(){
   }
   html += '</div>';
 
-  /* ===== Card: horas por analista ===== */
   html += '<div class="report-section">';
   html += '<div class="report-section-head">'
     + '<div class="report-section-icon" style="background:var(--brand-soft);color:var(--brand);">👤</div>'
@@ -2618,7 +2620,6 @@ function renderReportsView(){
   }
   html += '</div>';
 
-  /* ===== Card: Analista × Clientes ===== */
   html += '<div class="report-section">';
   html += '<div class="report-section-head">'
     + '<div class="report-section-icon" style="background:#EDE7F6;color:#7B4B94;">🔗</div>'
@@ -2655,7 +2656,6 @@ function renderReportsView(){
   return html;
 }
 
-/* Helper: card de KPI */
 function kpiCard(icon, label, value, sub, accent){
   return '<div class="kpi-card" style="--kpi-accent:'+accent+';">'
     + '<div class="kpi-icon">'+icon+'</div>'
@@ -3059,7 +3059,6 @@ function renderModal(){
   return '<div class="overlay"><div class="modal'+(m.type && (m.type.startsWith('schedule') || m.type==='card-closing-report' || m.type==='card-forecast-report' || m.type==='agenda-print')?' wide':'')+'">'+inner+'</div></div>';
 }
 
-/* Relatório de fechamento da implantação */
 function renderCardClosingReport(cardId){
   const c = getCard(cardId);
   if(!c) return '<div class="modal-header"><h3>Card não encontrado</h3><button class="modal-close" data-action="close-modal">✕</button></div>';
@@ -3134,7 +3133,6 @@ function renderCardClosingReport(cardId){
     + '</tbody></table>'
     + '<p style="margin-top:12px;font-weight:700;">Total de horas em agendas internas: '+minToHM(internalMinutes)+'</p>'
     + '</div>';
-  html += '<div class="form-actions no-print"><span style="flex:1;"></span><button class="btn btn-primary" data-action="print-report">🖨 Imprimir / Salvar PDF</button></div>';
   return html;
 }
 
@@ -3208,7 +3206,6 @@ function renderCardForecastReport(cardId){
     }
   }
   html += '</tbody></table></div>';
-  html += '<div class="form-actions no-print"><span style="flex:1;"></span><button class="btn btn-primary" data-action="print-report">🖨 Imprimir / Salvar PDF</button></div>';
   return html;
 }
 
@@ -3241,7 +3238,6 @@ function renderScheduleReportContent(scheduleId){
     + '<tr><td style="font-weight:700;">Usuário(s) treinado(s)</td><td>'+esc(users)+'</td></tr>'
     + '<tr><td style="font-weight:700;vertical-align:top;">Observações</td><td>'+esc(s.notes||'—')+'</td></tr>'
     + '</tbody></table></div>';
-  html += '<div class="form-actions no-print"><span style="flex:1;"></span><button class="btn btn-primary" data-action="print-report">🖨 Imprimir / Salvar PDF</button></div>';
   return html;
 }
 
@@ -3275,7 +3271,6 @@ function renderAgendaPrintReport(scheduleId){
 
   html += '<div class="agenda-print" id="print-report">';
 
-  /* Cabeçalho corporativo */
   html += '<div class="agenda-print-header">'
     +   '<div class="agenda-print-brand">'
     +     '<div class="agenda-print-brand-mark">NEO</div>'
@@ -3287,12 +3282,10 @@ function renderAgendaPrintReport(scheduleId){
     +   '<div class="agenda-print-badge">Nº '+esc(s.id.slice(-8).toUpperCase())+'</div>'
     + '</div>';
 
-  /* Corpo */
   html += '<div class="agenda-print-body">';
   html += '<h2 class="agenda-print-title">'+esc(scheduleDisplayTitle(s))+'</h2>';
   html += '<p class="agenda-print-subtitle">Documento emitido em '+emitido+' · Relatório de atendimento e registro de atividade</p>';
 
-  /* Resumo em cards */
   html += '<div class="agenda-print-summary">'
     +   '<div class="agenda-print-summary-item"><div class="lbl">Data</div><div class="val">'+scheduleDateText(s)+'</div></div>'
     +   '<div class="agenda-print-summary-item"><div class="lbl">Horário</div><div class="val">'+(s.allDay ? 'Dia todo' : (s.startTime+' – '+s.endTime))+'</div></div>'
@@ -3300,7 +3293,6 @@ function renderAgendaPrintReport(scheduleId){
     +   '<div class="agenda-print-summary-item"><div class="lbl">Status</div><div class="val"><span class="agenda-print-status '+statusClass+'">'+statusTxt+'</span></div></div>'
     + '</div>';
 
-  /* Seção: Identificação */
   html += '<div class="agenda-print-section-title">Identificação</div>';
   html += '<div class="agenda-print-grid">'
     +   '<div class="agenda-print-field"><span class="lbl">Cliente</span><span class="val">'+esc(client ? client.name : 'Interno / sem cliente')+(client && client.code ? ' <span style="color:var(--ink-faint);font-weight:500;">('+esc(client.code)+')</span>' : '')+'</span></div>'
@@ -3309,7 +3301,6 @@ function renderAgendaPrintReport(scheduleId){
     +   '<div class="agenda-print-field"><span class="lbl">Tipo / Categoria</span><span class="val">'+esc(tipoLabel)+' <span class="agenda-print-tag muted" style="margin-left:6px;">'+categoriaLabel+'</span></span></div>'
     + '</div>';
 
-  /* Seção: Atividade */
   html += '<div class="agenda-print-section-title">Atividade registrada</div>';
   html += '<div class="agenda-print-grid">';
   html += '<div class="agenda-print-field full"><span class="lbl">Módulo(s) trabalhado(s)</span><span class="val">'
@@ -3323,17 +3314,14 @@ function renderAgendaPrintReport(scheduleId){
         + '</span></div>';
   html += '</div>';
 
-  /* Observações */
   html += '<div class="agenda-print-section-title">Observações</div>';
   html += '<div class="agenda-print-notes">'+ (s.notes ? esc(s.notes) : '<span style="color:var(--ink-faint);">Sem observações registradas.</span>') +'</div>';
 
-  /* Assinaturas */
   html += '<div class="agenda-print-signatures">'
     +   '<div class="agenda-print-sign">Assinatura do Analista<small>'+analystNames+'</small></div>'
     +   '<div class="agenda-print-sign">Assinatura do Cliente<small>'+esc(client ? client.name : '—')+'</small></div>'
     + '</div>';
 
-  /* Rodapé */
   html += '<div class="agenda-print-footer">'
     +   '<span>Documento gerado automaticamente pelo sistema Implanta · NEO/REALTEC</span>'
     +   '<span>ID: '+esc(s.id)+'</span>'
@@ -3341,11 +3329,6 @@ function renderAgendaPrintReport(scheduleId){
 
   html += '</div>'; /* /agenda-print-body */
   html += '</div>'; /* /agenda-print */
-
-  html += '<div class="form-actions no-print"><span style="flex:1;"></span>'
-    +   '<button class="btn btn-ghost" data-action="close-modal">Fechar</button>'
-    +   '<button class="btn btn-primary" data-action="print-report">🖨 Imprimir / Salvar PDF</button>'
-    + '</div>';
 
   return html;
 }
@@ -3543,6 +3526,9 @@ document.addEventListener('click', function(e){
     ui.formErr='';
     ui.modal = {type, id:el.dataset.id, board:el.dataset.board, list:el.dataset.list, card:el.dataset.card};
     render();
+    if(type==='agenda-print' || type==='schedule-report' || type==='card-closing-report' || type==='card-forecast-report'){
+      setTimeout(()=>{ try{ window.print(); }catch(err){ console.warn('Falha ao abrir impressão', err); } }, 300);
+    }
   }
   else if(a==='close-modal' || a==='close-modal-bg'){ closeModal(); }
   else if(a==='confirm-ok'){ const d=ui.confirmDialog; ui.confirmDialog=null; if(d && d.onConfirm) d.onConfirm(); render(); }
@@ -3555,12 +3541,12 @@ document.addEventListener('click', function(e){
   else if(a==='card-conclude'){ ui.modal = {type:'card-conclude-confirm', payload:{cardId: el.dataset.id}}; render(); }
   else if(a==='card-conclude-confirm'){
     const id = ui.modal && ui.modal.payload ? ui.modal.payload.cardId : null;
-    if(id){ concludeCard(id); ui.modal = {type:'card-closing-report', payload:{cardId:id}}; }
+    if(id){ concludeCard(id); ui.modal = {type:'card-closing-report', payload:{cardId:id}}; render(); setTimeout(()=>{ try{ window.print(); }catch(err){} }, 300); return; }
     render();
   }
   else if(a==='card-reopen'){ const id = el.dataset.id; showConfirm('Reabrir esta implantação?', function(){ reopenCard(id); ui.modal=null; }); }
-  else if(a==='card-print-closing'){ ui.modal = {type:'card-closing-report', payload:{cardId: el.dataset.id}}; render(); }
-  else if(a==='card-print-forecast'){ ui.modal = {type:'card-forecast-report', payload:{cardId: el.dataset.id}}; render(); }
+  else if(a==='card-print-closing'){ ui.modal = {type:'card-closing-report', payload:{cardId: el.dataset.id}}; render(); setTimeout(()=>{ try{ window.print(); }catch(err){} }, 300); }
+  else if(a==='card-print-forecast'){ ui.modal = {type:'card-forecast-report', payload:{cardId: el.dataset.id}}; render(); setTimeout(()=>{ try{ window.print(); }catch(err){} }, 300); }
   else if(a==='attach-upload-click'){
     const cardId = el.dataset.card;
     const input = document.getElementById('attach-upload-input-'+cardId);
@@ -3594,7 +3580,6 @@ document.addEventListener('click', function(e){
     if(context==='card') ui.cardModuleTab = moduleId;
     else if(context==='schedule') ui.scheduleModuleTab = moduleId;
     else if(context==='forecast') ui.cardForecastModuleTab = moduleId;
-    /* Troca de guia é só visual - não precisa de render(), então nada mais na tela se perde. */
     const wrap = el.closest('.field') || el.closest('.compare-sections');
     if(wrap){
       wrap.querySelectorAll('.module-tab-btn').forEach(btn=> btn.classList.toggle('active', btn.dataset.moduleId===moduleId));
@@ -3691,7 +3676,7 @@ document.addEventListener('click', function(e){
     render();
   }
   else if(a==='internal-answer-no'){ const payload = ui.modal && ui.modal.payload ? ui.modal.payload : {}; const s = byId(state.schedules, payload.scheduleId); ui.modal = null; if(s){ s.keepUnlinkedInternal = true; } render(); }
-  else if(a==='after-complete-print'){ const payload = ui.modal && ui.modal.payload ? ui.modal.payload : {}; ui.modal = { type:'agenda-print', id: payload.scheduleId }; render(); }
+  else if(a==='after-complete-print'){ const payload = ui.modal && ui.modal.payload ? ui.modal.payload : {}; ui.modal = { type:'agenda-print', id: payload.scheduleId }; render(); setTimeout(()=>{ try{ window.print(); }catch(err){} }, 300); }
   else if(a==='after-complete-no-print'){ ui.modal = null; render(); }
   else if(a==='logout'){ logout(); }
   else { render(); }
@@ -3705,7 +3690,6 @@ document.addEventListener('change', function(e){
     if(file){ importClientsFromFile(file).catch(err=>{ showAlert('Erro: '+(err && err.message ? err.message : err)); }); }
   }
   else if(e.target.matches('input[type="file"][data-card]')){
-    /* Upload de anexo do card */
     const cardId = e.target.dataset.card;
     const form = e.target.closest('form') || document.querySelector('form[data-form="card-info"]');
     if(cardId){ handleCardAttachmentUpload(cardId, e.target, form); }
@@ -3949,6 +3933,7 @@ document.addEventListener('submit', async function(e){
     completeSchedule(id, minutes, fd.get('notes'));
     ui.modal = { type:'agenda-print', payload:{ scheduleId: id } };
     render();
+    setTimeout(()=>{ try{ window.print(); }catch(err){} }, 300);
   }
   else if(type==='product'){
     const name = fd.get('name').trim(); const color = fd.get('color'); const id = form.dataset.id;
