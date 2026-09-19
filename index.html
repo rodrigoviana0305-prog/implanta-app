@@ -1484,7 +1484,7 @@ function renderShell(){
 
 /* ============================= SIDEBAR ============================= */
 function renderSidebar(){
-  let html = '<div class="brand"><div class="brand-mark">RT</div><div class="brand-name">Implanta</div></div>';
+  let html = '<div class="brand"><div class="brand-mark">RT</div><div class="brand-name">NEO</div></div>';
   html += '<div class="side-section"><div class="side-label"><span>Implantações</span></div>';
   html += '<button class="side-item'+(ui.view==='board' && ui.boardAnalystFilter==='all'?' active':'')+'" data-action="board-analyst-filter" data-id="all">'
     + '<span>▦</span><span style="flex:1;">Todos os analistas</span>'
@@ -1511,9 +1511,12 @@ function renderSidebar(){
   html += navItem('settings','⚙','Configurações');
   html += '</div>';
   html += '<div class="side-spacer"></div>';
-  html += '<div class="side-foot" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">'
-    + '<span id="save-status-line" style="flex:1;">'+(cloudStatus==='connected' ? '☁ Sincronizado com a nuvem' : 'Dados salvos neste navegador.')+'</span>'
-    + '<button class="btn btn-sm btn-ghost" data-action="logout" title="Sair" style="color:#9FB6AC;">Sair</button>'
+  html += '<div class="side-foot" style="display:flex;flex-direction:column;gap:8px;">'
+    + '<img src="https://i.ibb.co/6P4qY8B/reallec-logo.png" alt="Realtec" style="max-width:100%;height:auto;opacity:.85;">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">'
+    +   '<span id="save-status-line" style="flex:1;">'+(cloudStatus==='connected' ? '☁ Sincronizado com a nuvem' : 'Dados salvos neste navegador.')+'</span>'
+    +   '<button class="btn btn-sm btn-ghost" data-action="logout" title="Sair" style="color:#9FB6AC;">Sair</button>'
+    + '</div>'
     + '</div>';
   return html;
 }
