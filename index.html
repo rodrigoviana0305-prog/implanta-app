@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Implanta — Gestão de Implantação</title>
+<title>NEO — Gestão de Implantação</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -403,6 +403,50 @@ th{background:#F1F6F9;color:#607587;}
   .search-box{min-width:0;}
 }
 
+
+/* ================= UNIFIED BOARD VIEW ================= */
+.board-analyst-filter{
+  min-width:190px;
+  border:1px solid #D6E1E8;
+  border-radius:9px;
+  padding:9px 34px 9px 11px;
+  background:#F7F9FB;
+  color:var(--ink);
+  font-weight:600;
+  outline:none;
+}
+.board-analyst-filter:focus{
+  border-color:#79AFCB;
+  box-shadow:0 0 0 3px rgba(11,92,142,.07);
+}
+.board-summary{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin:0 0 14px;
+  padding:11px 14px;
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:12px;
+  box-shadow:var(--shadow-1);
+}
+.board-summary-main{display:flex;align-items:center;gap:8px;min-width:0;}
+.board-summary-main strong{color:var(--brand-dark);}
+.board-summary-main span{color:var(--ink-soft);font-size:12.5px;}
+.board-summary-filter{font-size:12px;font-weight:700;color:var(--brand);background:var(--brand-soft);padding:5px 9px;border-radius:20px;white-space:nowrap;}
+.unified-board .list-col{min-width:285px;}
+.unified-board .list-cards{min-height:80px;}
+.analyst-meta{font-size:11px;font-weight:600;}
+.analyst-dot{width:7px;height:7px;border-radius:50%;flex:0 0 auto;}
+@media(max-width:1100px){
+  .board-analyst-filter{min-width:160px;}
+}
+@media(max-width:820px){
+  .board-summary{align-items:flex-start;flex-direction:column;}
+  .board-analyst-filter{order:3;width:100%;min-width:0;}
+}
+
 </style>
 </head>
 <body>
@@ -687,6 +731,7 @@ var ui = {
   calAnalyst: 'all',
   calCategory: 'all',
   calStart: startOfWeekISO(todayISO()),
+  boardAnalystFilter: 'all',
   settingsTab: 'analistas',
   formErr: ''
 };
@@ -920,12 +965,15 @@ function renderShell(){
 /* ============================= SIDEBAR ============================= */
 function renderSidebar(){
   let html = '<div class="brand"><div class="brand-mark">RT</div><div class="brand-name">Implanta</div></div>';
-  html += '<div class="side-section"><div class="side-label"><span>Quadros</span></div>';
+  html += '<div class="side-section"><div class="side-label"><span>Implantações</span></div>';
+  html += '<button class="side-item'+(ui.view==='board' && ui.boardAnalystFilter==='all'?' active':'')+'" data-action="board-analyst-filter" data-id="all">'
+    + '<span>▦</span><span style="flex:1;">Todos os analistas</span>'
+    + (totalPendingBoardBadge()? '<span class="side-badge">'+totalPendingBoardBadge()+'</span>' : '')
+    + '</button>';
   state.analysts.forEach(a=>{
-    const board = boardOfAnalyst(a.id);
     const pend = pendingConfirmations(a.id).length;
-    const active = ui.view==='board' && ui.currentBoardId===board.id;
-    html += '<button class="side-item'+(active?' active':'')+'" data-action="open-board" data-id="'+board.id+'">'
+    const active = ui.view==='board' && ui.boardAnalystFilter===a.id;
+    html += '<button class="side-item'+(active?' active':'')+'" data-action="board-analyst-filter" data-id="'+a.id+'">'
       + '<span class="side-dot" style="background:'+a.color+'"></span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+esc(a.name)+'</span>'
       + (pend? '<span class="side-badge">'+pend+'</span>' : '')
       + '</button>';
@@ -944,6 +992,8 @@ function renderSidebar(){
   html += '<div class="side-foot" id="save-status-line">'+(cloudStatus==='connected' ? '☁ Sincronizado com a nuvem' : 'Dados salvos neste navegador.')+'</div>';
   return html;
 }
+function totalPendingBoardBadge(){ return pendingConfirmations(null).length; }
+
 function navItem(view, icon, label, badge){
   const active = ui.view===view;
   return '<button class="side-item'+(active?' active':'')+'" data-action="goto-view" data-view="'+view+'">'
@@ -958,12 +1008,24 @@ function renderTopbar(){
   const hamburger = '<button class="topbar-hamburger" data-action="toggle-sidebar" title="Menu">☰</button>';
   let left = '';
   if(ui.view==='board'){
-    const board = getBoard(ui.currentBoardId);
-    const analyst = board ? getAnalyst(board.analystId) : null;
-    left = '<div class="topbar-title"><h2>'+esc(board? board.name : 'Nenhum quadro')+'</h2>'
-      + (analyst? '<div class="sub">Implantação • Analista responsável: '+esc(analyst.name)+'</div>' : '<div class="sub">Gestão de implantações Realtec</div>')+'</div>'
+    const selectedAnalyst = ui.boardAnalystFilter!=='all' ? getAnalyst(ui.boardAnalystFilter) : null;
+    const selectedBoard = selectedAnalyst ? boardOfAnalyst(selectedAnalyst.id) : null;
+    ui.currentBoardId = selectedBoard ? selectedBoard.id : (state.boards[0] ? state.boards[0].id : null);
+
+    left = '<div class="topbar-title"><h2>Implantações</h2>'
+      + '<div class="sub">'+(selectedAnalyst
+        ? 'Quadro consolidado • Analista: '+esc(selectedAnalyst.name)
+        : 'Quadro consolidado • Todos os analistas')+'</div></div>'
+      + '<select class="board-analyst-filter" data-action="board-analyst-filter" title="Filtrar analista">'
+      + '<option value="all"'+(ui.boardAnalystFilter==='all'?' selected':'')+'>Todos os analistas</option>';
+    state.analysts.forEach(a=>{
+      left += '<option value="'+a.id+'"'+(ui.boardAnalystFilter===a.id?' selected':'')+'>'+esc(a.name)+'</option>';
+    });
+    left += '</select>'
       + '<div class="search-box" style="margin-left:8px;"><span>🔎</span><input id="search-input" placeholder="Buscar cliente..." value="'+esc(ui.search)+'"></div>'
-      + (board? '<button class="btn btn-primary" data-action="open-modal" data-modal="card-new" data-board="'+board.id+'">+ Novo cliente</button>' : '');
+      + (selectedBoard
+        ? '<button class="btn btn-primary" data-action="open-modal" data-modal="card-new" data-board="'+selectedBoard.id+'">+ Novo cliente</button>'
+        : '');
   } else if(ui.view==='calendar'){
     left = '<div class="topbar-title"><h2>Agenda</h2><div class="sub">Visualize por analista ou em conjunto</div></div>';
   } else if(ui.view==='reports'){
@@ -1019,36 +1081,101 @@ function renderView(){
 
 /* ============================= BOARD VIEW ============================= */
 function renderBoardView(){
-  const board = getBoard(ui.currentBoardId) || state.boards[0];
-  if(!board) return '<div class="empty-state"><h3>Nenhum quadro selecionado</h3></div>';
-  ui.currentBoardId = board.id;
+  if(!state.analysts.length) return '<div class="empty-state"><h3>Nenhum quadro selecionado</h3></div>';
+
+  const filterId = ui.boardAnalystFilter || 'all';
+  const selectedAnalyst = filterId!=='all' ? getAnalyst(filterId) : null;
+  const selectedBoard = selectedAnalyst ? boardOfAnalyst(filterId) : null;
   const q = ui.search.trim().toLowerCase();
-  let html = '<div class="board-lists">';
-  board.lists.forEach((list, idx)=>{
-    let cards = cardsInBoard(board.id).filter(c=>c.listId===list.id);
-    if(q){ cards = cards.filter(c=>{ const cl=getClient(c.clientId); return cl && cl.name.toLowerCase().includes(q); }); }
-    html += '<div class="list-col">'
-      + '<div class="list-head"><span class="name">'+esc(list.name)+'</span><span class="count">'+cards.length+'</span>'
-      + '<button class="icon-btn btn-sm" style="width:26px;height:26px;" data-action="delete-list" data-board="'+board.id+'" data-list="'+list.id+'" title="Excluir lista">✕</button></div>'
-      + '<div class="list-cards" data-list-id="'+list.id+'" data-board-id="'+board.id+'">';
-    cards.forEach(c=> html += renderCardMini(c, idx));
-    html += '</div>'
-      + '<button class="add-card-btn" data-action="open-modal" data-modal="card-new" data-board="'+board.id+'" data-list="'+list.id+'">+ Adicionar cliente</button>'
-      + '</div>';
+
+  // The persisted boards remain one per analyst. The unified view only combines
+  // their lists/cards for display; no board records are merged or rewritten.
+  const boards = filterId==='all'
+    ? state.boards.slice()
+    : (selectedBoard ? [selectedBoard] : []);
+
+  if(!boards.length) return '<div class="empty-state"><h3>Nenhum quadro disponível</h3></div>';
+
+  // Build columns from list names, preserving the order used by the first board
+  // and adding any custom lists that exist on other boards.
+  const listDefs = [];
+  const seenNames = new Set();
+  boards.forEach(b=>{
+    (b.lists||[]).forEach(l=>{
+      if(!seenNames.has(l.name)){
+        seenNames.add(l.name);
+        listDefs.push(l.name);
+      }
+    });
   });
-  html += '<div class="list-col list-add-col"><button data-action="open-modal" data-modal="list-new" data-board="'+board.id+'">+ Nova lista</button></div>';
+
+  let html = '<div class="board-summary">'
+    + '<div class="board-summary-main"><strong>'+listDefs.length+' etapas</strong>'
+    + '<span>• '+state.cards.filter(c=>boards.some(b=>b.id===c.boardId)).filter(c=>{ const cl=getClient(c.clientId); return !q || (cl && cl.name.toLowerCase().includes(q)); }).length+' clientes em implantação</span></div>'
+    + '<span class="board-summary-filter">'+(selectedAnalyst ? 'Analista: '+esc(selectedAnalyst.name) : 'Todos os analistas')+'</span>'
+    + '</div>';
+
+  html += '<div class="board-lists unified-board">';
+  listDefs.forEach(listName=>{
+    let cards = [];
+    boards.forEach(b=>{
+      const list = (b.lists||[]).find(l=>l.name===listName);
+      if(!list) return;
+      cards = cards.concat(cardsInBoard(b.id).filter(c=>c.listId===list.id));
+    });
+    if(q){
+      cards = cards.filter(c=>{
+        const cl=getClient(c.clientId);
+        return cl && cl.name.toLowerCase().includes(q);
+      });
+    }
+
+    html += '<div class="list-col">'
+      + '<div class="list-head"><span class="name">'+esc(listName)+'</span><span class="count">'+cards.length+'</span>'
+      + (selectedBoard
+        ? (function(){
+            const realList = (selectedBoard.lists||[]).find(l=>l.name===listName);
+            return realList
+              ? '<button class="icon-btn btn-sm" style="width:26px;height:26px;" data-action="delete-list" data-board="'+selectedBoard.id+'" data-list="'+realList.id+'" title="Excluir lista">✕</button>'
+              : '';
+          })()
+        : '')
+      + '</div>'
+      + '<div class="list-cards" data-unified-list-name="'+esc(listName)+'">';
+
+    cards.forEach(c=> html += renderCardMini(c, listName, filterId));
+    html += '</div>';
+
+    if(selectedBoard){
+      const realList = (selectedBoard.lists||[]).find(l=>l.name===listName);
+      if(realList){
+        html += '<button class="add-card-btn" data-action="open-modal" data-modal="card-new" data-board="'+selectedBoard.id+'" data-list="'+realList.id+'">+ Adicionar cliente</button>';
+      }
+    }
+    html += '</div>';
+  });
+
+  if(selectedBoard){
+    html += '<div class="list-col list-add-col"><button data-action="open-modal" data-modal="list-new" data-board="'+selectedBoard.id+'">+ Nova lista</button></div>';
+  }
+
   html += '</div>';
   return html;
 }
-function renderCardMini(card, listIdx){
+function renderCardMini(card, listName, filterId){
   const client = getClient(card.clientId);
   const balance = cardBalanceHours(card);
   const due = pendingConfirmations(null).some(s=>s.cardId===card.id);
+  const board = getBoard(card.boardId);
+  const analyst = board ? getAnalyst(board.analystId) : null;
   let chips = '';
   (card.productTags||[]).forEach(tid=>{ const t=byId(state.productTags,tid); if(t) chips += '<span class="chip" style="background:'+t.color+'">'+esc(t.name)+'</span>'; });
   return '<div class="card-mini" draggable="true" data-card-id="'+card.id+'" data-action="open-card">'
     + (chips? '<div class="chip-row">'+chips+'</div>' : '')
     + '<div class="card-title">'+esc(client? client.name : '(cliente removido)')+'</div>'
+    + ((filterId==='all' && analyst)
+      ? '<div class="card-meta analyst-meta"><span class="analyst-dot" style="background:'+analyst.color+'"></span><span>'+esc(analyst.name)+'</span></div>'
+      : '')
     + '<div class="card-meta"><span class="balance-pill'+(balance<0?' neg':'')+'">'+minToHM(balance*60)+' saldo</span>'
     + (due? '<span class="pending-flag">● confirmar</span>' : '')
     + '</div></div>';
@@ -1777,7 +1904,28 @@ document.addEventListener('click', function(e){
   const a = el.dataset.action;
 
   if(a==='goto-view'){ ui.view = el.dataset.view; ui.showNotif=false; ui.sidebarOpen=false; render(); }
-  else if(a==='open-board'){ ui.view='board'; ui.currentBoardId = el.dataset.id; ui.search=''; ui.sidebarOpen=false; render(); }
+  else if(a==='open-board'){
+    ui.view='board';
+    const b = getBoard(el.dataset.id);
+    ui.boardAnalystFilter = b ? b.analystId : 'all';
+    ui.currentBoardId = b ? b.id : (state.boards[0] ? state.boards[0].id : null);
+    ui.search='';
+    ui.sidebarOpen=false;
+    render();
+  }
+  else if(a==='board-analyst-filter'){
+    const id = el.dataset.id || el.value || 'all';
+    ui.view='board';
+    ui.boardAnalystFilter = id;
+    if(id!=='all'){
+      const b = boardOfAnalyst(id);
+      ui.currentBoardId = b ? b.id : null;
+    } else {
+      ui.currentBoardId = state.boards[0] ? state.boards[0].id : null;
+    }
+    ui.search='';
+    render();
+  }
   else if(a==='toggle-sidebar'){ ui.sidebarOpen = !ui.sidebarOpen; render(); }
   else if(a==='close-sidebar'){ ui.sidebarOpen = false; render(); }
   else if(a==='open-modal'){
@@ -2218,7 +2366,20 @@ document.addEventListener('drop', function(e){
   if(list){
     e.preventDefault(); list.classList.remove('drag-over');
     const payload = e.dataTransfer.getData('text/plain');
-    if(payload && !payload.startsWith('sched:')){ moveCard(payload, list.dataset.boardId, list.dataset.listId); render(); }
+    if(payload && !payload.startsWith('sched:')){
+      const card = getCard(payload);
+      if(card){
+        const listName = list.dataset.unifiedListName;
+        const targetBoard = getBoard(card.boardId);
+        const targetList = targetBoard && targetBoard.lists.find(l=>l.name===listName);
+        if(targetList){
+          moveCard(payload, targetBoard.id, targetList.id);
+          render();
+        } else {
+          showAlert('Este estágio não existe no quadro do analista responsável pelo cliente.');
+        }
+      }
+    }
     return;
   }
   const daycol = e.target.closest('.cal-tg-daycol');
