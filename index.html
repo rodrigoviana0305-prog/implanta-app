@@ -447,6 +447,25 @@ th{background:#F1F6F9;color:#607587;}
   .board-analyst-filter{order:3;width:100%;min-width:0;}
 }
 
+
+/* ===== Atualização em tempo real — feedback sutil ===== */
+#app.rt-live-update{animation:rtLiveUpdate .42s ease-out;}
+@keyframes rtLiveUpdate{
+  0%{opacity:.88;}
+  100%{opacity:1;}
+}
+.live-sync-indicator{
+  position:fixed;right:16px;bottom:16px;z-index:9999;
+  display:flex;align-items:center;gap:7px;
+  padding:7px 10px;border:1px solid var(--border);
+  border-radius:999px;background:var(--surface);
+  color:var(--ink-soft);font:500 11px/1.1 var(--font-body);
+  box-shadow:var(--shadow-1);opacity:0;pointer-events:none;
+  transform:translateY(5px);transition:opacity .22s ease,transform .22s ease;
+}
+.live-sync-indicator.show{opacity:.92;transform:translateY(0);}
+.live-sync-dot{width:6px;height:6px;border-radius:50%;background:var(--ok);}
+
 </style>
 </head>
 <body>
@@ -532,6 +551,136 @@ var cloudErrorMsg = '';
 var saveStatus = 'idle'; // 'idle' | 'pending' | 'saving' | 'saved' | 'error'
 var saveTimer = null;
 var lastKnownUpdatedAt = null; // updated_at of the cloud row as of our last successful read/write
+
+var realtimeChannel = null;
+var realtimePollTimer = null;
+var realtimeRefreshInFlight = false;
+var realtimeRefreshQueued = false;
+var realtimeLastRefreshAt = 0;
+var REALTIME_POLL_MS = 20000;
+var REALTIME_MIN_REFRESH_GAP_MS = 1200;
+
+function showLiveSyncIndicator(){
+  let el = document.getElementById('live-sync-indicator');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'live-sync-indicator';
+    el.className = 'live-sync-indicator';
+    el.innerHTML = '<span class="live-sync-dot"></span><span>Informações atualizadas</span>';
+    document.body.appendChild(el);
+  }
+  el.classList.remove('show');
+  void el.offsetWidth;
+  el.classList.add('show');
+  clearTimeout(el._hideTimer);
+  el._hideTimer = setTimeout(()=>el.classList.remove('show'), 1100);
+}
+
+function flashLiveUpdate(){
+  const app = document.getElementById('app');
+  if(!app) return;
+  app.classList.remove('rt-live-update');
+  void app.offsetWidth;
+  app.classList.add('rt-live-update');
+  setTimeout(()=>app.classList.remove('rt-live-update'), 500);
+}
+
+function renderWithoutPersist(){
+  const app = document.getElementById('app');
+  if(!app) return;
+  app.innerHTML = renderShell();
+  if(ui._focus){
+    const el = document.getElementById(ui._focus.id);
+    if(el){ el.focus(); try{ el.setSelectionRange(ui._focus.pos, ui._focus.pos); }catch(e){} }
+  }
+}
+
+async function refreshFromCloudIfChanged(source){
+  if(!sbClient || cloudStatus!=='connected') return false;
+  if(realtimeRefreshInFlight){
+    realtimeRefreshQueued = true;
+    return false;
+  }
+  const now = Date.now();
+  if(now - realtimeLastRefreshAt < REALTIME_MIN_REFRESH_GAP_MS) return false;
+
+  realtimeRefreshInFlight = true;
+  realtimeLastRefreshAt = now;
+  let changed = false;
+  try{
+    const {data, error} = await sbClient.from('app_state')
+      .select('data, updated_at').eq('id', 1).maybeSingle();
+    if(error) throw error;
+    if(!data || !data.data || !data.updated_at) return false;
+    if(sameInstant(data.updated_at, lastKnownUpdatedAt)) return false;
+
+    const remote = normalizeState(data.data);
+    // Se há uma alteração local ainda aguardando envio, preservamos a alteração local.
+    // Quando não há alteração local pendente, o estado remoto substitui o estado exibido,
+    // permitindo inclusive que exclusões feitas por outro usuário desapareçam imediatamente.
+    if(saveStatus==='pending' || saveStatus==='saving'){
+      state = mergeStates(remote, state);
+    }else{
+      state = remote;
+    }
+    lastKnownUpdatedAt = data.updated_at;
+    saveStatus = 'saved';
+    changed = true;
+
+    // Atualiza a tela sem disparar um novo salvamento só por ter recebido dados.
+    renderWithoutPersist();
+    flashLiveUpdate();
+    showLiveSyncIndicator();
+    updateSaveStatusLine();
+  }catch(e){
+    console.warn('Falha na atualização em tempo real', source || 'refresh', e);
+  }finally{
+    realtimeRefreshInFlight = false;
+    if(realtimeRefreshQueued){
+      realtimeRefreshQueued = false;
+      setTimeout(()=>refreshFromCloudIfChanged('queued'), 0);
+    }
+  }
+  return changed;
+}
+
+function stopRealtimeSync(){
+  if(realtimeChannel && sbClient){
+    try{ sbClient.removeChannel(realtimeChannel); }catch(e){}
+  }
+  realtimeChannel = null;
+  if(realtimePollTimer){ clearInterval(realtimePollTimer); realtimePollTimer = null; }
+}
+
+function startRealtimeSync(){
+  stopRealtimeSync();
+  if(!sbClient || cloudStatus!=='connected') return;
+
+  // Atualização instantânea para todos os clientes conectados ao mesmo projeto Supabase.
+  try{
+    realtimeChannel = sbClient.channel('implanta-app-state-live')
+      .on('postgres_changes',
+        {event:'UPDATE',schema:'public',table:'app_state',filter:'id=eq.1'},
+        payload=>{
+          const updatedAt = payload && payload.new ? payload.new.updated_at : null;
+          if(updatedAt && !sameInstant(updatedAt, lastKnownUpdatedAt)){
+            refreshFromCloudIfChanged('realtime');
+          }
+        })
+      .subscribe(status=>{
+        if(status==='SUBSCRIBED') console.info('Sincronização em tempo real ativa.');
+      });
+  }catch(e){
+    console.warn('Não foi possível iniciar a sincronização em tempo real', e);
+  }
+
+  // Fallback silencioso: garante atualização mesmo se o Realtime não estiver habilitado
+  // para a tabela no projeto Supabase.
+  realtimePollTimer = setInterval(()=>{
+    if(document.visibilityState==='visible') refreshFromCloudIfChanged('poll');
+  }, REALTIME_POLL_MS);
+}
+
 
 var state = loadLocalState();
 
@@ -651,6 +800,9 @@ document.addEventListener('visibilitychange', function(){
     clearTimeout(saveTimer);
     cloudSave();
   }
+  if(document.visibilityState==='visible' && sbClient && cloudStatus==='connected'){
+    refreshFromCloudIfChanged('visibility');
+  }
 });
 async function connectCloud(url, anonKey){
   cloudConfig = {url, anonKey};
@@ -661,6 +813,7 @@ async function connectCloud(url, anonKey){
   await boot();
 }
 function disconnectCloud(){
+  stopRealtimeSync();
   cloudConfig = null; sbClient = null; cloudStatus = 'local'; cloudErrorMsg=''; usingDefaultCloud = false;
   localStorage.removeItem(CLOUD_CONFIG_KEY);
   localStorage.setItem(CLOUD_DISABLED_KEY, '1');
@@ -698,6 +851,7 @@ async function boot(){
         lastKnownUpdatedAt = nowIso;
       }
       cloudStatus = 'connected';
+      startRealtimeSync();
     }catch(e){
       console.warn('Falha ao conectar à nuvem', e);
       cloudStatus = 'error';
@@ -1903,7 +2057,10 @@ document.addEventListener('click', function(e){
   if(!el){ if(needsRender) render(); return; }
   const a = el.dataset.action;
 
-  if(a==='goto-view'){ ui.view = el.dataset.view; ui.showNotif=false; ui.sidebarOpen=false; render(); }
+  if(a==='goto-view'){
+    ui.view = el.dataset.view; ui.showNotif=false; ui.sidebarOpen=false;
+    refreshFromCloudIfChanged('view-change').finally(()=>render());
+  }
   else if(a==='open-board'){
     ui.view='board';
     const b = getBoard(el.dataset.id);
@@ -1911,7 +2068,7 @@ document.addEventListener('click', function(e){
     ui.currentBoardId = b ? b.id : (state.boards[0] ? state.boards[0].id : null);
     ui.search='';
     ui.sidebarOpen=false;
-    render();
+    refreshFromCloudIfChanged('board-change').finally(()=>render());
   }
   else if(a==='board-analyst-filter'){
     const id = el.dataset.id || el.value || 'all';
@@ -1924,7 +2081,7 @@ document.addEventListener('click', function(e){
       ui.currentBoardId = state.boards[0] ? state.boards[0].id : null;
     }
     ui.search='';
-    render();
+    refreshFromCloudIfChanged('analyst-filter').finally(()=>render());
   }
   else if(a==='toggle-sidebar'){ ui.sidebarOpen = !ui.sidebarOpen; render(); }
   else if(a==='close-sidebar'){ ui.sidebarOpen = false; render(); }
