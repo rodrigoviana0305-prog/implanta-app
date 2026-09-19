@@ -1183,8 +1183,25 @@ function scheduleAnalystNames(s){
 }
 function scheduleMinutes(s){
   if(s.deductMinutes!=null) return s.deductMinutes;
-  if(s.allDay) return 8*60;
+  if(s.allDay) return 8*60*scheduleDayCount(s);
   return timeToMin(s.endTime)-timeToMin(s.startTime);
+}
+function scheduleDayCount(s){
+  if(!s.allDay) return 1;
+  const endD = s.endDate || s.date;
+  const start = new Date(s.date+'T00:00:00');
+  const end = new Date(endD+'T00:00:00');
+  const diff = Math.round((end-start)/86400000)+1;
+  return Math.max(1, diff);
+}
+function scheduleDateText(s){
+  if(s.allDay && s.endDate && s.endDate!==s.date) return fmtDateBR(s.date)+' a '+fmtDateBR(s.endDate);
+  return fmtDateBR(s.date);
+}
+function scheduleSpansDate(s, dateISO){
+  if(!s.allDay) return s.date===dateISO;
+  const endD = s.endDate || s.date;
+  return dateISO>=s.date && dateISO<=endD;
 }
 
 function unlinkedInternalSchedulesForClient(clientId){
@@ -1226,7 +1243,7 @@ function scheduleConflict(analystIds, date, start, end, excludeId, allDay){
     return sIds.some(id=> analystIds.includes(id));
   });
 }
-function scheduleIsDue(s){ if(s.status!=='pendente') return false; const end=new Date(s.date+'T'+(s.allDay ? '23:59' : (s.endTime||'00:00'))+':00'); return end.getTime() < Date.now(); }
+function scheduleIsDue(s){ if(s.status!=='pendente') return false; const dueDate = s.allDay ? (s.endDate||s.date) : s.date; const end=new Date(dueDate+'T'+(s.allDay ? '23:59' : (s.endTime||'00:00'))+':00'); return end.getTime() < Date.now(); }
 function pendingConfirmations(analystId){ return state.schedules.filter(s=> scheduleIsDue(s) && (!analystId || scheduleAnalystIds(s).includes(analystId))); }
 function addHistory(card, text){ card.history = card.history||[]; card.history.unshift({ts:Date.now(), text}); }
 function colorForIndex(i){ return PALETTE[i % PALETTE.length]; }
@@ -1380,12 +1397,12 @@ function updateSchedule(id, patch){ const s=byId(state.schedules,id); if(s) Obje
 function completeSchedule(id, deductMinutes, note){
   const s=byId(state.schedules,id); if(!s) return;
   s.status='concluida'; s.deductMinutes=deductMinutes; if(note) s.notes = note;
-  if(s.cardId){ const c=getCard(s.cardId); if(c) addHistory(c, 'Agenda concluída ('+fmtDateBR(s.date)+(s.allDay? ' (dia todo)' : ' '+s.startTime+'–'+s.endTime)+') — '+minToHM(deductMinutes)+' abatido(s)'); }
+  if(s.cardId){ const c=getCard(s.cardId); if(c) addHistory(c, 'Agenda concluída ('+scheduleDateText(s)+(s.allDay? ' (dia todo)' : ' '+s.startTime+'–'+s.endTime)+') — '+minToHM(deductMinutes)+' abatido(s)'); }
 }
 function markNotDone(id){
   const s=byId(state.schedules,id); if(!s) return;
   s.status='nao_realizada';
-  if(s.cardId){ const c=getCard(s.cardId); if(c) addHistory(c, 'Agenda marcada como não realizada ('+fmtDateBR(s.date)+(s.allDay? ' (dia todo)' : ' '+s.startTime+'–'+s.endTime)+')'); }
+  if(s.cardId){ const c=getCard(s.cardId); if(c) addHistory(c, 'Agenda marcada como não realizada ('+scheduleDateText(s)+(s.allDay? ' (dia todo)' : ' '+s.startTime+'–'+s.endTime)+')'); }
 }
 function revertToPending(id){
   const s=byId(state.schedules,id); if(!s || s.status==='pendente') return;
@@ -1395,8 +1412,8 @@ function revertToPending(id){
   if(s.cardId){
     const c=getCard(s.cardId);
     if(c){
-      if(wasConcluida) addHistory(c, 'Conclusão revertida ('+fmtDateBR(s.date)+') — '+minToHM(deducted||0)+' estornado(s)');
-      else addHistory(c, 'Agenda revertida para pendente ('+fmtDateBR(s.date)+')');
+      if(wasConcluida) addHistory(c, 'Conclusão revertida ('+scheduleDateText(s)+') — '+minToHM(deducted||0)+' estornado(s)');
+      else addHistory(c, 'Agenda revertida para pendente ('+scheduleDateText(s)+')');
     }
   }
 }
@@ -1534,7 +1551,7 @@ function renderNotifPanel(){
       const title = scheduleDisplayTitle(s);
       html += '<div class="notif-item">'
         + '<div style="font-weight:700;font-size:13px;">'+esc(title)+'</div>'
-        + '<div style="font-size:11.5px;color:var(--ink-soft);margin:2px 0 6px;">'+fmtDateBR(s.date)+' '+(s.allDay?'(dia todo)':s.startTime+'–'+s.endTime)+' · '+esc(scheduleAnalystNames(s))+'</div>'
+        + '<div style="font-size:11.5px;color:var(--ink-soft);margin:2px 0 6px;">'+scheduleDateText(s)+' '+(s.allDay?'(dia todo)':s.startTime+'–'+s.endTime)+' · '+esc(scheduleAnalystNames(s))+'</div>'
         + '<div class="row-actions">'
           + '<button class="btn btn-sm btn-primary" data-action="open-modal" data-modal="confirm-complete" data-id="'+s.id+'">Confirmar</button>'
           + '<button class="btn btn-sm btn-ghost" data-action="mark-not-done" data-id="'+s.id+'">Não realizada</button>'
@@ -1759,7 +1776,7 @@ function renderSchedRow(s){
   return '<div class="sched-row'+(due?' due':'')+'">'
     + '<div class="sched-main">'
     + (title? '<div style="font-weight:800;font-size:13px;color:var(--brand-dark);">'+esc(title)+'</div>' : '')
-    + '<div class="sched-time">'+fmtDateBR(s.date)+' · '+(s.allDay?'<span class="allday-badge">Dia todo</span>':s.startTime+'–'+s.endTime)
+    + '<div class="sched-time">'+scheduleDateText(s)+' · '+(s.allDay?'<span class="allday-badge">Dia todo</span>':s.startTime+'–'+s.endTime)
     + ' <span class="badge '+s.status+'">'+statusLabel(s.status)+'</span>'
     + ' <span class="badge" style="background:'+(isServico?'#EDE7F6':(isInterna?'var(--gold-soft)':'var(--brand-soft)'))+';color:'+(isServico?'#7B4B94':(isInterna?'var(--gold)':'var(--brand)'))+';">'+esc(s.type)+'</span>'
     + (isOrphanInternal?' <span class="nao-abatido-pill">Não abatido</span>':'')+'</div>'
@@ -1863,11 +1880,11 @@ function renderCalendarView(){
   });
   html += '</div>';
 
-  let anyAllday = days.some(d=> state.schedules.some(s=>s.date===d && s.allDay && matchesAnalyst(s) && inCategory(s)));
+  let anyAllday = days.some(d=> state.schedules.some(s=>s.allDay && scheduleSpansDate(s,d) && matchesAnalyst(s) && inCategory(s)));
   if(anyAllday){
     html += '<div class="cal-tg-headerrow" style="background:var(--surface-2);"><div style="padding:6px 8px;font-size:10px;color:var(--ink-faint);font-weight:800;text-transform:uppercase;display:flex;align-items:center;">Dia todo</div>';
     days.forEach(d=>{
-      const dayAllday = state.schedules.filter(s=>s.date===d && s.allDay && matchesAnalyst(s) && inCategory(s));
+      const dayAllday = state.schedules.filter(s=>s.allDay && scheduleSpansDate(s,d) && matchesAnalyst(s) && inCategory(s));
       html += '<div style="min-height:'+alldayHeight+'px;border-left:1px solid var(--border);padding:3px 4px;display:flex;flex-direction:column;gap:3px;">';
       dayAllday.forEach(s=>{
         const internal = isInternalType(s.type);
@@ -1982,7 +1999,7 @@ function renderReportsView(){
       const cl = getClient(s.clientId);
       const dur = scheduleMinutes(s);
       html += '<tr>'
-        + '<td>'+fmtDateBR(s.date)+'</td>'
+        + '<td>'+scheduleDateText(s)+'</td>'
         + '<td>'+esc(cl?cl.name:'—')+'</td>'
         + '<td>'+esc(scheduleAnalystNames(s))+'</td>'
         + '<td>'+(s.allDay?'Dia todo':s.startTime+'–'+s.endTime)+'</td>'
@@ -2045,7 +2062,7 @@ function renderReportsView(){
     const naoAbatido = !s.cardId;
     html += '<tr>'
       + '<td>'+esc(client?client.name:'—')+(naoAbatido?' <span class="nao-abatido-pill">Não abatido</span>':'')+'</td>'
-      + '<td>'+esc(scheduleAnalystNames(s))+'</td><td>'+fmtDateBR(s.date)+'</td><td>'+(s.allDay?'Dia todo':s.startTime+'–'+s.endTime)+'</td><td>'+esc(s.type)+'</td><td>'+esc(s.notes||'—')+'</td></tr>';
+      + '<td>'+esc(scheduleAnalystNames(s))+'</td><td>'+scheduleDateText(s)+'</td><td>'+(s.allDay?'Dia todo':s.startTime+'–'+s.endTime)+'</td><td>'+esc(s.type)+'</td><td>'+esc(s.notes||'—')+'</td></tr>';
   });
   html += '</tbody></table></div>';
   return html;
@@ -2408,7 +2425,7 @@ function renderModal(){
     const s = byId(state.schedules, m.id);
     const dur = scheduleMinutes(s);
     inner = '<div class="modal-header"><h3>Confirmar conclusão</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
-      + '<p class="hint" style="margin-top:-6px;">'+(s.title? '<strong>'+esc(s.title)+'</strong> · ':'')+fmtDateBR(s.date)+' · '+(s.allDay?'Dia todo':s.startTime+'–'+s.endTime)+' · '+esc(s.type)+'</p>'
+      + '<p class="hint" style="margin-top:-6px;">'+(s.title? '<strong>'+esc(s.title)+'</strong> · ':'')+scheduleDateText(s)+' · '+(s.allDay?'Dia todo':s.startTime+'–'+s.endTime)+' · '+esc(s.type)+'</p>'
       + '<form data-form="confirm-complete" data-id="'+s.id+'">'
       + '<div class="field"><label>Minutos a abater do saldo</label><input type="number" min="0" name="deductMinutes" value="'+dur+'"></div>'
       + '<div class="field"><label>Observação (opcional)</label><textarea name="notes">'+esc(s.notes||'')+'</textarea></div>'
@@ -2422,7 +2439,7 @@ function renderModal(){
     inner = '<div class="modal-header"><h3>Vincular a um quadro?</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
       + '<div class="choice-box">'
         + '<div class="choice-title">'+esc(client?client.name:'(cliente)')+' — '+esc(s?s.type:'')+'</div>'
-        + '<div class="choice-desc">'+fmtDateBR(s?s.date:'')+' · '+(s&&s.allDay?'Dia todo':(s?s.startTime+'–'+s.endTime:''))+' · '+minToHM(dur)+' · '+esc(s?scheduleAnalystNames(s):'')+'</div>'
+        + '<div class="choice-desc">'+(s?scheduleDateText(s):'')+' · '+(s&&s.allDay?'Dia todo':(s?s.startTime+'–'+s.endTime:''))+' · '+minToHM(dur)+' · '+esc(s?scheduleAnalystNames(s):'')+'</div>'
         + '<div class="choice-desc" style="margin-top:8px;">Esta é uma <strong>agenda interna</strong> vinculada a um cliente. Deseja <strong>criar um card/quadro</strong> para registrar as horas e abater do saldo contratado?</div>'
         + '<div class="choice-desc" style="margin-top:6px;background:#fff;border:1px dashed var(--border);border-radius:8px;padding:8px 10px;">'
           + '<strong>Sim</strong> → cria card no quadro do analista e as horas <strong>consomem o saldo</strong>.<br>'
@@ -2441,7 +2458,7 @@ function renderModal(){
     inner = '<div class="modal-header"><h3>✓ Agenda concluída</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
       + '<div class="choice-box">'
         + '<div class="choice-title">'+esc(scheduleDisplayTitle(s))+'</div>'
-        + '<div class="choice-desc">'+fmtDateBR(s.date)+' · '+(s.allDay?'Dia todo':s.startTime+'–'+s.endTime)+' · '+minToHM(dur)+' abatido(s) · '+esc(scheduleAnalystNames(s))+'</div>'
+        + '<div class="choice-desc">'+scheduleDateText(s)+' · '+(s.allDay?'Dia todo':s.startTime+'–'+s.endTime)+' · '+minToHM(dur)+' abatido(s) · '+esc(scheduleAnalystNames(s))+'</div>'
         + (client?'<div class="choice-desc" style="margin-top:8px;">Cliente: <strong>'+esc(client.name)+'</strong></div>':'')
         + '<div class="choice-desc" style="margin-top:8px;">Deseja <strong>imprimir o relatório</strong> deste atendimento agora?</div>'
       + '</div>'
@@ -2472,7 +2489,7 @@ function renderScheduleReportContent(scheduleId){
     + '<table><tbody>'
     + '<tr><td style="font-weight:700;white-space:nowrap;">Cliente</td><td>'+esc(client?client.name:'Interno / sem cliente')+'</td></tr>'
     + '<tr><td style="font-weight:700;">Analista(s)</td><td>'+analystsList+'</td></tr>'
-    + '<tr><td style="font-weight:700;">Data</td><td>'+fmtDateBR(s.date)+'</td></tr>'
+    + '<tr><td style="font-weight:700;">Data</td><td>'+scheduleDateText(s)+'</td></tr>'
     + '<tr><td style="font-weight:700;">Horário</td><td>'+(s.allDay? 'Dia todo ('+minToHM(duration)+')' : s.startTime+' – '+s.endTime+' ('+minToHM(duration)+')')+'</td></tr>'
     + '<tr><td style="font-weight:700;">Tipo de agenda</td><td>'+esc(s.type)+(isOrphanInternal?' — <em>não abatido</em>':'')+'</td></tr>'
     + '<tr><td style="font-weight:700;">Módulo(s) abordado(s)</td><td>'+esc(modules)+'</td></tr>'
@@ -2523,6 +2540,7 @@ function renderScheduleForm(m){
     clientId: effClientId,
     analystIds: draft ? (draft.analystIds || (draft.analystId ? [draft.analystId] : [])) : (editingAnalystIds.length ? editingAnalystIds : (fixedAnalystId? [fixedAnalystId] : (m.prefillAnalyst? [m.prefillAnalyst] : []))),
     date: draft ? draft.date : (editing ? editing.date : (m.prefillDate || todayISO())),
+    endDate: draft ? (draft.endDate||draft.date) : (editing ? (editing.endDate||editing.date) : (m.prefillDate || todayISO())),
     allDay: draft ? formValuesAllDay(draft) : (editing ? !!editing.allDay : false),
     startTime: draft ? draft.startTime : (editing ? editing.startTime : (m.prefillStart || '09:00')),
     endTime: draft ? draft.endTime : (editing ? editing.endTime : (m.prefillEnd || '10:00')),
@@ -2580,18 +2598,26 @@ function renderScheduleForm(m){
   html += '</div><div class="multi-hint">Marque um ou mais analistas. A agenda aparecerá para todos.</div></div>';
 
   html += '<div class="field-row">'
-    + '<div class="field"><label>Data</label><input type="date" name="date" value="'+esc(eff.date)+'"></div>'
+    + '<div class="field"><label>'+(eff.allDay?'Dia inicial':'Data')+'</label><input type="date" name="date" value="'+esc(eff.date)+'"></div>'
     + '<div class="field" style="justify-content:flex-end;">'
     +   '<label class="allday-toggle"><input type="checkbox" name="allDay" '+(eff.allDay?'checked':'')+'> Dia todo</label>'
     + '</div>'
     + '</div>';
 
-  html += '<div class="field-row" id="schedule-time-row" style="'+(eff.allDay?'display:none;':'')+'">'
-    + '<div class="field"><label>Início</label><input type="time" name="startTime" value="'+esc(eff.startTime)+'"></div>'
-    + '<div class="field"><label>Fim</label><input type="time" name="endTime" value="'+esc(eff.endTime)+'"></div>'
-    + '</div>';
   if(eff.allDay){
-    html += '<div class="allday-banner">📅 <span class="allday-time">Agenda de dia todo</span> — considera-se 8h corridas para abatimento, sem horário específico.</div>';
+    html += '<div class="field-row" id="schedule-enddate-row">'
+      + '<div class="field"><label>Dia final</label><input type="date" name="endDate" value="'+esc(eff.endDate)+'"></div>'
+      + '</div>';
+    const daysCount = Math.max(1, Math.round((new Date((eff.endDate||eff.date)+'T00:00:00') - new Date(eff.date+'T00:00:00'))/86400000)+1);
+    const bannerDetail = daysCount>1
+      ? (daysCount+' dias corridos — considera-se 8h por dia ('+minToHM(8*60*daysCount)+' no total) para abatimento.')
+      : 'considera-se 8h corridas para abatimento, sem horário específico.';
+    html += '<div class="allday-banner">📅 <span class="allday-time">Agenda de dia todo</span> — '+bannerDetail+'</div>';
+  } else {
+    html += '<div class="field-row" id="schedule-time-row">'
+      + '<div class="field"><label>Início</label><input type="time" name="startTime" value="'+esc(eff.startTime)+'"></div>'
+      + '<div class="field"><label>Fim</label><input type="time" name="endTime" value="'+esc(eff.endTime)+'"></div>'
+      + '</div>';
   }
 
   html += '<div class="field"><label>Tipo</label><select name="type">';
@@ -3101,6 +3127,8 @@ document.addEventListener('submit', async function(e){
     const clientId = card ? card.clientId : (fd.get('clientId') || null);
     const date = fd.get('date');
     const allDay = fd.get('allDay')==='on';
+    let endDate = allDay ? (fd.get('endDate')||date) : date;
+    if(allDay && endDate < date){ ui.formErr = 'O dia final não pode ser antes do dia inicial.'; render(); return; }
     const startTime = allDay ? '00:00' : (fd.get('startTime')||'09:00');
     const endTime = allDay ? '23:59' : (fd.get('endTime')||'10:00');
     const typeName = fd.get('type');
@@ -3150,6 +3178,7 @@ document.addEventListener('submit', async function(e){
       clientId: clientId,
       cardId: resolvedCardId,
       date: date,
+      endDate: allDay ? endDate : date,
       allDay: allDay,
       startTime: startTime,
       endTime: endTime,
