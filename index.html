@@ -56,7 +56,6 @@ h1,h2,h3,h4{ font-family:var(--font-head); margin:0; color:var(--ink); }
 ::-webkit-scrollbar-track{ background:transparent; }
 
 .shell{ display:flex; height:100vh; width:100%; overflow:hidden; }
-
 .sidebar{
   width:230px; flex:0 0 230px; background:var(--brand-dark); color:#EFF4F1;
   display:flex; flex-direction:column; padding:18px 14px; gap:18px; overflow-y:auto;
@@ -126,6 +125,7 @@ h1,h2,h3,h4{ font-family:var(--font-head); margin:0; color:var(--ink); }
 .card-mini{ background:var(--surface); border-radius:9px; padding:10px 11px; box-shadow:var(--shadow-1); cursor:grab; border:1px solid transparent; display:flex; flex-direction:column; gap:6px; }
 .card-mini:hover{ border-color:var(--border); }
 .card-mini.dragging{ opacity:.4; }
+.card-mini.done{ border-left:4px solid var(--ok); }
 .chip-row{ display:flex; flex-wrap:wrap; gap:4px; }
 .chip{ font-size:10.5px; font-weight:700; padding:2px 7px; border-radius:20px; color:#fff; letter-spacing:.2px; }
 .card-title{ font-weight:700; font-size:13.5px; color:var(--ink); }
@@ -133,6 +133,7 @@ h1,h2,h3,h4{ font-family:var(--font-head); margin:0; color:var(--ink); }
 .balance-pill{ font-weight:700; padding:1px 7px; border-radius:20px; background:var(--ok-soft); color:var(--ok); }
 .balance-pill.neg{ background:var(--danger-soft); color:var(--danger); }
 .pending-flag{ color:var(--danger); font-weight:700; display:flex; align-items:center; gap:3px; }
+.done-flag{ color:var(--ok); font-weight:700; display:flex; align-items:center; gap:3px; }
 .add-card-btn{ margin:4px 10px 10px; padding:8px 10px; border-radius:8px; background:transparent; border:1px dashed var(--border); color:var(--ink-soft); text-align:left; font-size:13px; }
 .add-card-btn:hover{ background:var(--surface); color:var(--ink); }
 .list-add-col{ width:230px; flex:0 0 230px; }
@@ -147,7 +148,7 @@ h1,h2,h3,h4{ font-family:var(--font-head); margin:0; color:var(--ink); }
 .overlay.card-overlay{ z-index:90; }
 .overlay.confirm-overlay{ z-index:300; }
 .modal{ background:var(--surface); border-radius:var(--radius-l); box-shadow:var(--shadow-2); width:100%; max-width:520px; padding:22px 24px 24px; }
-.modal.wide{ max-width:680px; }
+.modal.wide{ max-width:760px; }
 .modal-header{ display:flex; align-items:flex-start; gap:10px; margin-bottom:14px; }
 .modal-header h3{ font-size:18px; flex:1; }
 .modal-close{ background:none;border:none;font-size:20px;color:var(--ink-faint); line-height:1; padding:2px 4px;}
@@ -168,15 +169,26 @@ h1,h2,h3,h4{ font-family:var(--font-head); margin:0; color:var(--ink); }
 .error-msg{ background:var(--danger-soft); color:var(--danger); border-radius:8px; padding:8px 11px; font-size:12.5px; font-weight:600; margin-bottom:12px; white-space:pre-line; }
 input[type=color]{ width:38px; height:32px; padding:2px; border:1px solid var(--border); border-radius:7px; background:var(--surface-2); }
 
-.card-modal-top{ display:flex; align-items:flex-start; gap:12px; }
 .card-modal-meta{ font-size:12.5px; color:var(--ink-soft); display:flex; gap:14px; flex-wrap:wrap; margin-top:4px; }
-.tabs{ display:flex; gap:4px; border-bottom:1px solid var(--border); margin:16px 0 16px; }
+.tabs{ display:flex; gap:4px; border-bottom:1px solid var(--border); margin:16px 0 16px; flex-wrap:wrap; }
 .tab-btn{ background:none; border:none; padding:9px 4px; margin-right:16px; font-weight:700; color:var(--ink-faint); border-bottom:2px solid transparent; }
 .tab-btn.active{ color:var(--brand); border-color:var(--brand); }
-.balance-box{ display:flex; gap:10px; margin-bottom:16px; }
-.balance-item{ flex:1; background:var(--surface-2); border-radius:10px; padding:11px 13px; text-align:center; }
+.balance-box{ display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+.balance-item{ flex:1; background:var(--surface-2); border-radius:10px; padding:11px 13px; text-align:center; min-width:100px; }
 .balance-item .num{ font-family:var(--font-head); font-weight:800; font-size:19px; }
 .balance-item .lbl{ font-size:11px; color:var(--ink-soft); margin-top:2px; }
+
+.progress-bar-outer{
+  background:var(--surface-2); border-radius:999px; height:14px; overflow:hidden;
+  border:1px solid var(--border); margin:6px 0 10px;
+}
+.progress-bar-inner{
+  height:100%; border-radius:999px; transition:width .3s ease; background:var(--ok);
+}
+.progress-bar-inner.warn{ background:var(--gold); }
+.progress-bar-inner.danger{ background:var(--danger); }
+.progress-meta{ display:flex; justify-content:space-between; font-size:11.5px; color:var(--ink-soft); font-weight:600; }
+
 .sched-row{ display:flex; align-items:center; gap:10px; padding:10px 11px; border:1px solid var(--border); border-radius:9px; margin-bottom:8px; background:var(--surface-2); }
 .sched-row.due{ border-color:var(--danger); background:var(--danger-soft); }
 .sched-main{ flex:1; min-width:0; }
@@ -237,17 +249,69 @@ tr.row-inactive{ opacity:.55; }
 .section-card h3{ font-size:15px; margin-bottom:12px; }
 .settings-tabs{ display:flex; gap:6px; margin-bottom:16px; flex-wrap:wrap; }
 .inline-add{ display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
-.inline-add input[type=text]{ border:1px solid var(--border); border-radius:8px; padding:8px 10px; background:var(--surface-2); }
-.tag-list{ display:flex; flex-wrap:wrap; gap:8px; }
-.tag-list .chip-x{ display:flex; align-items:center; gap:6px; }
-.tag-list .chip-x button{ background:rgba(255,255,255,.35); border:none; border-radius:50%; width:15px;height:15px; font-size:10px; line-height:1; color:inherit; }
-.list-plain{ display:flex; flex-wrap:wrap; gap:8px; }
-.list-plain .item-x{ display:flex; align-items:center; gap:6px; background:var(--surface-2); border:1px solid var(--border); padding:5px 10px; border-radius:20px; font-size:12.5px; }
-.list-plain .item-x button{ background:none;border:none;color:var(--ink-faint); font-weight:700; }
 .hint{ font-size:12px; color:var(--ink-faint); margin-top:8px; }
 #print-report{ display:none; }
 .topbar-hamburger{ display:none; width:38px; height:38px; border-radius:9px; border:1px solid var(--border); background:var(--surface-2); align-items:center; justify-content:center; flex:0 0 auto; font-size:18px; }
 .sidebar-backdrop{ position:fixed; inset:0; background:rgba(15,20,17,.45); z-index:290; }
+
+.switch{ position:relative; display:inline-block; width:44px; height:24px; vertical-align:middle; }
+.switch input{ opacity:0; width:0; height:0; }
+.switch .slider{ position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background:#C7D2DA; border-radius:24px; transition:.2s; }
+.switch .slider::before{ content:''; position:absolute; height:18px; width:18px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:.2s; box-shadow:0 1px 3px rgba(0,0,0,.2); }
+.switch input:checked + .slider{ background:var(--ok); }
+.switch input:checked + .slider::before{ transform:translateX(20px); }
+.switch input:disabled + .slider{ opacity:.5; cursor:not-allowed; }
+.status-label{ font-size:11.5px; font-weight:700; margin-left:6px; vertical-align:middle; }
+.status-label.active{ color:var(--ok); }
+.status-label.inactive{ color:var(--ink-faint); }
+
+.choice-box{ background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:14px 16px; margin-bottom:14px; }
+.choice-box .choice-title{ font-weight:700; font-size:14px; color:var(--ink); margin-bottom:4px; }
+.choice-box .choice-desc{ font-size:12.5px; color:var(--ink-soft); line-height:1.5; }
+.choice-actions{ display:flex; gap:8px; justify-content:flex-end; margin-top:14px; flex-wrap:wrap; }
+
+.nao-abatido{ color:var(--gold); font-weight:700; }
+.nao-abatido-pill{ background:var(--gold-soft); color:var(--gold); font-size:10.5px; font-weight:800; padding:2px 8px; border-radius:20px; margin-left:6px; letter-spacing:.2px; }
+
+.multi-analyst-grid{ display:flex; flex-wrap:wrap; gap:8px; padding:10px; border:1px solid var(--border); border-radius:9px; background:var(--surface-2); }
+.multi-analyst-item{ display:flex; align-items:center; gap:8px; padding:6px 12px 6px 8px; border:1px solid var(--border); border-radius:20px; background:var(--surface); font-size:12.5px; font-weight:600; cursor:pointer; transition:.14s ease; }
+.multi-analyst-item:hover{ border-color:#79AFCB; }
+.multi-analyst-item input{ accent-color:var(--brand); }
+.multi-analyst-item.checked{ border-color:var(--brand); background:var(--brand-soft); color:var(--brand); }
+.multi-analyst-item .m-dot{ width:8px; height:8px; border-radius:50%; flex:0 0 auto; }
+.multi-hint{ font-size:11.5px; color:var(--ink-faint); margin-top:6px; }
+
+.allday-toggle{ display:flex; align-items:center; gap:8px; padding:8px 12px; border:1px solid var(--border); border-radius:9px; background:var(--surface-2); cursor:pointer; width:fit-content; font-size:12.5px; font-weight:600; }
+.allday-toggle input{ accent-color:var(--brand); }
+.allday-banner{ background:#E0F2F1; color:#00695C; border-radius:8px; padding:8px 12px; font-size:12.5px; font-weight:600; margin-bottom:10px; }
+.allday-banner .allday-time{ font-weight:800; color:#004D40; }
+.allday-badge{ background:#E0F2F1; color:#00897B; border-radius:20px; padding:2px 8px; font-size:10.5px; font-weight:800; margin-left:4px; }
+.cal-tg-event.allday.multiday{ background-image:linear-gradient(to right, transparent 0%, transparent 92%, rgba(0,0,0,.06) 92%, rgba(0,0,0,.06) 100%); border-right:1px dashed rgba(0,0,0,.15); }
+.cal-tg-event.allday.continuation{ border-left:1px dashed rgba(0,0,0,.15); border-top-left-radius:0; border-bottom-left-radius:0; }
+.cal-tg-event.allday.continuation .t{ opacity:.85; }
+
+/* Previsão de módulos/telas */
+.compare-grid{
+  display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:10px;
+}
+.compare-col{
+  border:1px solid var(--border); border-radius:10px; padding:12px 14px; background:var(--surface-2);
+}
+.compare-col h4{ font-size:12.5px; text-transform:uppercase; letter-spacing:.5px; color:var(--ink-soft); margin-bottom:8px; }
+.compare-col.expected{ background:#FFF7E6; border-color:#F0D9A8; }
+.compare-col.trained{ background:#E7F5EE; border-color:#B7E0CA; }
+.compare-item{ font-size:12.5px; padding:3px 0; display:flex; align-items:center; gap:6px; }
+.compare-item.ok{ color:var(--ok); font-weight:700; }
+.compare-item.miss{ color:var(--danger); font-weight:700; }
+.compare-item.extra{ color:var(--gold); font-weight:700; }
+.compare-item .cmp-dot{ width:8px; height:8px; border-radius:50%; flex:0 0 auto; }
+.compare-list{ display:flex; flex-direction:column; gap:2px; }
+.compare-sections{ margin-top:14px; display:flex; flex-direction:column; gap:14px; }
+.compare-section-title{
+  font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.4px;
+  color:var(--ink-soft); margin-bottom:6px;
+}
+
 @media (max-width:820px){
   .shell{ position:relative; }
   .sidebar{
@@ -273,14 +337,11 @@ tr.row-inactive{ opacity:.55; }
   .list-add-col{ width:180px; flex:0 0 180px; }
   .cal-tg-inner{ min-width:560px; }
   .balance-box{ flex-wrap:wrap; }
-  .card-modal-meta{ gap:8px; }
-  .settings-tabs .btn{ padding:7px 10px; font-size:12.5px; }
-  .cal-toolbar .btn-sm{ padding:7px 10px; font-size:12px; }
+  .compare-grid{ grid-template-columns:1fr; }
 }
 @media (max-width:480px){
   .list-col{ width:78vw; flex:0 0 78vw; }
   .list-add-col{ width:60vw; flex:0 0 60vw; }
-  .balance-item{ min-width:88px; }
   table{ font-size:12.5px; }
   th, td{ padding:8px 9px; }
 }
@@ -294,295 +355,78 @@ tr.row-inactive{ opacity:.55; }
 }
 
 :root{
-  --bg:#F4F7F9;
-  --bg-soft:#EAF1F5;
-  --surface:#FFFFFF;
-  --surface-2:#F7F9FB;
-  --border:#DCE5EB;
-  --ink:#17324D;
-  --ink-soft:#627486;
-  --ink-faint:#8A9AAA;
-  --brand:#0B5C8E;
-  --brand-dark:#073F63;
-  --brand-soft:#E5F1F8;
-  --gold:#F0A72F;
-  --gold-soft:#FFF1D8;
-  --danger:#C94B42;
-  --danger-soft:#FCE7E5;
-  --ok:#169B67;
-  --ok-soft:#E2F5ED;
+  --bg:#F4F7F9; --bg-soft:#EAF1F5; --surface:#FFFFFF; --surface-2:#F7F9FB;
+  --border:#DCE5EB; --ink:#17324D; --ink-soft:#627486; --ink-faint:#8A9AAA;
+  --brand:#0B5C8E; --brand-dark:#073F63; --brand-soft:#E5F1F8;
+  --gold:#F0A72F; --gold-soft:#FFF1D8; --danger:#C94B42; --danger-soft:#FCE7E5;
+  --ok:#169B67; --ok-soft:#E2F5ED;
   --radius-s:7px; --radius-m:12px; --radius-l:18px;
   --shadow-1:0 2px 8px rgba(23,50,77,.06),0 1px 2px rgba(23,50,77,.04);
   --shadow-2:0 18px 50px rgba(23,50,77,.18);
-  --font-head:'Manrope',sans-serif; --font-body:'Inter',sans-serif;
 }
 html,body{background:var(--bg);}
 body{font-size:14px;color:var(--ink);}
 .shell{background:var(--bg);}
-.sidebar{
-  width:258px;flex:0 0 258px;background:#fff;color:var(--ink);
-  border-right:1px solid var(--border);padding:20px 14px 14px;gap:20px;
-  box-shadow:4px 0 18px rgba(23,50,77,.035);
-}
+.sidebar{ width:258px;flex:0 0 258px;background:#fff;color:var(--ink);border-right:1px solid var(--border);padding:20px 14px 14px;gap:20px;box-shadow:4px 0 18px rgba(23,50,77,.035); }
 .brand{padding:4px 9px 17px;gap:11px;border-bottom:1px solid var(--border);}
-.brand-mark{
-  width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--brand),#1684BD);
-  color:#fff;font-size:13px;box-shadow:0 5px 14px rgba(11,92,142,.22);letter-spacing:-.5px;
-}
+.brand-mark{ width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--brand),#1684BD);color:#fff;font-size:13px;box-shadow:0 5px 14px rgba(11,92,142,.22);letter-spacing:-.5px; }
 .brand-name{font-size:18px;color:var(--brand-dark);letter-spacing:-.3px;}
 .brand-name::after{content:' • REALTEC';font-size:9px;letter-spacing:1.1px;color:var(--ok);font-weight:800;display:block;margin-top:-2px;}
 .side-label{color:var(--ink-faint);font-size:10px;text-transform:uppercase;letter-spacing:.8px;padding:4px 10px 6px;}
-.side-section{gap:4px;}
 .side-item{color:#506579;border-radius:9px;padding:10px 10px;font-weight:600;transition:.16s ease;}
 .side-item:hover{background:#F0F6FA;color:var(--brand);}
 .side-item.active{background:var(--brand-soft);color:var(--brand);box-shadow:inset 3px 0 0 var(--brand);}
-.side-item.inactive-analyst{opacity:.5;}
-.side-item.inactive-analyst .side-dot{background:#B9CAD5 !important;}
 .side-dot{width:8px;height:8px;box-shadow:none;}
 .side-badge{background:var(--gold);color:#fff;min-width:22px;text-align:center;padding:2px 7px;}
-.side-badge.inativo{background:#B9CAD5;color:#fff;}
 .side-add{border:1px dashed #B9CAD5;color:var(--brand);background:#F8FBFD;padding:8px 10px;}
 .side-add:hover{background:var(--brand-soft);}
 .side-foot{color:#8A9AAA;border-top:1px solid var(--border);padding:12px 9px 2px;}
 .main{min-width:0;background:var(--bg);}
-.topbar{
-  min-height:72px;padding:14px 28px;background:rgba(255,255,255,.96);border-bottom:1px solid var(--border);
-  box-shadow:0 2px 12px rgba(23,50,77,.035);position:relative;z-index:40;
-}
+.topbar{ min-height:72px;padding:14px 28px;background:rgba(255,255,255,.96);border-bottom:1px solid var(--border);box-shadow:0 2px 12px rgba(23,50,77,.035);position:relative;z-index:40; }
 .topbar-title h2{font-size:20px;color:var(--brand-dark);letter-spacing:-.35px;}
-.topbar .sub{color:var(--ink-soft);font-size:12px;}
 .search-box{background:#F5F8FA;border-color:#DDE7ED;border-radius:10px;min-width:260px;padding:8px 12px;}
-.search-box:focus-within{border-color:#8BB8D2;box-shadow:0 0 0 3px rgba(11,92,142,.08);background:#fff;}
 .icon-btn{background:#F7FAFC;border-color:#DCE5EB;border-radius:10px;}
-.icon-btn:hover{background:var(--brand-soft);color:var(--brand);}
 .view{padding:26px 28px 46px;}
-.btn{border-radius:9px;padding:9px 15px;border-color:#D6E1E8;box-shadow:0 1px 1px rgba(23,50,77,.03);}
-.btn-primary{background:var(--brand);border-color:var(--brand);box-shadow:0 5px 12px rgba(11,92,142,.17);}
-.btn-primary:hover{background:var(--brand-dark);}
-.btn-gold{background:var(--gold);border-color:var(--gold);color:#fff;}
+.btn{border-radius:9px;padding:9px 15px;border-color:#D6E1E8;}
+.btn-primary{background:var(--brand);border-color:var(--brand);}
 .board-lists{gap:18px;align-items:stretch;min-height:calc(100vh - 170px);}
 .list-col{background:#EAF0F4;border:1px solid #DCE5EB;border-radius:14px;width:285px;flex:0 0 285px;max-height:calc(100vh - 160px);}
 .list-head{padding:13px 13px 9px;}
-.list-head .name{color:#365066;font-size:13px;}
-.list-head .count{border:1px solid var(--border);color:var(--ink-soft);}
-.list-cards{padding:3px 10px 8px;gap:10px;}
 .card-mini{border:1px solid #E3EAEF;border-radius:11px;padding:12px;box-shadow:var(--shadow-1);gap:8px;}
-.card-mini:hover{border-color:#AFC8D8;box-shadow:0 6px 16px rgba(23,50,77,.09);transform:translateY(-1px);}
-.card-title{font-size:13.5px;color:#193A55;}
-.card-meta{color:var(--ink-soft);}
-.balance-pill{background:var(--ok-soft);color:var(--ok);}
-.pending-flag{color:var(--danger);}
-.add-card-btn{border-color:#BFD0DB;color:#5F7485;margin:4px 10px 11px;background:rgba(255,255,255,.32);}
-.add-card-btn:hover{background:#fff;color:var(--brand);}
-.list-add-col{background:transparent;border:none;}
-.list-add-col button{border:1.5px dashed #B9CAD5;background:rgba(255,255,255,.5);color:#6B7E8E;}
-.list-add-col button:hover{background:#fff;color:var(--brand);border-color:#8FB4C9;}
 .empty-state{background:#fff;border:1px solid var(--border);border-radius:18px;padding:58px 28px;box-shadow:var(--shadow-1);margin-top:30px;}
-.empty-state h3{color:var(--brand-dark);}
 .section-card{border-color:var(--border);border-radius:14px;box-shadow:var(--shadow-1);}
 table{box-shadow:var(--shadow-1);}
 th{background:#F1F6F9;color:#607587;}
-.modal{border:1px solid #E1E8ED;}
 .field input[type=text],.field input[type=date],.field input[type=time],.field input[type=number],.field input[type=email],.field input[type=tel],.field input[type=password],.field select,.field textarea{background:#F7F9FB;border-color:#DCE5EB;border-radius:9px;}
-.field input:focus,.field select:focus,.field textarea:focus{border-color:#79AFCB;box-shadow:0 0 0 3px rgba(11,92,142,.07);}
-.tabs{border-color:var(--border);}
-.tab-btn.active{color:var(--brand);border-color:var(--brand);}
-.cal-tg-outer{border-color:var(--border);box-shadow:var(--shadow-1);}
-.cal-tg-daycol-head.today .dt{color:var(--brand);}
-.notif-panel{border-color:var(--border);}
-@media (max-width:820px){
-  .sidebar{width:258px;flex-basis:258px;}
-  .topbar{padding:11px 14px;min-height:62px;}
-  .view{padding:16px 12px 32px;}
-  .search-box{min-width:0;}
-}
 
-
-.board-analyst-filter{
-  min-width:190px;
-  border:1px solid #D6E1E8;
-  border-radius:9px;
-  padding:9px 34px 9px 11px;
-  background:#F7F9FB;
-  color:var(--ink);
-  font-weight:600;
-  outline:none;
-}
-.board-analyst-filter:focus{
-  border-color:#79AFCB;
-  box-shadow:0 0 0 3px rgba(11,92,142,.07);
-}
-.board-summary{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-  margin:0 0 14px;
-  padding:11px 14px;
-  background:#fff;
-  border:1px solid var(--border);
-  border-radius:12px;
-  box-shadow:var(--shadow-1);
-}
+.board-analyst-filter{ min-width:190px;border:1px solid #D6E1E8;border-radius:9px;padding:9px 34px 9px 11px;background:#F7F9FB;color:var(--ink);font-weight:600;outline:none; }
+.board-summary{ display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px;padding:11px 14px;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow-1); }
 .board-summary-main{display:flex;align-items:center;gap:8px;min-width:0;}
 .board-summary-main strong{color:var(--brand-dark);}
 .board-summary-main span{color:var(--ink-soft);font-size:12.5px;}
 .board-summary-filter{font-size:12px;font-weight:700;color:var(--brand);background:var(--brand-soft);padding:5px 9px;border-radius:20px;white-space:nowrap;}
-.unified-board .list-col{min-width:285px;}
-.unified-board .list-cards{min-height:80px;}
 .analyst-meta{font-size:11px;font-weight:600;}
 .analyst-dot{width:7px;height:7px;border-radius:50%;flex:0 0 auto;}
-@media(max-width:1100px){
-  .board-analyst-filter{min-width:160px;}
-}
-@media(max-width:820px){
-  .board-summary{align-items:flex-start;flex-direction:column;}
-  .board-analyst-filter{order:3;width:100%;min-width:0;}
-}
-
 
 #app.rt-live-update{animation:rtLiveUpdate .42s ease-out;}
-@keyframes rtLiveUpdate{
-  0%{opacity:.88;}
-  100%{opacity:1;}
-}
-.live-sync-indicator{
-  position:fixed;right:16px;bottom:16px;z-index:9999;
-  display:flex;align-items:center;gap:7px;
-  padding:7px 10px;border:1px solid var(--border);
-  border-radius:999px;background:var(--surface);
-  color:var(--ink-soft);font:500 11px/1.1 var(--font-body);
-  box-shadow:var(--shadow-1);opacity:0;pointer-events:none;
-  transform:translateY(5px);transition:opacity .22s ease,transform .22s ease;
-}
+@keyframes rtLiveUpdate{ 0%{opacity:.88;} 100%{opacity:1;} }
+.live-sync-indicator{ position:fixed;right:16px;bottom:16px;z-index:9999;display:flex;align-items:center;gap:7px;padding:7px 10px;border:1px solid var(--border);border-radius:999px;background:var(--surface);color:var(--ink-soft);font:500 11px/1.1 var(--font-body);box-shadow:var(--shadow-1);opacity:0;pointer-events:none;transform:translateY(5px);transition:opacity .22s ease,transform .22s ease; }
 .live-sync-indicator.show{opacity:.92;transform:translateY(0);}
 .live-sync-dot{width:6px;height:6px;border-radius:50%;background:var(--ok);}
 
-#login-screen{
-  position:fixed; inset:0; z-index:10000;
-  display:flex; align-items:center; justify-content:center;
-  background:linear-gradient(135deg,#073F63 0%,#0B5C8E 50%,#1684BD 100%);
-  padding:20px;
-}
-.login-card{
-  background:#fff; border-radius:20px; box-shadow:0 24px 64px rgba(7,63,99,.35);
-  width:100%; max-width:400px; padding:36px 32px 32px; text-align:center;
-}
-.login-brand{
-  display:flex; align-items:center; justify-content:center; gap:12px; margin-bottom:6px;
-}
-.login-brand-mark{
-  width:48px; height:48px; border-radius:14px;
-  background:linear-gradient(135deg,var(--brand),#1684BD);
-  display:flex; align-items:center; justify-content:center;
-  font-family:var(--font-head); font-weight:800; color:#fff; font-size:18px;
-  box-shadow:0 8px 20px rgba(11,92,142,.25);
-}
+#login-screen{ position:fixed; inset:0; z-index:10000;display:flex; align-items:center; justify-content:center;background:linear-gradient(135deg,#073F63 0%,#0B5C8E 50%,#1684BD 100%);padding:20px; }
+.login-card{ background:#fff; border-radius:20px; box-shadow:0 24px 64px rgba(7,63,99,.35);width:100%; max-width:400px; padding:36px 32px 32px; text-align:center; }
+.login-brand{ display:flex; align-items:center; justify-content:center; gap:12px; margin-bottom:6px; }
+.login-brand-mark{ width:48px; height:48px; border-radius:14px;background:linear-gradient(135deg,var(--brand),#1684BD);display:flex; align-items:center; justify-content:center;font-family:var(--font-head); font-weight:800; color:#fff; font-size:18px;box-shadow:0 8px 20px rgba(11,92,142,.25); }
 .login-brand h1{ font-size:26px; color:var(--brand-dark); letter-spacing:-.5px; }
 .login-brand p{ font-size:11px; color:var(--ok); font-weight:800; letter-spacing:1.2px; margin:0; }
 .login-subtitle{ font-size:13px; color:var(--ink-soft); margin:8px 0 24px; }
 .login-card .field{ text-align:left; }
-.login-card .field label{ font-size:12.5px; font-weight:700; color:var(--ink-soft); }
-.login-card .field input{
-  border:1px solid var(--border); border-radius:10px; padding:11px 12px;
-  background:#F7F9FB; color:var(--ink); outline:none; width:100%;
-  font-size:14.5px; transition:.18s ease;
-}
-.login-card .field input:focus{
-  border-color:#79AFCB; box-shadow:0 0 0 3px rgba(11,92,142,.07); background:#fff;
-}
-.login-card .btn{
-  width:100%; justify-content:center; padding:12px; font-size:15px; margin-top:6px;
-}
-.login-error{
-  background:var(--danger-soft); color:var(--danger); border-radius:10px;
-  padding:10px 12px; font-size:12.5px; font-weight:600; margin-bottom:14px; text-align:left;
-}
+.login-card .field input{ border:1px solid var(--border); border-radius:10px; padding:11px 12px;background:#F7F9FB; color:var(--ink); outline:none; width:100%;font-size:14.5px; transition:.18s ease; }
+.login-card .field input:focus{ border-color:#79AFCB; box-shadow:0 0 0 3px rgba(11,92,142,.07); background:#fff; }
+.login-card .btn{ width:100%; justify-content:center; padding:12px; font-size:15px; margin-top:6px; }
+.login-error{ background:var(--danger-soft); color:var(--danger); border-radius:10px;padding:10px 12px; font-size:12.5px; font-weight:600; margin-bottom:14px; text-align:left; }
 .login-footer{ margin-top:22px; font-size:11px; color:var(--ink-faint); }
-
-.switch{
-  position:relative; display:inline-block; width:44px; height:24px; vertical-align:middle;
-}
-.switch input{ opacity:0; width:0; height:0; }
-.switch .slider{
-  position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0;
-  background:#C7D2DA; border-radius:24px; transition:.2s;
-}
-.switch .slider::before{
-  content:''; position:absolute; height:18px; width:18px; left:3px; bottom:3px;
-  background:#fff; border-radius:50%; transition:.2s; box-shadow:0 1px 3px rgba(0,0,0,.2);
-}
-.switch input:checked + .slider{ background:var(--ok); }
-.switch input:checked + .slider::before{ transform:translateX(20px); }
-.switch input:disabled + .slider{ opacity:.5; cursor:not-allowed; }
-.status-label{ font-size:11.5px; font-weight:700; margin-left:6px; vertical-align:middle; }
-.status-label.active{ color:var(--ok); }
-.status-label.inactive{ color:var(--ink-faint); }
-
-.choice-box{
-  background:var(--surface-2); border:1px solid var(--border); border-radius:10px;
-  padding:14px 16px; margin-bottom:14px;
-}
-.choice-box .choice-title{ font-weight:700; font-size:14px; color:var(--ink); margin-bottom:4px; }
-.choice-box .choice-desc{ font-size:12.5px; color:var(--ink-soft); line-height:1.5; }
-.choice-actions{ display:flex; gap:8px; justify-content:flex-end; margin-top:14px; }
-
-.nao-abatido{ color:var(--gold); font-weight:700; }
-.nao-abatido-pill{
-  background:var(--gold-soft); color:var(--gold); font-size:10.5px; font-weight:800;
-  padding:2px 8px; border-radius:20px; margin-left:6px; letter-spacing:.2px;
-}
-
-.multi-analyst-grid{
-  display:flex; flex-wrap:wrap; gap:8px; padding:10px;
-  border:1px solid var(--border); border-radius:9px; background:var(--surface-2);
-}
-.multi-analyst-item{
-  display:flex; align-items:center; gap:8px; padding:6px 12px 6px 8px;
-  border:1px solid var(--border); border-radius:20px; background:var(--surface);
-  font-size:12.5px; font-weight:600; cursor:pointer; transition:.14s ease;
-}
-.multi-analyst-item:hover{ border-color:#79AFCB; }
-.multi-analyst-item input{ accent-color:var(--brand); }
-.multi-analyst-item.checked{ border-color:var(--brand); background:var(--brand-soft); color:var(--brand); }
-.multi-analyst-item .m-dot{ width:8px; height:8px; border-radius:50%; flex:0 0 auto; }
-.multi-hint{ font-size:11.5px; color:var(--ink-faint); margin-top:6px; }
-
-.allday-toggle{
-  display:flex; align-items:center; gap:8px; padding:8px 12px;
-  border:1px solid var(--border); border-radius:9px; background:var(--surface-2);
-  cursor:pointer; width:fit-content; font-size:12.5px; font-weight:600;
-}
-.allday-toggle input{ accent-color:var(--brand); }
-.field.is-hidden{ display:none; }
-.allday-banner{
-  background:#E0F2F1; color:#00695C; border-radius:8px; padding:8px 12px;
-  font-size:12.5px; font-weight:600; margin-bottom:10px;
-}
-.allday-banner .allday-time{ font-weight:800; color:#004D40; }
-.titulo-badge{
-  display:inline-block; background:var(--surface-2); border:1px solid var(--border);
-  border-radius:6px; padding:2px 8px; font-size:11.5px; font-weight:700;
-  color:var(--ink-soft); margin-right:6px;
-}
-.servico-badge{
-  background:#EDE7F6; color:#7B4B94; border-radius:20px;
-  padding:2px 8px; font-size:10.5px; font-weight:800; margin-left:4px;
-}
-.allday-badge{
-  background:#E0F2F1; color:#00897B; border-radius:20px;
-  padding:2px 8px; font-size:10.5px; font-weight:800; margin-left:4px;
-}
-.cal-tg-event.allday.multiday{
-  background-image:linear-gradient(to right, transparent 0%, transparent 92%, rgba(0,0,0,.06) 92%, rgba(0,0,0,.06) 100%);
-  border-right:1px dashed rgba(0,0,0,.15);
-}
-.cal-tg-event.allday.continuation{
-  border-left:1px dashed rgba(0,0,0,.15);
-  border-top-left-radius:0;
-  border-bottom-left-radius:0;
-}
-.cal-tg-event.allday.continuation .t{ opacity:.85; }
 </style>
 </head>
 <body>
@@ -598,14 +442,8 @@ const MASTER_PASS = '71209403';
 
 var currentUser = null;
 
-function getStoredUser(){
-  try{ return JSON.parse(localStorage.getItem(LOGIN_KEY)); }catch(e){ return null; }
-}
-function setStoredUser(u){
-  currentUser = u;
-  if(u) localStorage.setItem(LOGIN_KEY, JSON.stringify(u));
-  else localStorage.removeItem(LOGIN_KEY);
-}
+function getStoredUser(){ try{ return JSON.parse(localStorage.getItem(LOGIN_KEY)); }catch(e){ return null; } }
+function setStoredUser(u){ currentUser = u; if(u) localStorage.setItem(LOGIN_KEY, JSON.stringify(u)); else localStorage.removeItem(LOGIN_KEY); }
 
 function renderLoginScreen(errorMsg){
   return '<div id="login-screen">'
@@ -629,10 +467,7 @@ function doLogin(){
   const u = (userEl.value||'').trim().toLowerCase();
   const p = passEl.value||'';
 
-  if(!u || !p){
-    document.getElementById('app').innerHTML = renderLoginScreen('Preencha usuário e senha.');
-    return;
-  }
+  if(!u || !p){ document.getElementById('app').innerHTML = renderLoginScreen('Preencha usuário e senha.'); return; }
   if(u === MASTER_USER && p === MASTER_PASS){
     setStoredUser({username:MASTER_USER, displayName:'Administrador', role:'admin', isMaster:true});
     document.getElementById('app').innerHTML = '';
@@ -641,21 +476,9 @@ function doLogin(){
   }
   const analyst = state.analysts.find(a=> a.username && a.username.toLowerCase() === u);
   if(analyst){
-    if(analyst.inactive){
-      document.getElementById('app').innerHTML = renderLoginScreen('Este usuário está inativo. Fale com o administrador.');
-      return;
-    }
-    if(!analyst.password || analyst.password !== p){
-      document.getElementById('app').innerHTML = renderLoginScreen('Usuário ou senha inválidos. Tente novamente.');
-      return;
-    }
-    setStoredUser({
-      username: analyst.username,
-      displayName: analyst.name,
-      role: analyst.isAdmin ? 'admin' : 'analyst',
-      analystId: analyst.id,
-      isAdmin: !!analyst.isAdmin
-    });
+    if(analyst.inactive){ document.getElementById('app').innerHTML = renderLoginScreen('Este usuário está inativo. Fale com o administrador.'); return; }
+    if(!analyst.password || analyst.password !== p){ document.getElementById('app').innerHTML = renderLoginScreen('Usuário ou senha inválidos. Tente novamente.'); return; }
+    setStoredUser({ username: analyst.username, displayName: analyst.name, role: analyst.isAdmin ? 'admin' : 'analyst', analystId: analyst.id, isAdmin: !!analyst.isAdmin });
     document.getElementById('app').innerHTML = '';
     boot();
     return;
@@ -663,10 +486,7 @@ function doLogin(){
   document.getElementById('app').innerHTML = renderLoginScreen('Usuário ou senha inválidos. Tente novamente.');
 }
 
-function logout(){
-  setStoredUser(null);
-  document.getElementById('app').innerHTML = renderLoginScreen();
-}
+function logout(){ setStoredUser(null); document.getElementById('app').innerHTML = renderLoginScreen(); }
 
 /* ============================= STATE ============================= */
 const STORAGE_KEY = 'implanta_v1';
@@ -677,6 +497,8 @@ const PALETTE = [
 const ADMIN_ANALYST_NAME = 'Rodrigo Soares';
 const FERIAS_TYPE_NAME = 'Férias';
 const FERIAS_MIN_PER_WEEKDAY = 8*60 + 48;
+/* Nomes de lista considerados "concluído" (case-insensitive, sem acento) */
+const DONE_LIST_NAMES = ['concluido','concluídos','concluida','concluída','finalizado','fechado'];
 
 function defaultState(){
   const st = {
@@ -714,32 +536,29 @@ function defaultState(){
 }
 function uid(p){ return p+'_'+Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4); }
 
+function normalizeHeader(h){ return String(h||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim(); }
+function isDoneListName(name){
+  const n = normalizeHeader(name);
+  return DONE_LIST_NAMES.some(x => n === x || n.startsWith(x));
+}
+
 function ensureAdminAnalyst(s){
   let admin = s.analysts.find(a=> a.isAdmin);
-  if(!admin){
-    admin = s.analysts.find(a=> a.name && a.name.toLowerCase() === ADMIN_ANALYST_NAME.toLowerCase());
-  }
+  if(!admin){ admin = s.analysts.find(a=> a.name && a.name.toLowerCase() === ADMIN_ANALYST_NAME.toLowerCase()); }
   if(!admin){
     admin = {id:uid('an'), name:ADMIN_ANALYST_NAME, color:'#0B5C8E', username:'rodrigo.soares', password:'71209403', isAdmin:true, inactive:false};
     s.analysts.push(admin);
     s.boards.push({id:uid('bd'), name:'Quadro — '+ADMIN_ANALYST_NAME, analystId:admin.id, lists:[
-      {id:uid('ls'), name:'Fila / Cadastro'},
-      {id:uid('ls'), name:'Em implantação'},
-      {id:uid('ls'), name:'Treinamento'},
-      {id:uid('ls'), name:'Concluído'}
+      {id:uid('ls'), name:'Fila / Cadastro'},{id:uid('ls'), name:'Em implantação'},{id:uid('ls'), name:'Treinamento'},{id:uid('ls'), name:'Concluído'}
     ]});
   } else {
-    admin.isAdmin = true;
-    admin.inactive = false;
+    admin.isAdmin = true; admin.inactive = false;
     if(!admin.username) admin.username = 'rodrigo.soares';
     if(!admin.password) admin.password = '71209403';
   }
   if(!s.boards.some(b=> b.analystId===admin.id)){
     s.boards.push({id:uid('bd'), name:'Quadro — '+admin.name, analystId:admin.id, lists:[
-      {id:uid('ls'), name:'Fila / Cadastro'},
-      {id:uid('ls'), name:'Em implantação'},
-      {id:uid('ls'), name:'Treinamento'},
-      {id:uid('ls'), name:'Concluído'}
+      {id:uid('ls'), name:'Fila / Cadastro'},{id:uid('ls'), name:'Em implantação'},{id:uid('ls'), name:'Treinamento'},{id:uid('ls'), name:'Concluído'}
     ]});
   }
   return s;
@@ -759,12 +578,8 @@ function normalizeState(raw){
     if(copy.isServico===undefined) copy.isServico = false;
     return copy;
   });
-  if(!s.agendaTypes.some(t=> t.isServico)){
-    s.agendaTypes.push({id:uid('at'), name:'Serviço', isInternal:false, isServico:true, inactive:false});
-  }
-  if(!s.agendaTypes.some(t=> t.name && t.name.toLowerCase()===FERIAS_TYPE_NAME.toLowerCase())){
-    s.agendaTypes.push({id:uid('at'), name:FERIAS_TYPE_NAME, isInternal:true, isServico:false, inactive:false});
-  }
+  if(!s.agendaTypes.some(t=> t.isServico)) s.agendaTypes.push({id:uid('at'), name:'Serviço', isInternal:false, isServico:true, inactive:false});
+  if(!s.agendaTypes.some(t=> t.name && t.name.toLowerCase()===FERIAS_TYPE_NAME.toLowerCase())) s.agendaTypes.push({id:uid('at'), name:FERIAS_TYPE_NAME, isInternal:true, isServico:false, inactive:false});
   s.analysts = s.analysts.map(a=>{
     const copy = Object.assign({}, a);
     if(!copy.username) copy.username = '';
@@ -780,12 +595,17 @@ function normalizeState(raw){
     if(copy.category===undefined) copy.category = 'implantacao';
     if(!Array.isArray(copy.analystIds)){ copy.analystIds = copy.analystId ? [copy.analystId] : []; }
     if(copy.analystId===undefined && copy.analystIds.length) copy.analystId = copy.analystIds[0];
-    if(copy.allDay){
-      if(!copy.endDate) copy.endDate = copy.date;
-      if(copy.endDate < copy.date) copy.endDate = copy.date;
-    } else {
-      copy.endDate = copy.date;
-    }
+    if(copy.allDay){ if(!copy.endDate) copy.endDate = copy.date; if(copy.endDate < copy.date) copy.endDate = copy.date; }
+    else { copy.endDate = copy.date; }
+    return copy;
+  });
+  /* Migração dos cards: campos novos (módulos/telas previstas, data de conclusão) */
+  s.cards = s.cards.map(c=>{
+    const copy = Object.assign({}, c);
+    if(!Array.isArray(copy.expectedModules)) copy.expectedModules = [];
+    if(!Array.isArray(copy.expectedScreens)) copy.expectedScreens = [];
+    if(copy.conclusionDate===undefined) copy.conclusionDate = null;
+    if(copy.isConcluded===undefined) copy.isConcluded = false;
     return copy;
   });
   s = dedupeRegistries(s);
@@ -793,10 +613,8 @@ function normalizeState(raw){
   return s;
 }
 function loadLocalState(){
-  try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return normalizeState(raw ? JSON.parse(raw) : defaultState());
-  }catch(e){ return defaultState(); }
+  try{ const raw = localStorage.getItem(STORAGE_KEY); return normalizeState(raw ? JSON.parse(raw) : defaultState()); }
+  catch(e){ return defaultState(); }
 }
 
 const DEFAULT_CLOUD_CONFIG = {
@@ -846,7 +664,6 @@ function showLiveSyncIndicator(){
   clearTimeout(el._hideTimer);
   el._hideTimer = setTimeout(()=>el.classList.remove('show'), 1100);
 }
-
 function flashLiveUpdate(){
   const app = document.getElementById('app');
   if(!app) return;
@@ -855,96 +672,58 @@ function flashLiveUpdate(){
   app.classList.add('rt-live-update');
   setTimeout(()=>app.classList.remove('rt-live-update'), 500);
 }
-
 function renderWithoutPersist(){
   const app = document.getElementById('app');
   if(!app) return;
   app.innerHTML = renderShell();
-  if(ui._focus){
-    const el = document.getElementById(ui._focus.id);
-    if(el){ el.focus(); try{ el.setSelectionRange(ui._focus.pos, ui._focus.pos); }catch(e){} }
-  }
+  if(ui._focus){ const el = document.getElementById(ui._focus.id); if(el){ el.focus(); try{ el.setSelectionRange(ui._focus.pos, ui._focus.pos); }catch(e){} } }
 }
-
 async function refreshFromCloudIfChanged(source){
   if(!sbClient || cloudStatus!=='connected') return false;
-  if(realtimeRefreshInFlight){
-    realtimeRefreshQueued = true;
-    return false;
-  }
+  if(realtimeRefreshInFlight){ realtimeRefreshQueued = true; return false; }
   const now = Date.now();
   if(now - realtimeLastRefreshAt < REALTIME_MIN_REFRESH_GAP_MS) return false;
-
   realtimeRefreshInFlight = true;
   realtimeLastRefreshAt = now;
   let changed = false;
   try{
-    const {data, error} = await sbClient.from('app_state')
-      .select('data, updated_at').eq('id', 1).maybeSingle();
+    const {data, error} = await sbClient.from('app_state').select('data, updated_at').eq('id', 1).maybeSingle();
     if(error) throw error;
     if(!data || !data.data || !data.updated_at) return false;
     if(sameInstant(data.updated_at, lastKnownUpdatedAt)) return false;
-
     const remote = normalizeState(data.data);
-    if(saveStatus==='pending' || saveStatus==='saving'){
-      state = mergeStates(remote, state);
-    }else{
-      state = remote;
-    }
+    if(saveStatus==='pending' || saveStatus==='saving') state = mergeStates(remote, state);
+    else state = remote;
     lastKnownUpdatedAt = data.updated_at;
     saveStatus = 'saved';
     changed = true;
-
     renderWithoutPersist();
     flashLiveUpdate();
     showLiveSyncIndicator();
     updateSaveStatusLine();
-  }catch(e){
-    console.warn('Falha na atualização em tempo real', source || 'refresh', e);
-  }finally{
+  }catch(e){ console.warn('Falha na atualização em tempo real', source || 'refresh', e); }
+  finally{
     realtimeRefreshInFlight = false;
-    if(realtimeRefreshQueued){
-      realtimeRefreshQueued = false;
-      setTimeout(()=>refreshFromCloudIfChanged('queued'), 0);
-    }
+    if(realtimeRefreshQueued){ realtimeRefreshQueued = false; setTimeout(()=>refreshFromCloudIfChanged('queued'), 0); }
   }
   return changed;
 }
-
 function stopRealtimeSync(){
-  if(realtimeChannel && sbClient){
-    try{ sbClient.removeChannel(realtimeChannel); }catch(e){}
-  }
+  if(realtimeChannel && sbClient){ try{ sbClient.removeChannel(realtimeChannel); }catch(e){} }
   realtimeChannel = null;
   if(realtimePollTimer){ clearInterval(realtimePollTimer); realtimePollTimer = null; }
 }
-
 function startRealtimeSync(){
   stopRealtimeSync();
   if(!sbClient || cloudStatus!=='connected') return;
-
   try{
     realtimeChannel = sbClient.channel('implanta-app-state-live')
-      .on('postgres_changes',
-        {event:'UPDATE',schema:'public',table:'app_state',filter:'id=eq.1'},
-        payload=>{
-          const updatedAt = payload && payload.new ? payload.new.updated_at : null;
-          if(updatedAt && !sameInstant(updatedAt, lastKnownUpdatedAt)){
-            refreshFromCloudIfChanged('realtime');
-          }
-        })
-      .subscribe(status=>{
-        if(status==='SUBSCRIBED') console.info('Sincronização em tempo real ativa.');
-      });
-  }catch(e){
-    console.warn('Não foi possível iniciar a sincronização em tempo real', e);
-  }
-
-  realtimePollTimer = setInterval(()=>{
-    if(document.visibilityState==='visible') refreshFromCloudIfChanged('poll');
-  }, REALTIME_POLL_MS);
+      .on('postgres_changes', {event:'UPDATE',schema:'public',table:'app_state',filter:'id=eq.1'},
+        payload=>{ const updatedAt = payload && payload.new ? payload.new.updated_at : null; if(updatedAt && !sameInstant(updatedAt, lastKnownUpdatedAt)){ refreshFromCloudIfChanged('realtime'); } })
+      .subscribe(status=>{ if(status==='SUBSCRIBED') console.info('Sincronização em tempo real ativa.'); });
+  }catch(e){ console.warn('Não foi possível iniciar a sincronização em tempo real', e); }
+  realtimePollTimer = setInterval(()=>{ if(document.visibilityState==='visible') refreshFromCloudIfChanged('poll'); }, REALTIME_POLL_MS);
 }
-
 
 var state = loadLocalState();
 
@@ -978,10 +757,7 @@ async function cloudSave(){
     if(error) throw error;
     lastKnownUpdatedAt = nowIso;
     saveStatus = 'saved';
-  }catch(e){
-    console.warn('Falha ao salvar na nuvem', e);
-    saveStatus = 'error';
-  }
+  }catch(e){ console.warn('Falha ao salvar na nuvem', e); saveStatus = 'error'; }
   updateSaveStatusLine();
 }
 function mergeStates(remote, local){
@@ -1009,10 +785,7 @@ function dedupeRegistries(s){
   (s.screens||[]).forEach(scr=>{ if(modResult.remap.has(scr.moduleId)) scr.moduleId = modResult.remap.get(scr.moduleId); });
   s.agendaTypes = dedupeWithRemap(s.agendaTypes).deduped;
   const seenScreens = new Map();
-  (s.screens||[]).forEach(scr=>{
-    const key = scr.name+'::'+scr.moduleId;
-    if(!seenScreens.has(key)) seenScreens.set(key, scr);
-  });
+  (s.screens||[]).forEach(scr=>{ const key = scr.name+'::'+scr.moduleId; if(!seenScreens.has(key)) seenScreens.set(key, scr); });
   s.screens = [...seenScreens.values()];
   return s;
 }
@@ -1036,18 +809,11 @@ async function forceSaveNow(){
     setForceSaveMsg('Salvando na nuvem...');
     await cloudSave();
     setForceSaveMsg(saveStatus==='saved' ? '✓ Alterações salvas na nuvem.' : '⚠ Falha ao salvar — tente de novo.', saveStatus!=='saved');
-  } else {
-    setForceSaveMsg('✓ Salvo neste navegador.');
-  }
+  } else { setForceSaveMsg('✓ Salvo neste navegador.'); }
 }
 document.addEventListener('visibilitychange', function(){
-  if(document.visibilityState==='hidden' && saveStatus==='pending' && sbClient){
-    clearTimeout(saveTimer);
-    cloudSave();
-  }
-  if(document.visibilityState==='visible' && sbClient && cloudStatus==='connected'){
-    refreshFromCloudIfChanged('visibility');
-  }
+  if(document.visibilityState==='hidden' && saveStatus==='pending' && sbClient){ clearTimeout(saveTimer); cloudSave(); }
+  if(document.visibilityState==='visible' && sbClient && cloudStatus==='connected'){ refreshFromCloudIfChanged('visibility'); }
 });
 async function connectCloud(url, anonKey){
   cloudConfig = {url, anonKey};
@@ -1065,10 +831,7 @@ function disconnectCloud(){
   render();
 }
 async function boot(){
-  if(!currentUser){
-    document.getElementById('app').innerHTML = renderLoginScreen();
-    return;
-  }
+  if(!currentUser){ document.getElementById('app').innerHTML = renderLoginScreen(); return; }
   let needsImmediateResave = false;
   if(cloudConfig && window.supabase){
     try{
@@ -1105,13 +868,9 @@ async function boot(){
       sbClient = null;
       state = loadLocalState();
     }
-  } else {
-    state = loadLocalState();
-  }
+  } else { state = loadLocalState(); }
   render();
-  if(needsImmediateResave && sbClient){
-    await cloudSave();
-  }
+  if(needsImmediateResave && sbClient){ await cloudSave(); }
 }
 
 var ui = {
@@ -1209,23 +968,14 @@ function scheduleAnalystIds(s){
   if(Array.isArray(s.analystIds) && s.analystIds.length) return s.analystIds.slice();
   return s.analystId ? [s.analystId] : [];
 }
-function scheduleAnalysts(s){
-  return scheduleAnalystIds(s).map(id=> getAnalyst(id)).filter(Boolean);
-}
-function scheduleAnalystNames(s){
-  return scheduleAnalysts(s).map(a=>a.name).join(', ');
-}
-/* Retorna UMA entrada por analista da agenda, cada uma com o mesmo schedule
-   e um analystId específico. Usado para renderizar a agenda múltiplas vezes
-   no calendário (uma por cor de analista). */
+function scheduleAnalysts(s){ return scheduleAnalystIds(s).map(id=> getAnalyst(id)).filter(Boolean); }
+function scheduleAnalystNames(s){ return scheduleAnalysts(s).map(a=>a.name).join(', '); }
 function schedulePerAnalystEntries(s){
   const ids = scheduleAnalystIds(s);
   if(!ids.length) return [{ schedule:s, analystId:null }];
   return ids.map(id => ({ schedule:s, analystId:id }));
 }
-function isFeriasType(typeName){
-  return !!(typeName && typeName.toLowerCase() === FERIAS_TYPE_NAME.toLowerCase());
-}
+function isFeriasType(typeName){ return !!(typeName && typeName.toLowerCase() === FERIAS_TYPE_NAME.toLowerCase()); }
 function scheduleDayCount(s){
   if(!s.allDay) return 1;
   const endD = s.endDate || s.date;
@@ -1328,15 +1078,9 @@ function scheduleFallbackColor(s){
   return '#0B5C8E';
 }
 function scheduleColorForAnalyst(s, analystId){
-  if(analystId){
-    const a = getAnalyst(analystId);
-    if(a && a.color) return a.color;
-  }
+  if(analystId){ const a = getAnalyst(analystId); if(a && a.color) return a.color; }
   const ids = scheduleAnalystIds(s);
-  if(ids.length){
-    const a = getAnalyst(ids[0]);
-    if(a && a.color) return a.color;
-  }
+  if(ids.length){ const a = getAnalyst(ids[0]); if(a && a.color) return a.color; }
   return scheduleFallbackColor(s);
 }
 function darkenColor(hex, amount){
@@ -1356,18 +1100,29 @@ function readableTextColor(hex){
   return yiq >= 150 ? '#111' : '#fff';
 }
 
+/* --- Helpers do card (progresso, saldo consolidado por cliente, etc) --- */
+function cardProgressPercent(card){
+  const total = (card.contractedHours||0);
+  if(!total) return 0;
+  const used = cardUsedMinutes(card)/60;
+  return Math.min(100, Math.max(0, (used/total)*100));
+}
+function cardProgressClass(pct){ if(pct >= 90) return 'danger'; if(pct >= 70) return 'warn'; return ''; }
+/* Saldo consolidado do cliente somando todos os cards (inclusive concluídos). */
+function clientConsolidatedBalanceHours(clientId){
+  const totalContracted = state.cards.filter(c=>c.clientId===clientId).reduce((sum,c)=> sum + (c.contractedHours||0), 0);
+  const totalUsed = state.cards.filter(c=>c.clientId===clientId).reduce((sum,c)=> sum + cardUsedMinutes(c)/60, 0);
+  return totalContracted - totalUsed;
+}
+/* Se o cliente tem pelo menos um card concluído, retorna saldo consolidado. */
+function clientHasPastCards(clientId){ return state.cards.some(c=>c.clientId===clientId); }
+
 /* ============================= MUTATIONS ============================= */
 function createAnalyst(name, color, username, password, isAdmin){
-  const analyst = {
-    id:uid('an'), name, color: color || colorForIndex(state.analysts.length),
-    username: username||'', password: password||'', isAdmin: !!isAdmin, inactive: false
-  };
+  const analyst = { id:uid('an'), name, color: color || colorForIndex(state.analysts.length), username: username||'', password: password||'', isAdmin: !!isAdmin, inactive: false };
   state.analysts.push(analyst);
   const board = {id:uid('bd'), name:'Quadro — '+name, analystId:analyst.id, lists:[
-    {id:uid('ls'), name:'Fila / Cadastro'},
-    {id:uid('ls'), name:'Em implantação'},
-    {id:uid('ls'), name:'Treinamento'},
-    {id:uid('ls'), name:'Concluído'}
+    {id:uid('ls'), name:'Fila / Cadastro'},{id:uid('ls'), name:'Em implantação'},{id:uid('ls'), name:'Treinamento'},{id:uid('ls'), name:'Concluído'}
   ]};
   state.boards.push(board);
   return {analyst, board};
@@ -1410,19 +1165,10 @@ function deleteClient(id){
   state.cards = state.cards.filter(c=>{ if(c.clientId===id){ state.schedules = state.schedules.filter(s=>s.cardId!==c.id); return false; } return true; });
   state.clients = state.clients.filter(c=>c.id!==id);
 }
-/* ---- Excel/CSV client import ---- */
-function normalizeHeader(h){ return String(h||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim(); }
 const CLIENT_IMPORT_HEADER_MAP = {
-  'codigo':'code', 'cod':'code',
-  'nome fantasia':'name', 'nome':'name',
-  'razao social':'companyName',
-  'cnpj':'cnpj',
-  'ie':'ie', 'inscricao estadual':'ie',
-  'segmento':'segment',
-  'cidade':'city',
-  'telefone':'phone', 'fone':'phone',
-  'email':'email', 'e-mail':'email',
-  'contato':'contact',
+  'codigo':'code', 'cod':'code', 'nome fantasia':'name', 'nome':'name', 'razao social':'companyName',
+  'cnpj':'cnpj', 'ie':'ie', 'inscricao estadual':'ie', 'segmento':'segment', 'cidade':'city',
+  'telefone':'phone', 'fone':'phone', 'email':'email', 'e-mail':'email', 'contato':'contact',
   'tipo de cliente':'clientType', 'tipo':'clientType'
 };
 function parseImportRow(row){
@@ -1431,9 +1177,7 @@ function parseImportRow(row){
     const field = CLIENT_IMPORT_HEADER_MAP[normalizeHeader(h)];
     if(field && out[field]===undefined) out[field] = row[h]!=null ? String(row[h]).trim() : '';
   });
-  if(out.clientType){
-    out.clientType = normalizeHeader(out.clientType).includes('base') ? 'base' : 'novo';
-  }
+  if(out.clientType){ out.clientType = normalizeHeader(out.clientType).includes('base') ? 'base' : 'novo'; }
   return out;
 }
 function downloadClientTemplate(){
@@ -1465,7 +1209,11 @@ async function importClientsFromFile(file){
   showAlert('Importação concluída: '+created+' cliente(s) criado(s), '+updated+' atualizado(s)'+(skipped?', '+skipped+' linha(s) ignorada(s) por falta de nome':'')+'.');
 }
 function createCard(boardId, listId, clientId, extra){
-  const card = Object.assign({id:uid('cd'), boardId, listId, clientId, contractedHours:0, startDate:todayISO(), productTags:[], history:[{ts:Date.now(), text:'Card criado'}]}, extra||{});
+  const card = Object.assign({
+    id:uid('cd'), boardId, listId, clientId, contractedHours:0, startDate:todayISO(),
+    productTags:[], history:[{ts:Date.now(), text:'Card criado'}],
+    expectedModules:[], expectedScreens:[], conclusionDate:null, isConcluded:false
+  }, extra||{});
   state.cards.push(card);
   return card;
 }
@@ -1480,6 +1228,20 @@ function moveCard(cardId, boardId, listId){
   if(fromBoard && toBoard && fromBoard.id!==toBoard.id){ text = 'Movido de "'+esc(fromBoard.name)+'" para "'+esc(toBoard.name)+'"'; if(toList) text += ' — lista "'+esc(toList.name)+'"'; }
   else if(toList){ text = 'Estágio alterado para "'+esc(toList.name)+'"'; }
   addHistory(c, text);
+  return { c, toList, fromList };
+}
+function concludeCard(cardId){
+  const c = getCard(cardId); if(!c) return;
+  if(c.isConcluded) return;
+  c.isConcluded = true;
+  c.conclusionDate = todayISO();
+  addHistory(c, 'Implantação concluída em '+fmtDateBR(c.conclusionDate));
+}
+function reopenCard(cardId){
+  const c = getCard(cardId); if(!c) return;
+  c.isConcluded = false;
+  c.conclusionDate = null;
+  addHistory(c, 'Implantação reaberta');
 }
 function deleteCard(id){ state.schedules = state.schedules.filter(s=>s.cardId!==id); state.cards = state.cards.filter(c=>c.id!==id); }
 function createSchedule(data){
@@ -1487,9 +1249,7 @@ function createSchedule(data){
     id:uid('sc'), status:'pendente', deductMinutes:null, modules:[], notes:'', category:'implantacao',
     allDay:false, title:'', analystIds:[]
   }, data);
-  if(!Array.isArray(s.analystIds) || !s.analystIds.length){
-    s.analystIds = s.analystId ? [s.analystId] : [];
-  }
+  if(!Array.isArray(s.analystIds) || !s.analystIds.length){ s.analystIds = s.analystId ? [s.analystId] : []; }
   if(s.analystIds.length && !s.analystId) s.analystId = s.analystIds[0];
   state.schedules.push(s);
   return s;
@@ -1530,18 +1290,11 @@ function deleteListFromBoard(boardId, listId){
 /* ============================= RENDER ROOT ============================= */
 function render(){
   persist();
-  if(!currentUser){
-    document.getElementById('app').innerHTML = renderLoginScreen();
-    return;
-  }
+  if(!currentUser){ document.getElementById('app').innerHTML = renderLoginScreen(); return; }
   const app = document.getElementById('app');
   app.innerHTML = renderShell();
-  if(ui._focus){
-    const el = document.getElementById(ui._focus.id);
-    if(el){ el.focus(); try{ el.setSelectionRange(ui._focus.pos, ui._focus.pos); }catch(e){} }
-  }
+  if(ui._focus){ const el = document.getElementById(ui._focus.id); if(el){ el.focus(); try{ el.setSelectionRange(ui._focus.pos, ui._focus.pos); }catch(e){} } }
 }
-
 function renderShell(){
   return '<div class="shell">'
     + '<aside class="sidebar'+(ui.sidebarOpen?' open':'')+'">'+renderSidebar()+'</aside>'
@@ -1591,7 +1344,6 @@ function renderSidebar(){
   return html;
 }
 function totalPendingBoardBadge(){ return pendingConfirmations(null).length; }
-
 function navItem(view, icon, label, badge){
   const active = ui.view===view;
   return '<button class="side-item'+(active?' active':'')+'" data-action="goto-view" data-view="'+view+'">'
@@ -1689,22 +1441,12 @@ function renderBoardView(){
   const selectedBoard = selectedAnalyst ? boardOfAnalyst(filterId) : null;
   const q = ui.search.trim().toLowerCase();
 
-  const boards = filterId==='all'
-    ? state.boards.slice()
-    : (selectedBoard ? [selectedBoard] : []);
-
+  const boards = filterId==='all' ? state.boards.slice() : (selectedBoard ? [selectedBoard] : []);
   if(!boards.length) return '<div class="empty-state"><h3>Nenhum quadro disponível</h3></div>';
 
   const listDefs = [];
   const seenNames = new Set();
-  boards.forEach(b=>{
-    (b.lists||[]).forEach(l=>{
-      if(!seenNames.has(l.name)){
-        seenNames.add(l.name);
-        listDefs.push(l.name);
-      }
-    });
-  });
+  boards.forEach(b=>{ (b.lists||[]).forEach(l=>{ if(!seenNames.has(l.name)){ seenNames.add(l.name); listDefs.push(l.name); } }); });
 
   let html = '<div class="board-summary">'
     + '<div class="board-summary-main"><strong>'+listDefs.length+' etapas</strong>'
@@ -1720,12 +1462,7 @@ function renderBoardView(){
       if(!list) return;
       cards = cards.concat(cardsInBoard(b.id).filter(c=>c.listId===list.id));
     });
-    if(q){
-      cards = cards.filter(c=>{
-        const cl=getClient(c.clientId);
-        return cl && cl.name.toLowerCase().includes(q);
-      });
-    }
+    if(q){ cards = cards.filter(c=>{ const cl=getClient(c.clientId); return cl && cl.name.toLowerCase().includes(q); }); }
 
     html += '<div class="list-col">'
       + '<div class="list-head"><span class="name">'+esc(listName)+'</span><span class="count">'+cards.length+'</span>'
@@ -1745,17 +1482,12 @@ function renderBoardView(){
 
     if(selectedBoard){
       const realList = (selectedBoard.lists||[]).find(l=>l.name===listName);
-      if(realList){
-        html += '<button class="add-card-btn" data-action="open-modal" data-modal="card-new" data-board="'+selectedBoard.id+'" data-list="'+realList.id+'">+ Adicionar cliente</button>';
-      }
+      if(realList){ html += '<button class="add-card-btn" data-action="open-modal" data-modal="card-new" data-board="'+selectedBoard.id+'" data-list="'+realList.id+'">+ Adicionar cliente</button>'; }
     }
     html += '</div>';
   });
 
-  if(selectedBoard){
-    html += '<div class="list-col list-add-col"><button data-action="open-modal" data-modal="list-new" data-board="'+selectedBoard.id+'">+ Nova lista</button></div>';
-  }
-
+  if(selectedBoard){ html += '<div class="list-col list-add-col"><button data-action="open-modal" data-modal="list-new" data-board="'+selectedBoard.id+'">+ Nova lista</button></div>'; }
   html += '</div>';
   return html;
 }
@@ -1765,54 +1497,63 @@ function renderCardMini(card, listName, filterId){
   const due = pendingConfirmations(null).some(s=>s.cardId===card.id);
   const board = getBoard(card.boardId);
   const analyst = board ? getAnalyst(board.analystId) : null;
+  const pct = cardProgressPercent(card);
+  const pctClass = cardProgressClass(pct);
   let chips = '';
   (card.productTags||[]).forEach(tid=>{ const t=byId(state.productTags,tid); if(t) chips += '<span class="chip" style="background:'+t.color+'">'+esc(t.name)+'</span>'; });
-  return '<div class="card-mini" draggable="true" data-card-id="'+card.id+'" data-action="open-card">'
+  return '<div class="card-mini'+(card.isConcluded?' done':'')+'" draggable="true" data-card-id="'+card.id+'" data-action="open-card">'
     + (chips? '<div class="chip-row">'+chips+'</div>' : '')
-    + '<div class="card-title">'+esc(client? client.name : '(cliente removido)')+'</div>'
+    + '<div class="card-title">'+esc(client? client.name : '(cliente removido)')+(card.isConcluded?' <span class="done-flag">✓</span>':'')+'</div>'
     + ((filterId==='all' && analyst)
       ? '<div class="card-meta analyst-meta"><span class="analyst-dot" style="background:'+analyst.color+'"></span><span>'+esc(analyst.name)+'</span></div>'
       : '')
     + '<div class="card-meta"><span class="balance-pill'+(balance<0?' neg':'')+'">'+minToHM(balance*60)+' saldo</span>'
     + (due? '<span class="pending-flag">● confirmar</span>' : '')
-    + '</div></div>';
+    + (card.isConcluded? '<span class="done-flag">Concluído '+fmtDateBR(card.conclusionDate)+'</span>' : '')
+    + '</div>'
+    + '<div class="progress-bar-outer" style="height:8px;margin:4px 0 2px;"><div class="progress-bar-inner '+pctClass+'" style="width:'+pct+'%;"></div></div>'
+    + '<div class="progress-meta"><span>'+pct.toFixed(0)+'%</span><span>'+minToHM(cardUsedMinutes(card))+' / '+card.contractedHours+'h</span></div>'
+    + '</div>';
 }
 
-/* ============================= CARD MODAL CONTENT ============================= */
+/* ============================= CARD MODAL ============================= */
 function renderCardModalContent(card){
   const client = getClient(card.clientId);
   const board = getBoard(card.boardId);
   const analyst = board ? getAnalyst(board.analystId) : null;
   const used = cardUsedMinutes(card)/60;
   const balance = cardBalanceHours(card);
+  const pct = cardProgressPercent(card);
+  const pctClass = cardProgressClass(pct);
   let html = '<div class="modal-header"><div style="flex:1;">'
-    + '<h3>'+esc(client? client.name : '(cliente removido)')+'</h3>'
-    + '<div class="card-modal-meta"><span>Analista: '+esc(analyst?analyst.name:'—')+'</span><span>Início: '+fmtDateBR(card.startDate)+'</span></div>'
+    + '<h3>'+esc(client? client.name : '(cliente removido)')+(card.isConcluded?' <span class="badge concluida" style="vertical-align:middle;">Concluído</span>':'')+'</h3>'
+    + '<div class="card-modal-meta"><span>Analista: '+esc(analyst?analyst.name:'—')+'</span><span>Início: '+fmtDateBR(card.startDate)+'</span>'+(card.conclusionDate?'<span>Conclusão: '+fmtDateBR(card.conclusionDate)+'</span>':'')+'</div>'
     + '</div><button class="modal-close" data-action="close-card">✕</button></div>';
 
   html += '<div class="tabs">'
-    + tabBtn('info','Informações') + tabBtn('agenda','Agenda ('+schedulesForCard(card.id).length+')') + tabBtn('history','Histórico')
+    + tabBtn('info','Informações')
+    + tabBtn('agenda','Agenda ('+schedulesForCard(card.id).length+')')
+    + tabBtn('forecast','Previstos × Treinados')
+    + tabBtn('history','Histórico')
     + '</div>';
 
   if(ui.cardTab==='info'){
-    const draft = (ui.cardDraft && ui.cardDraft.cardId===card.id) ? ui.cardDraft.values : null;
-    const effHours = draft ? draft.contractedHours : card.contractedHours;
-    const effStart = draft ? draft.startDate : card.startDate;
-    const effTags = draft ? (draft.productTags||[]) : (card.productTags||[]);
-    const effMove = draft ? draft.moveTo : (card.boardId+'::'+card.listId);
-    html += '<div class="balance-box">'
+    html += '<div class="progress-meta"><span><strong>Uso das horas contratadas</strong></span><span>'+pct.toFixed(0)+'%</span></div>'
+      + '<div class="progress-bar-outer"><div class="progress-bar-inner '+pctClass+'" style="width:'+pct+'%;"></div></div>'
+      + '<div class="balance-box" style="margin-top:14px;">'
       + balanceItem(card.contractedHours+'h','Contratadas')
       + balanceItem(minToHM(used*60),'Usadas')
       + balanceItem(minToHM(balance*60), 'Saldo');
     html += '</div>';
+
     html += '<form data-form="card-info" data-card="'+card.id+'">';
     html += '<div class="field-row">'
-      + '<div class="field"><label>Total de horas contratadas</label><input type="number" min="0" step="0.5" name="contractedHours" value="'+esc(effHours)+'"></div>'
-      + '<div class="field"><label>Início da implantação</label><input type="date" name="startDate" value="'+esc(effStart)+'"></div>'
+      + '<div class="field"><label>Total de horas contratadas</label><input type="number" min="0" step="0.5" name="contractedHours" value="'+esc(card.contractedHours)+'"></div>'
+      + '<div class="field"><label>Início da implantação</label><input type="date" name="startDate" value="'+esc(card.startDate)+'"></div>'
       + '</div>';
     html += '<div class="field"><label>Produtos contratados</label><div class="check-grid">';
     activeProductTags().forEach(t=>{
-      const checked = effTags.includes(t.id) ? 'checked' : '';
+      const checked = (card.productTags||[]).includes(t.id) ? 'checked' : '';
       html += '<label class="check-pill" style="border-color:'+t.color+'55;"><input type="checkbox" name="productTags" value="'+t.id+'" '+checked+'><span style="color:'+t.color+';font-weight:700;">'+esc(t.name)+'</span></label>';
     });
     (card.productTags||[]).forEach(tid=>{
@@ -1828,23 +1569,52 @@ function renderCardModalContent(card){
       + '<button type="button" class="btn btn-sm btn-primary" data-action="quick-add-product">+ Adicionar</button>'
       + '</div>';
     html += '</div>';
+
+    /* Módulos e telas previstas */
+    html += '<div class="field"><label>Módulos previstos (o que o cliente deve utilizar)</label><div class="check-grid">';
+    state.modules.forEach(mod=>{
+      const checked = (card.expectedModules||[]).includes(mod.name) ? 'checked' : '';
+      html += '<label class="check-pill"><input type="checkbox" name="expectedModules" value="'+esc(mod.name)+'" '+checked+'>'+esc(mod.name)+'</label>';
+    });
+    if(!state.modules.length) html += '<span class="hint">Nenhum módulo cadastrado.</span>';
+    html += '</div></div>';
+
+    html += '<div class="field"><label>Telas previstas (o que o cliente deve utilizar)</label><div class="check-grid">';
+    state.screens.forEach(scr=>{
+      const checked = (card.expectedScreens||[]).includes(scr.name) ? 'checked' : '';
+      html += '<label class="check-pill"><input type="checkbox" name="expectedScreens" value="'+esc(scr.name)+'" '+checked+'>'+esc(scr.name)+'</label>';
+    });
+    if(!state.screens.length) html += '<span class="hint">Nenhuma tela cadastrada.</span>';
+    html += '</div></div>';
+
     html += '<div class="field"><label>Mover para</label><select name="moveTo">';
     state.boards.forEach(b=>{
       const a=getAnalyst(b.analystId);
       b.lists.forEach(l=>{
         const val = b.id+'::'+l.id;
-        const sel = (val===effMove) ? 'selected' : '';
+        const sel = (val===card.boardId+'::'+card.listId) ? 'selected' : '';
         html += '<option value="'+val+'" '+sel+'>'+esc(a?a.name:b.name)+' — '+esc(l.name)+'</option>';
       });
     });
     html += '</select></div>';
-    html += '<div class="form-actions"><button type="button" class="btn btn-danger" data-action="delete-card" data-id="'+card.id+'">Excluir card</button><span style="flex:1;"></span><button type="submit" class="btn btn-primary">Salvar</button></div>';
+
+    html += '<div class="form-actions">'
+      + '<button type="button" class="btn btn-danger" data-action="delete-card" data-id="'+card.id+'">Excluir card</button>'
+      + '<button type="button" class="btn btn-ghost" data-action="card-print-closing" data-id="'+card.id+'">🖨 Relatório de fechamento</button>'
+      + (card.isConcluded
+          ? '<button type="button" class="btn btn-ghost" data-action="card-reopen" data-id="'+card.id+'">Reabrir</button>'
+          : '<button type="button" class="btn btn-gold" data-action="card-conclude" data-id="'+card.id+'">✓ Concluir implantação</button>')
+      + '<span style="flex:1;"></span><button type="submit" class="btn btn-primary">Salvar</button></div>';
     html += '</form>';
   } else if(ui.cardTab==='agenda'){
     html += '<button class="btn btn-primary btn-sm" style="margin-bottom:12px;" data-action="open-modal" data-modal="schedule-new" data-card="'+card.id+'">+ Nova agenda</button>';
     const scheds = schedulesForCard(card.id);
     if(!scheds.length) html += '<p class="hint">Nenhum agendamento para este cliente ainda.</p>';
     scheds.forEach(s=> html += renderSchedRow(s));
+  } else if(ui.cardTab==='forecast'){
+    html += renderForecastCompare(card);
+    html += '<div class="form-actions" style="margin-top:16px;">'
+      + '<button type="button" class="btn btn-primary" data-action="card-print-forecast" data-id="'+card.id+'">🖨 Gerar relatório comparativo</button></div>';
   } else {
     const hist = card.history||[];
     if(!hist.length) html += '<p class="hint">Sem histórico.</p>';
@@ -1852,21 +1622,80 @@ function renderCardModalContent(card){
   }
   return html;
 }
+
+/* Comparação de módulos/telas previstos x efetivamente treinados
+   (baseado nas agendas concluídas vinculadas ao card). */
+function collectTrainedFromCard(card){
+  const trains = state.schedules.filter(s=> s.cardId===card.id && s.status==='concluida');
+  const mods = new Set();
+  const screens = new Set();
+  trains.forEach(s=>{
+    (s.modules||[]).forEach(m=> mods.add(m));
+    (s.trainedScreens||[]).forEach(sc=> screens.add(sc));
+  });
+  return { modules:[...mods], screens:[...screens] };
+}
+function renderForecastCompare(card){
+  const expectedM = card.expectedModules || [];
+  const expectedS = card.expectedScreens || [];
+  const trained = collectTrainedFromCard(card);
+
+  function compareList(expectedArr, trainedArr){
+    const trainedSet = new Set(trainedArr);
+    const expectedSet = new Set(expectedArr);
+    const okItems = expectedArr.filter(x=> trainedSet.has(x));
+    const missItems = expectedArr.filter(x=> !trainedSet.has(x));
+    const extraItems = trainedArr.filter(x=> !expectedSet.has(x));
+    return { okItems, missItems, extraItems };
+  }
+  const cmpM = compareList(expectedM, trained.modules);
+  const cmpS = compareList(expectedS, trained.screens);
+
+  function renderListSection(title, expectedArr, trainedArr, cmp){
+    let h = '<div class="compare-sections">';
+    h += '<div class="compare-section-title">'+esc(title)+'</div>';
+    h += '<div class="compare-grid">';
+    h += '<div class="compare-col expected"><h4>Previsto</h4><div class="compare-list">';
+    if(!expectedArr.length) h += '<div class="hint">Nenhum item previsto.</div>';
+    expectedArr.forEach(name=>{
+      const ok = trainedArr.includes(name);
+      h += '<div class="compare-item '+(ok?'ok':'miss')+'"><span class="cmp-dot" style="background:'+(ok?'var(--ok)':'var(--danger)')+'"></span>'+esc(name)+(ok?' ✓':' ✗')+'</div>';
+    });
+    h += '</div></div>';
+    h += '<div class="compare-col trained"><h4>Treinado</h4><div class="compare-list">';
+    if(!trainedArr.length) h += '<div class="hint">Nada treinado ainda.</div>';
+    trainedArr.forEach(name=>{
+      const extra = !expectedArr.includes(name);
+      h += '<div class="compare-item '+(extra?'extra':'ok')+'"><span class="cmp-dot" style="background:'+(extra?'var(--gold)':'var(--ok)')+'"></span>'+esc(name)+(extra?' +':' ✓')+'</div>';
+    });
+    h += '</div></div>';
+    h += '</div>';
+    h += '<div style="margin-top:8px;font-size:12.5px;">'
+      + '<span style="color:var(--ok);font-weight:700;">'+cmp.okItems.length+' conferidos</span>'
+      + (cmp.missItems.length? ' · <span style="color:var(--danger);font-weight:700;">'+cmp.missItems.length+' pendentes</span>' : '')
+      + (cmp.extraItems.length? ' · <span style="color:var(--gold);font-weight:700;">'+cmp.extraItems.length+' extras</span>' : '')
+      + '</div>';
+    h += '</div>';
+    return h;
+  }
+
+  let html = '<p class="hint" style="margin-top:-4px;">Compara os itens previstos no card com os efetivamente treinados nas agendas concluídas.</p>';
+  html += renderListSection('Módulos', expectedM, trained.modules, cmpM);
+  html += renderListSection('Telas', expectedS, trained.screens, cmpS);
+  return html;
+}
+
 function tabBtn(key,label){ return '<button class="tab-btn'+(ui.cardTab===key?' active':'')+'" data-action="card-tab" data-tab="'+key+'">'+label+'</button>'; }
 function balanceItem(num,lbl){ return '<div class="balance-item"><div class="num">'+num+'</div><div class="lbl">'+lbl+'</div></div>'; }
-/* Card de agenda no modal do cliente — mostra uma linha por analista,
-   com a cor respectiva, para refletir a mesma visão do calendário. */
 function renderSchedRow(s){
   const due = scheduleIsDue(s);
   const modules = (s.modules||[]).join(', ');
   const screens = (s.trainedScreens||[]).join(', ');
   const isInterna = isInternalType(s.type);
-  const isServico = isServicoType(s.type);
   const isOrphanInternal = isInterna && s.clientId && !s.cardId;
   const title = scheduleDisplayTitle(s);
   const analysts = scheduleAnalysts(s);
   const analystsList = analysts.length ? analysts : [null];
-
   let actions = '';
   if(s.status==='pendente'){
     actions = '<button class="btn btn-sm btn-primary" data-action="open-modal" data-modal="confirm-complete" data-id="'+s.id+'">Concluir</button>'
@@ -1876,10 +1705,9 @@ function renderSchedRow(s){
     actions = '<button class="btn btn-sm btn-ghost" data-action="revert-to-pending" data-id="'+s.id+'">'+(s.status==='concluida'?'Reverter conclusão':'Reverter p/ pendente')+'</button>'
       + '<button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="schedule-edit" data-id="'+s.id+'">Editar</button>';
   }
-  if(s.status==='concluida') actions += '<button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="schedule-report" data-id="'+s.id+'">🖨 Relatório</button>';
+  if(s.status==='concluida') actions += '<button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="schedule-report" data-id="'+s.id+'">🖨</button>';
   actions += '<button class="btn btn-sm btn-ghost" data-action="delete-schedule" data-id="'+s.id+'">🗑</button>';
 
-  /* Uma linha por analista (ou única linha se não houver analista) */
   let rowsHtml = '';
   analystsList.forEach(a=>{
     const color = scheduleColorForAnalyst(s, a?a.id:null);
@@ -1902,7 +1730,6 @@ function renderSchedRow(s){
   return rowsHtml;
 }
 function statusLabel(st){ return st==='pendente'?'Pendente': st==='concluida'?'Concluída':'Não realizada'; }
-
 function scheduleDisplayTitle(s){
   if(s.title && s.title.trim()) return s.title.trim();
   const client = s.clientId ? getClient(s.clientId) : null;
@@ -1972,35 +1799,10 @@ function renderCalendarView(){
     if(ui.calCategory==='servico') return isServicoType(s.type);
     return !isInternalType(s.type) && !isServicoType(s.type);
   }
-  function matchesAnalystId(s, analystId){
-    if(!analystId) return true; // 'all'
-    return scheduleAnalystIds(s).includes(analystId);
-  }
-  /* Retorna as "entradas" (schedule + analystId específico) que devem ser
-     renderizadas no calendário. Se o filtro for 'todos', expande cada
-     schedule em UMA entrada por analista, para colorir cada uma com a cor
-     do respectivo analista. Se o filtro for específico, apenas 1 entrada
-     daquele analista. */
-  function expandSchedulesForCalendar(scheds){
-    const out = [];
-    scheds.forEach(s=>{
-      if(ui.calAnalyst==='all'){
-        const ids = scheduleAnalystIds(s);
-        if(ids.length){
-          ids.forEach(id => out.push({ schedule:s, analystId:id }));
-        } else {
-          out.push({ schedule:s, analystId:null });
-        }
-      } else {
-        out.push({ schedule:s, analystId: ui.calAnalyst });
-      }
-    });
-    return out;
-  }
+  function matchesAnalystId(s, analystId){ if(!analystId) return true; return scheduleAnalystIds(s).includes(analystId); }
 
   const days = [];
   for(let i=0;i<7;i++) days.push(addDaysISO(ui.calStart, i));
-  /* Coleta todos os schedules únicos que "caem" na semana (sem expandir) */
   const uniqueWeekSchedules = state.schedules.filter(s=>{
     const inAnyDay = days.some(d => scheduleSpansDate(s, d));
     if(!inAnyDay) return false;
@@ -2022,17 +1824,26 @@ function renderCalendarView(){
   });
   html += '</div>';
 
-  /* Faixa de dia todo — expandida por analista */
+  /* Faixa dia todo — expandida por analista */
   let anyAllday = false;
   days.forEach(d=>{
     const raw = state.schedules.filter(s=>s.allDay && scheduleSpansDate(s, d) && inCategory(s) && (ui.calAnalyst==='all' || scheduleAnalystIds(s).includes(ui.calAnalyst)));
-    if(expandSchedulesForCalendar(raw).length) anyAllday = true;
+    if(raw.length) anyAllday = true;
   });
   if(anyAllday){
     html += '<div class="cal-tg-headerrow" style="background:var(--surface-2);"><div style="padding:6px 8px;font-size:10px;color:var(--ink-faint);font-weight:800;text-transform:uppercase;display:flex;align-items:center;">Dia todo</div>';
     days.forEach(d=>{
       const raw = state.schedules.filter(s=>s.allDay && scheduleSpansDate(s, d) && inCategory(s) && (ui.calAnalyst==='all' || scheduleAnalystIds(s).includes(ui.calAnalyst)));
-      const entries = expandSchedulesForCalendar(raw);
+      const entries = [];
+      raw.forEach(s=>{
+        if(ui.calAnalyst==='all'){
+          const ids = scheduleAnalystIds(s);
+          if(!ids.length) entries.push({ schedule:s, analystId:null });
+          else ids.forEach(id => entries.push({ schedule:s, analystId:id }));
+        } else {
+          entries.push({ schedule:s, analystId: ui.calAnalyst });
+        }
+      });
       html += '<div style="min-height:'+alldayHeight+'px;border-left:1px solid var(--border);padding:3px 4px;display:flex;flex-direction:column;gap:3px;">';
       entries.forEach(entry=>{
         const s = entry.schedule;
@@ -2046,9 +1857,7 @@ function renderCalendarView(){
         const arrow = isContinuation ? '↳ ' : '';
         const analyst = entry.analystId ? getAnalyst(entry.analystId) : null;
         const analystPrefix = analyst ? analyst.name+' · ' : '';
-        const colorStyle = due
-          ? 'background:var(--danger);color:#fff;border-left-color:var(--danger);'
-          : 'background:'+color+';color:'+txt+';border-left-color:'+darkenColor(color,.25)+';';
+        const colorStyle = due ? 'background:var(--danger);color:#fff;border-left-color:var(--danger);' : 'background:'+color+';color:'+txt+';border-left-color:'+darkenColor(color,.25)+';';
         html += '<div class="'+cls+'" style="position:static;left:auto;width:auto;'+colorStyle+'" data-action="open-modal" data-modal="schedule-edit" data-id="'+s.id+'" title="'+esc(title+' · '+(analyst?analyst.name:'—')+' · '+scheduleDateText(s))+'">'
           + '<div class="t">'+arrow+esc(analystPrefix+title)+'</div>'
           + '</div>';
@@ -2060,41 +1869,21 @@ function renderCalendarView(){
 
   html += '<div class="cal-tg-bodyscroll"><div class="cal-tg-bodyrow" style="height:'+gridHeight+'px;">';
   html += '<div class="cal-tg-hourlabels" style="height:'+gridHeight+'px;">';
-  for(let h=startHour; h<=endHour; h++){
-    html += '<div class="cal-tg-hourlabel" style="top:'+((h-startHour)*pxPerHour)+'px;">'+String(h).padStart(2,'0')+':00</div>';
-  }
+  for(let h=startHour; h<=endHour; h++){ html += '<div class="cal-tg-hourlabel" style="top:'+((h-startHour)*pxPerHour)+'px;">'+String(h).padStart(2,'0')+':00</div>'; }
   html += '</div>';
 
   const now = new Date();
   const nowMin = now.getHours()*60+now.getMinutes();
 
   days.forEach(d=>{
-    /* Schedules únicos do dia (com horário) */
     const rawScheds = state.schedules.filter(s=>!s.allDay && scheduleSpansDate(s, d) && inCategory(s) && (ui.calAnalyst==='all' || scheduleAnalystIds(s).includes(ui.calAnalyst)));
-    /* Expande cada schedule em 1 "pseudo-schedule" por analista, para o
-       layoutDayEvents distribuir cada cópia como um evento separado.
-       Importante: quando filtro='todos', duas cópias do mesmo schedule têm
-       os MESMOS horários, então o layoutDayEvents as coloca em lanes
-       adjacentes (side-by-side), cada uma colorida com a cor do seu
-       analista. */
     const expandedScheds = [];
     rawScheds.forEach(s=>{
       const ids = scheduleAnalystIds(s);
       if(ui.calAnalyst==='all'){
-        if(!ids.length){
-          /* Sem analista: mantém como está */
-          const copy = Object.assign({}, s, {__viewAnalystId:null});
-          expandedScheds.push(copy);
-        } else {
-          ids.forEach((anId, idx)=>{
-            const copy = Object.assign({}, s, {__viewAnalystId: anId, __viewIdx: idx});
-            expandedScheds.push(copy);
-          });
-        }
-      } else {
-        const copy = Object.assign({}, s, {__viewAnalystId: ui.calAnalyst});
-        expandedScheds.push(copy);
-      }
+        if(!ids.length){ expandedScheds.push(Object.assign({}, s, {__viewAnalystId:null})); }
+        else { ids.forEach(anId=> expandedScheds.push(Object.assign({}, s, {__viewAnalystId: anId}))); }
+      } else { expandedScheds.push(Object.assign({}, s, {__viewAnalystId: ui.calAnalyst})); }
     });
     const laidOut = layoutDayEvents(expandedScheds);
     html += '<div class="cal-tg-daycol" data-action="cal-grid-click" data-date="'+d+'" data-start-hour="'+startHour+'" data-px-per-hour="'+pxPerHour+'" style="height:'+gridHeight+'px;--hour-px:'+pxPerHour+'px;">';
@@ -2111,17 +1900,13 @@ function renderCalendarView(){
       const draggable = s.status==='pendente';
       const title = scheduleDisplayTitle(s);
       const analyst = viewAnalystId ? getAnalyst(viewAnalystId) : null;
-      const colorStyle = due
-        ? 'background:var(--danger);color:#fff;border-left-color:#8a2018;'
-        : 'background:'+color+';color:'+txt+';border-left-color:'+darkenColor(color,.25)+';';
+      const colorStyle = due ? 'background:var(--danger);color:#fff;border-left-color:#8a2018;' : 'background:'+color+';color:'+txt+';border-left-color:'+darkenColor(color,.25)+';';
       html += '<div class="cal-tg-event" draggable="'+(draggable?'true':'false')+'" data-draggable="'+(draggable?'1':'0')+'" style="top:'+top+'px;height:'+height+'px;left:'+leftPct+'%;width:calc('+widthPct+'% - 4px);'+colorStyle+'" data-action="open-modal" data-modal="schedule-edit" data-id="'+s.id+'" title="'+esc(title+' · '+(analyst?analyst.name:'—')+' · '+s.startTime+'–'+s.endTime)+'">'
         + '<div class="t">'+s.startTime+' '+esc(title)+'</div>'
         + (height>34? '<div class="s">'+esc(analyst?analyst.name:scheduleAnalystNames(s))+'</div>' : '')
         + '</div>';
     });
-    if(d===today && nowMin>=startHour*60 && nowMin<=endHour*60){
-      html += '<div class="cal-tg-now" style="top:'+((nowMin-startHour*60)*pxPerMin)+'px;"></div>';
-    }
+    if(d===today && nowMin>=startHour*60 && nowMin<=endHour*60){ html += '<div class="cal-tg-now" style="top:'+((nowMin-startHour*60)*pxPerMin)+'px;"></div>'; }
     html += '</div>';
   });
   html += '</div></div>';
@@ -2133,14 +1918,14 @@ function renderCalendarView(){
 function renderReportsView(){
   let html = '';
   html += '<div class="section-card"><h3>Saldo de horas por cliente</h3>'
-    + '<p class="hint" style="margin-top:-4px;">Horas internas concluídas sem card vinculado aparecem como <span class="nao-abatido">horas não abatidas</span>. Horas de agenda tipo <strong>Férias</strong> contam apenas dias úteis (seg–sex), 8h48 por dia.</p>'
+    + '<p class="hint" style="margin-top:-4px;">Saldo consolidado soma todos os cards (incluindo concluídos). Férias contam só dias úteis (seg–sex), 8h48/dia.</p>'
     + '<table><thead><tr><th>Cliente</th><th>Analista</th><th>Contratadas</th><th>Usadas</th><th>Saldo</th><th>Horas não abatidas</th></tr></thead><tbody>';
 
   const rows = [];
   state.cards.forEach(c=>{
     const client=getClient(c.clientId), board=getBoard(c.boardId), analyst=board?getAnalyst(board.analystId):null;
     const used = cardUsedMinutes(c)/60, bal = cardBalanceHours(c);
-    rows.push({ client, analyst, used, bal, contracted: c.contractedHours, naoAbatido: 0 });
+    rows.push({ client, analyst, used, bal, contracted: c.contractedHours, naoAbatido: 0, concluded: c.isConcluded, cardId: c.id });
   });
   state.clients.forEach(cl=>{
     if(state.cards.some(c=>c.clientId===cl.id)) return;
@@ -2151,18 +1936,14 @@ function renderReportsView(){
   const naoAbatidoByClient = {};
   state.clients.forEach(cl=>{ naoAbatidoByClient[cl.id] = unlinkedInternalMinutesForClient(cl.id); });
   rows.forEach(r=>{
-    if(r.client && naoAbatidoByClient[r.client.id] && !r.naoAbatido){
-      r.naoAbatido = naoAbatidoByClient[r.client.id];
-    }
+    if(r.client && naoAbatidoByClient[r.client.id] && !r.naoAbatido){ r.naoAbatido = naoAbatidoByClient[r.client.id]; }
   });
 
   if(!rows.length) html += '<tr><td colspan="6" class="hint">Nenhum cliente em implantação ainda.</td></tr>';
   rows.forEach(r=>{
-    const naoAbatidoTxt = r.naoAbatido > 0
-      ? '<span class="nao-abatido">'+minToHM(r.naoAbatido)+'</span>'
-      : '<span class="hint">—</span>';
+    const naoAbatidoTxt = r.naoAbatido > 0 ? '<span class="nao-abatido">'+minToHM(r.naoAbatido)+'</span>' : '<span class="hint">—</span>';
     html += '<tr>'
-      + '<td>'+esc(r.client?r.client.name:'—')+'</td>'
+      + '<td>'+esc(r.client?r.client.name:'—')+(r.concluded?' <span class="badge concluida" style="vertical-align:middle;">Concluído</span>':'')+'</td>'
       + '<td>'+esc(r.analyst?r.analyst.name:'—')+'</td>'
       + '<td>'+(r.onlyInternal? '—' : (r.contracted+'h'))+'</td>'
       + '<td>'+(r.onlyInternal? '—' : minToHM(r.used*60))+'</td>'
@@ -2177,19 +1958,16 @@ function renderReportsView(){
     .sort((a,b)=> (b.date+(b.startTime||'')).localeCompare(a.date+(a.startTime||'')));
   if(allUnlinked.length){
     html += '<div class="section-card"><h3>Detalhe — horas internas não abatidas</h3>'
-      + '<p class="hint" style="margin-top:-4px;">Cada linha é uma agenda interna concluída vinculada a um cliente, mas sem card criado.</p>'
       + '<table><thead><tr><th>Data</th><th>Cliente</th><th>Analista</th><th>Horário</th><th>Tipo</th><th>Duração</th></tr></thead><tbody>';
     allUnlinked.forEach(s=>{
       const cl = getClient(s.clientId);
       const dur = scheduleMinutes(s);
-      const nAnalysts = scheduleAnalystIds(s).length || 1;
-      const extra = nAnalysts > 1 ? ' <span class="hint">('+nAnalysts+'× analistas)</span>' : '';
       html += '<tr>'
         + '<td>'+scheduleDateText(s)+'</td>'
         + '<td>'+esc(cl?cl.name:'—')+'</td>'
         + '<td>'+esc(scheduleAnalystNames(s))+'</td>'
         + '<td>'+(s.allDay?'Dia todo':s.startTime+'–'+s.endTime)+'</td>'
-        + '<td>'+esc(s.type)+extra+'</td>'
+        + '<td>'+esc(s.type)+'</td>'
         + '<td><span class="nao-abatido">'+minToHM(dur)+'</span></td>'
         + '</tr>';
     });
@@ -2200,28 +1978,21 @@ function renderReportsView(){
   const anyTrained = state.cards.some(c=> state.schedules.some(s=>s.cardId===c.id && s.status==='concluida' && s.type==='Treinamento'));
   if(!anyTrained) html += '<tr><td colspan="4" class="hint">Nenhum treinamento concluído registrado ainda.</td></tr>';
   state.cards.forEach(c=>{
+    const t = collectTrainedFromCard(c);
     const trainSchedules = state.schedules.filter(s=>s.cardId===c.id && s.status==='concluida' && s.type==='Treinamento');
-    const mods = new Set();
-    const screens = new Set();
     const users = new Set();
-    trainSchedules.forEach(s=>{
-      (s.modules||[]).forEach(m=>mods.add(m));
-      (s.trainedScreens||[]).forEach(sc=>screens.add(sc));
-      (s.trainedUsers||'').split(',').map(u=>u.trim()).filter(Boolean).forEach(u=>users.add(u));
-    });
-    if(mods.size || screens.size || users.size){
+    trainSchedules.forEach(s=>{ (s.trainedUsers||'').split(',').map(u=>u.trim()).filter(Boolean).forEach(u=>users.add(u)); });
+    if(t.modules.length || t.screens.length || users.size){
       const client=getClient(c.clientId);
       html += '<tr><td>'+esc(client?client.name:'—')+'</td>'
-        + '<td>'+([...mods].map(m=>'<span class="chip" style="background:var(--brand);margin-right:4px;">'+esc(m)+'</span>').join('')||'<span class="hint">—</span>')+'</td>'
-        + '<td>'+([...screens].map(esc).join(', ')||'<span class="hint">—</span>')+'</td>'
+        + '<td>'+([...t.modules].map(m=>'<span class="chip" style="background:var(--brand);margin-right:4px;">'+esc(m)+'</span>').join('')||'<span class="hint">—</span>')+'</td>'
+        + '<td>'+([...t.screens].map(esc).join(', ')||'<span class="hint">—</span>')+'</td>'
         + '<td>'+([...users].map(esc).join(', ')||'<span class="hint">—</span>')+'</td></tr>';
     }
   });
   html += '</tbody></table></div>';
 
-  html += '<div class="section-card"><h3>Horas realizadas por analista</h3>'
-    + '<p class="hint" style="margin-top:-4px;">Quando uma agenda tem 2+ analistas, o tempo é contado integralmente para cada um.</p>'
-    + '<table><thead><tr><th>Analista</th><th>Sessões concluídas</th><th>Total de horas</th></tr></thead><tbody>';
+  html += '<div class="section-card"><h3>Horas realizadas por analista</h3><table><thead><tr><th>Analista</th><th>Sessões concluídas</th><th>Total de horas</th></tr></thead><tbody>';
   if(!state.analysts.length) html += '<tr><td colspan="3" class="hint">Nenhum analista cadastrado.</td></tr>';
   state.analysts.forEach(a=>{
     const scheds = schedulesForAnalyst(a.id).filter(s=>s.status==='concluida');
@@ -2239,20 +2010,6 @@ function renderReportsView(){
     html += '<tr'+(a.inactive?' class="row-inactive"':'')+'><td>'+esc(a.name)+(a.inactive?' <span class="badge" style="background:#B9CAD5;color:#fff;">Inativo</span>':'')+'</td><td>'+(names.length? names.join(', ') : '<span class="hint">Nenhum</span>')+'</td></tr>';
   });
   html += '</tbody></table></div>';
-
-  const internalWithClient = state.schedules.filter(s=> isInternalType(s.type) && s.clientId);
-  html += '<div class="section-card"><h3>Agendas internas vinculadas a cliente</h3>'
-    + '<p class="hint" style="margin-top:-4px;">Agendas de tipo interno (não são atendimento direto) que ainda assim foram vinculadas a um cliente específico.</p>'
-    + '<table><thead><tr><th>Cliente</th><th>Analista</th><th>Data</th><th>Horário</th><th>Tipo</th><th>Observações</th></tr></thead><tbody>';
-  if(!internalWithClient.length) html += '<tr><td colspan="6" class="hint">Nenhuma agenda interna vinculada a cliente no momento.</td></tr>';
-  internalWithClient.sort((a,b)=> (b.date+(b.startTime||'')).localeCompare(a.date+(a.startTime||''))).forEach(s=>{
-    const client = getClient(s.clientId);
-    const naoAbatido = !s.cardId;
-    html += '<tr>'
-      + '<td>'+esc(client?client.name:'—')+(naoAbatido?' <span class="nao-abatido-pill">Não abatido</span>':'')+'</td>'
-      + '<td>'+esc(scheduleAnalystNames(s))+'</td><td>'+scheduleDateText(s)+'</td><td>'+(s.allDay?'Dia todo':s.startTime+'–'+s.endTime)+'</td><td>'+esc(s.type)+'</td><td>'+esc(s.notes||'—')+'</td></tr>';
-  });
-  html += '</tbody></table></div>';
   return html;
 }
 
@@ -2268,16 +2025,21 @@ function renderClientsView(){
   const q = ui.clientSearch.trim().toLowerCase();
   let clients = state.clients;
   if(q){ clients = clients.filter(cl=> cl.name.toLowerCase().includes(q) || (cl.code||'').toLowerCase().includes(q) || (cl.cnpj||'').toLowerCase().includes(q) || (cl.companyName||'').toLowerCase().includes(q)); }
-  html += '<div class="section-card" style="overflow-x:auto;"><table><thead><tr><th>Código</th><th>Nome fantasia</th><th>Razão social</th><th>CNPJ</th><th>Tipo</th><th>Segmento</th><th>Cidade</th><th>Contato</th><th>E-mail</th><th>Telefone</th><th>Cards</th><th></th></tr></thead><tbody>';
-  if(!clients.length) html += '<tr><td colspan="12" class="hint">Nenhum cliente encontrado.</td></tr>';
+  html += '<div class="section-card" style="overflow-x:auto;"><table><thead><tr><th>Código</th><th>Nome fantasia</th><th>Razão social</th><th>CNPJ</th><th>Tipo</th><th>Saldo consolidado</th><th>Cidade</th><th>Contato</th><th>Cards</th><th></th></tr></thead><tbody>';
+  if(!clients.length) html += '<tr><td colspan="10" class="hint">Nenhum cliente encontrado.</td></tr>';
   clients.forEach(cl=>{
     const cardCount = state.cards.filter(c=>c.clientId===cl.id).length;
     const isNovo = (cl.clientType||'novo')==='novo';
     const typeBadge = '<span class="badge" style="background:'+(isNovo?'var(--gold-soft)':'var(--brand-soft)')+';color:'+(isNovo?'var(--gold)':'var(--brand)')+';">'+(isNovo?'Novo':'Base')+'</span>';
     const hasLinks = cardCount > 0 || schedulesForClient(cl.id).length > 0;
-    html += '<tr><td>'+esc(cl.code||'—')+'</td><td style="font-weight:700;">'+esc(cl.name)+'</td><td>'+esc(cl.companyName||'—')+'</td><td>'+esc(cl.cnpj||'—')+'</td><td>'+typeBadge+'</td><td>'+esc(cl.segment||'—')+'</td><td>'+esc(cl.city||'—')+'</td><td>'+esc(cl.contact||'—')+'</td><td>'+esc(cl.email||'—')+'</td><td>'+esc(cl.phone||'—')+'</td><td>'+cardCount+'</td>'
+    const balHours = clientConsolidatedBalanceHours(cl.id);
+    const balTxt = cardCount ? minToHM(balHours*60) : '—';
+    const balColor = balHours < 0 ? 'var(--danger)' : 'var(--ok)';
+    html += '<tr><td>'+esc(cl.code||'—')+'</td><td style="font-weight:700;">'+esc(cl.name)+'</td><td>'+esc(cl.companyName||'—')+'</td><td>'+esc(cl.cnpj||'—')+'</td><td>'+typeBadge+'</td>'
+      + '<td>'+(cardCount? '<span style="color:'+balColor+';font-weight:700;">'+balTxt+'</span>' : '<span class="hint">—</span>')+'</td>'
+      + '<td>'+esc(cl.city||'—')+'</td><td>'+esc(cl.contact||'—')+'</td><td>'+cardCount+'</td>'
       + '<td><div class="row-actions"><button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="client-edit" data-id="'+cl.id+'">Editar</button>'
-      + '<button class="btn btn-sm btn-danger" data-action="delete-client" data-id="'+cl.id+'" '+(hasLinks?'disabled title="Não é possível excluir: este cliente possui card(s)/agendamento(s) vinculado(s). Remova-os primeiro."':'')+'>Excluir</button></div></td></tr>';
+      + '<button class="btn btn-sm btn-danger" data-action="delete-client" data-id="'+cl.id+'" '+(hasLinks?'disabled title="Não é possível excluir: há vínculos."':'')+'>Excluir</button></div></td></tr>';
   });
   html += '</tbody></table></div>';
   return html;
@@ -2303,14 +2065,10 @@ function renderSettingsView(){
     {k:'nuvem',     l:'Nuvem',     adminOnly:true}
   ];
   const visibleTabs = allTabs.filter(t=> admin || !t.adminOnly);
-  if(!visibleTabs.some(t=> t.k===ui.settingsTab)){
-    ui.settingsTab = visibleTabs[0] ? visibleTabs[0].k : 'produtos';
-  }
+  if(!visibleTabs.some(t=> t.k===ui.settingsTab)){ ui.settingsTab = visibleTabs[0] ? visibleTabs[0].k : 'produtos'; }
 
   let html = '<div class="settings-tabs">';
-  visibleTabs.forEach(t=>{
-    html += '<button class="btn btn-sm'+(ui.settingsTab===t.k?' btn-primary':'')+'" data-action="settings-tab" data-tab="'+t.k+'">'+t.l+'</button>';
-  });
+  visibleTabs.forEach(t=>{ html += '<button class="btn btn-sm'+(ui.settingsTab===t.k?' btn-primary':'')+'" data-action="settings-tab" data-tab="'+t.k+'">'+t.l+'</button>'; });
   html += '</div>';
 
   if(ui.settingsTab!=='nuvem'){
@@ -2322,13 +2080,13 @@ function renderSettingsView(){
 
   if(ui.settingsTab==='analistas'){
     html += '<div class="section-card"><h3>Analistas</h3>'
-      + '<p class="hint" style="margin-top:-4px;">Cada analista precisa de um login e senha próprios. Analistas inativos não conseguem logar. A cor do analista é usada para destacar as agendas dele no calendário.</p>'
+      + '<p class="hint" style="margin-top:-4px;">Cada analista precisa de login e senha próprios. A cor do analista é usada para destacar as agendas dele no calendário.</p>'
       + '<table><thead><tr><th></th><th>Nome</th><th>Usuário</th><th>Quadro</th><th>Cor</th><th>Perfil</th><th>Situação</th><th></th></tr></thead><tbody>';
     state.analysts.forEach(a=>{
       const board = boardOfAnalyst(a.id);
       const linkedScheds = schedulesForAnalyst(a.id).length;
       const canDelete = !a.isAdmin && linkedScheds === 0 && !(board && cardsInBoard(board.id).length);
-      const blockTitle = a.isAdmin ? 'Administrador do sistema não pode ser excluído.' : (linkedScheds ? 'Não é possível excluir: há '+linkedScheds+' agendamento(s) vinculado(s) a este analista.' : (board && cardsInBoard(board.id).length ? 'Não é possível excluir: há cards vinculados ao quadro deste analista.' : ''));
+      const blockTitle = a.isAdmin ? 'Administrador do sistema não pode ser excluído.' : (linkedScheds ? 'Não é possível excluir: há '+linkedScheds+' agendamento(s) vinculado(s).' : (board && cardsInBoard(board.id).length ? 'Não é possível excluir: há cards vinculados.' : ''));
       html += '<tr'+(a.inactive?' class="row-inactive"':'')+'>'
         + '<td><span class="side-dot" style="background:'+(a.inactive?'#B9CAD5':a.color)+';display:inline-block;"></span></td>'
         + '<td>'+esc(a.name)+'</td>'
@@ -2344,114 +2102,89 @@ function renderSettingsView(){
     });
     html += '</tbody></table><div style="margin-top:12px;"><button class="btn btn-primary btn-sm" data-action="open-modal" data-modal="analyst-new">+ Novo analista</button></div></div>';
   } else if(ui.settingsTab==='produtos'){
-    html += '<div class="section-card"><h3>Produtos contratados — cadastro</h3>'
-      + '<p class="hint" style="margin-top:-4px;">Produtos inativos ficam ocultos nos novos cards, mas continuam vinculados aos que já os utilizam.</p>';
-    if(!state.productTags.length){
-      html += '<p class="hint" style="margin-top:-2px;">Nenhum produto cadastrado ainda.</p>';
-    } else {
+    html += '<div class="section-card"><h3>Produtos contratados — cadastro</h3>';
+    if(!state.productTags.length){ html += '<p class="hint">Nenhum produto cadastrado ainda.</p>'; }
+    else {
       html += '<table><thead><tr><th></th><th>Produto</th><th>Clientes vinculados</th><th>Situação</th><th></th></tr></thead><tbody>';
       state.productTags.forEach(t=>{
         const linkedCards = cardsUsingProduct(t.id);
         const names = linkedCards.map(c=>{ const cl=getClient(c.clientId); return esc(cl?cl.name:'—'); });
         const canDelete = linkedCards.length===0;
         html += '<tr'+(t.inactive?' class="row-inactive"':'')+'><td><span class="side-dot" style="background:'+(t.inactive?'#B9CAD5':t.color)+';display:inline-block;"></span></td>'
-          + '<td style="font-weight:700;">'+esc(t.name)+'</td>'
-          + '<td>'+(names.length? names.join(', ') : '<span class="hint">Nenhum</span>')+'</td>'
+          + '<td style="font-weight:700;">'+esc(t.name)+'</td><td>'+(names.length? names.join(', ') : '<span class="hint">Nenhum</span>')+'</td>'
           + '<td>'+switchCell('product', t.id, t.inactive, 'Ativo', 'Inativo')+'</td>'
-          + '<td><div class="row-actions">'
-            + '<button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="product-edit" data-id="'+t.id+'">Editar</button>'
-            + '<button class="btn btn-sm btn-danger" data-action="delete-product" data-id="'+t.id+'" '+(canDelete?'':'disabled title="Não é possível excluir: há '+linkedCards.length+' cliente(s) vinculado(s) a este produto."')+'>Excluir</button>'
-            + '</div></td></tr>';
+          + '<td><div class="row-actions"><button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="product-edit" data-id="'+t.id+'">Editar</button>'
+          + '<button class="btn btn-sm btn-danger" data-action="delete-product" data-id="'+t.id+'" '+(canDelete?'':'disabled title="Há clientes vinculados."')+'>Excluir</button></div></td></tr>';
       });
       html += '</tbody></table>';
     }
     html += '<div style="margin-top:12px;"><button class="btn btn-primary btn-sm" data-action="open-modal" data-modal="product-new">+ Novo produto</button></div></div>';
   } else if(ui.settingsTab==='modulos'){
-    html += '<div class="section-card"><h3>Módulos do sistema — cadastro</h3>'
-      + '<p class="hint" style="margin-top:-4px;">Módulos inativos ficam ocultos em novos agendamentos, mas permanecem vinculados aos já existentes.</p>';
-    if(!state.modules.length){
-      html += '<p class="hint" style="margin-top:-2px;">Nenhum módulo cadastrado ainda.</p>';
-    } else {
+    html += '<div class="section-card"><h3>Módulos do sistema — cadastro</h3>';
+    if(!state.modules.length){ html += '<p class="hint">Nenhum módulo cadastrado ainda.</p>'; }
+    else {
       html += '<table><thead><tr><th>Módulo</th><th>Agendamentos vinculados</th><th>Situação</th><th></th></tr></thead><tbody>';
       state.modules.forEach(m=>{
         const linked = schedulesUsingModule(m.name);
         const clientNames = clientNamesForSchedules(linked);
         const linkedScreens = screensForModule(m.id);
         const canDelete = linked.length===0 && linkedScreens.length===0;
-        const blockTitle = linked.length ? 'Não é possível excluir: há '+linked.length+' agendamento(s) usando este módulo.' : (linkedScreens.length ? 'Não é possível excluir: há '+linkedScreens.length+' tela(s) cadastrada(s) neste módulo.' : '');
         html += '<tr'+(m.inactive?' class="row-inactive"':'')+'><td style="font-weight:700;">'+esc(m.name)+'</td>'
           + '<td>'+(linked.length ? (linked.length+' agendamento(s)'+(clientNames.length? ' — '+clientNames.map(esc).join(', '):'')) : '<span class="hint">Nenhum</span>')+'</td>'
           + '<td>'+switchCell('module', m.id, m.inactive, 'Ativo', 'Inativo')+'</td>'
-          + '<td><div class="row-actions">'
-            + '<button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="module-edit" data-id="'+m.id+'">Editar</button>'
-            + '<button class="btn btn-sm btn-danger" data-action="delete-module" data-id="'+m.id+'" '+(canDelete?'':'disabled title="'+esc(blockTitle)+'"')+'>Excluir</button>'
-            + '</div></td></tr>';
+          + '<td><div class="row-actions"><button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="module-edit" data-id="'+m.id+'">Editar</button>'
+          + '<button class="btn btn-sm btn-danger" data-action="delete-module" data-id="'+m.id+'" '+(canDelete?'':'disabled title="Há vínculos."')+'>Excluir</button></div></td></tr>';
       });
       html += '</tbody></table>';
     }
     html += '<div style="margin-top:12px;"><button class="btn btn-primary btn-sm" data-action="open-modal" data-modal="module-new">+ Novo módulo</button></div></div>';
   } else if(ui.settingsTab==='telas'){
-    html += '<div class="section-card"><h3>Telas — cadastro</h3>'
-      + '<p class="hint" style="margin-top:-4px;">Telas inativas ficam ocultas em novos agendamentos de treinamento, mas permanecem vinculadas aos já existentes.</p>';
-    if(!state.modules.length){
-      html += '<p class="hint" style="margin-top:-2px;">Cadastre um módulo primeiro — toda tela precisa estar vinculada a um módulo.</p>';
-    } else if(!state.screens.length){
-      html += '<p class="hint" style="margin-top:-2px;">Nenhuma tela cadastrada ainda.</p>';
-    } else {
+    html += '<div class="section-card"><h3>Telas — cadastro</h3>';
+    if(!state.modules.length){ html += '<p class="hint">Cadastre um módulo primeiro.</p>'; }
+    else if(!state.screens.length){ html += '<p class="hint">Nenhuma tela cadastrada ainda.</p>'; }
+    else {
       html += '<table><thead><tr><th>Tela</th><th>Módulo</th><th>Agendamentos vinculados</th><th>Situação</th><th></th></tr></thead><tbody>';
       state.screens.forEach(scr=>{
         const mod = byId(state.modules, scr.moduleId);
         const linked = schedulesUsingScreen(scr.name);
-        const clientNames = clientNamesForSchedules(linked);
         const canDelete = linked.length===0;
         html += '<tr'+(scr.inactive?' class="row-inactive"':'')+'><td style="font-weight:700;">'+esc(scr.name)+'</td><td>'+esc(mod?mod.name:'—')+'</td>'
-          + '<td>'+(linked.length ? (linked.length+' agendamento(s)'+(clientNames.length? ' — '+clientNames.map(esc).join(', '):'')) : '<span class="hint">Nenhum</span>')+'</td>'
+          + '<td>'+(linked.length ? (linked.length+' agendamento(s)') : '<span class="hint">Nenhum</span>')+'</td>'
           + '<td>'+switchCell('screen', scr.id, scr.inactive, 'Ativo', 'Inativo')+'</td>'
-          + '<td><div class="row-actions">'
-            + '<button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="screen-edit" data-id="'+scr.id+'">Editar</button>'
-            + '<button class="btn btn-sm btn-danger" data-action="delete-screen" data-id="'+scr.id+'" '+(canDelete?'':'disabled title="Não é possível excluir: há '+linked.length+' agendamento(s) usando esta tela."')+'>Excluir</button>'
-            + '</div></td></tr>';
+          + '<td><div class="row-actions"><button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="screen-edit" data-id="'+scr.id+'">Editar</button>'
+          + '<button class="btn btn-sm btn-danger" data-action="delete-screen" data-id="'+scr.id+'" '+(canDelete?'':'disabled title="Há agendamentos usando esta tela."')+'>Excluir</button></div></td></tr>';
       });
       html += '</tbody></table>';
     }
-    if(state.modules.length){
-      html += '<div style="margin-top:12px;"><button class="btn btn-primary btn-sm" data-action="open-modal" data-modal="screen-new">+ Nova tela</button></div>';
-    }
+    if(state.modules.length){ html += '<div style="margin-top:12px;"><button class="btn btn-primary btn-sm" data-action="open-modal" data-modal="screen-new">+ Nova tela</button></div>'; }
     html += '</div>';
   } else if(ui.settingsTab==='tipos'){
-    html += '<div class="section-card"><h3>Tipos de agenda — cadastro</h3>'
-      + '<p class="hint" style="margin-top:-4px;">Tipos inativos ficam ocultos em novos agendamentos. O tipo <strong>Férias</strong> contabiliza apenas dias úteis (seg–sex), 8h48 por dia.</p>';
-    if(!state.agendaTypes.length){
-      html += '<p class="hint" style="margin-top:-2px;">Nenhum tipo cadastrado ainda.</p>';
-    } else {
+    html += '<div class="section-card"><h3>Tipos de agenda — cadastro</h3>';
+    if(!state.agendaTypes.length){ html += '<p class="hint">Nenhum tipo cadastrado ainda.</p>'; }
+    else {
       html += '<table><thead><tr><th>Tipo</th><th>Categoria</th><th>Agendamentos vinculados</th><th>Situação</th><th></th></tr></thead><tbody>';
       state.agendaTypes.forEach(t=>{
         const linked = schedulesUsingType(t.name);
-        const clientNames = clientNamesForSchedules(linked);
         const canDelete = linked.length===0;
         const catLabel = t.isServico ? 'Serviço' : (t.isInternal ? 'Interna' : 'Implantação');
         const catBg = t.isServico ? '#EDE7F6' : (t.isInternal?'var(--gold-soft)':'var(--brand-soft)');
         const catColor = t.isServico ? '#7B4B94' : (t.isInternal?'var(--gold)':'var(--brand)');
         html += '<tr'+(t.inactive?' class="row-inactive"':'')+'><td style="font-weight:700;">'+esc(t.name)+'</td>'
           + '<td><span class="badge" style="background:'+catBg+';color:'+catColor+';">'+catLabel+'</span></td>'
-          + '<td>'+(linked.length ? (linked.length+' agendamento(s)'+(clientNames.length? ' — '+clientNames.map(esc).join(', '):'')) : '<span class="hint">Nenhum</span>')+'</td>'
+          + '<td>'+(linked.length ? (linked.length+' agendamento(s)') : '<span class="hint">Nenhum</span>')+'</td>'
           + '<td>'+switchCell('type', t.id, t.inactive, 'Ativo', 'Inativo')+'</td>'
-          + '<td><div class="row-actions">'
-            + '<button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="type-edit" data-id="'+t.id+'">Editar</button>'
-            + '<button class="btn btn-sm btn-danger" data-action="delete-type" data-id="'+t.id+'" '+(canDelete?'':'disabled title="Não é possível excluir: há '+linked.length+' agendamento(s) usando este tipo."')+'>Excluir</button>'
-            + '</div></td></tr>';
+          + '<td><div class="row-actions"><button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="type-edit" data-id="'+t.id+'">Editar</button>'
+          + '<button class="btn btn-sm btn-danger" data-action="delete-type" data-id="'+t.id+'" '+(canDelete?'':'disabled title="Há agendamentos usando este tipo."')+'>Excluir</button></div></td></tr>';
       });
       html += '</tbody></table>';
     }
     html += '<div style="margin-top:12px;"><button class="btn btn-primary btn-sm" data-action="open-modal" data-modal="type-new">+ Novo tipo</button></div></div>';
   } else if(ui.settingsTab==='acesso' && admin){
     const meAnalyst = currentUser && currentUser.analystId ? getAnalyst(currentUser.analystId) : null;
-    html += '<div class="section-card"><h3>Credenciais de acesso</h3>'
-      + '<p class="hint" style="margin-top:-4px;">Todos os logins cadastrados no sistema. As senhas ficam salvas junto aos dados (visíveis apenas para administradores).</p>';
-    if(!state.analysts.length){
-      html += '<p class="hint">Nenhum analista cadastrado.</p>';
-    } else {
-      html += '<table><thead><tr><th>Nome</th><th>Usuário (login)</th><th>Senha</th><th>Perfil</th><th>Situação</th><th></th></tr></thead><tbody>';
+    html += '<div class="section-card"><h3>Credenciais de acesso</h3>';
+    if(!state.analysts.length){ html += '<p class="hint">Nenhum analista cadastrado.</p>'; }
+    else {
+      html += '<table><thead><tr><th>Nome</th><th>Usuário</th><th>Senha</th><th>Perfil</th><th>Situação</th><th></th></tr></thead><tbody>';
       state.analysts.forEach(a=>{
         html += '<tr'+(a.inactive?' class="row-inactive"':'')+'>'
           + '<td style="font-weight:700;">'+esc(a.name)+(a.isAdmin?' <span class="badge" style="background:var(--gold-soft);color:var(--gold);">ADMIN</span>':'')+'</td>'
@@ -2465,10 +2198,8 @@ function renderSettingsView(){
       html += '</tbody></table>';
     }
     html += '</div>';
-
     if(meAnalyst){
       html += '<div class="section-card"><h3>Trocar minha senha</h3>'
-        + '<p class="hint" style="margin-top:-4px;">Logado como <strong>'+esc(meAnalyst.name)+'</strong> ('+esc(meAnalyst.username||'—')+').</p>'
         + '<form data-form="change-password" data-id="'+meAnalyst.id+'">'
         + '<div class="field-row">'
         + '<div class="field"><label>Senha atual</label><input type="password" name="currentPassword" required></div>'
@@ -2478,31 +2209,26 @@ function renderSettingsView(){
         + '<div class="form-actions"><button type="submit" class="btn btn-primary">Alterar senha</button></div>'
         + '</form></div>';
     }
-
     html += '<div class="section-card"><h3>Conta mestra de emergência</h3>'
-      + '<p class="hint" style="margin-top:-4px;">Esta conta sempre funciona, mesmo que todas as credenciais de analistas sejam perdidas. Guarde com segurança.</p>'
       + '<table><thead><tr><th>Usuário</th><th>Senha</th></tr></thead><tbody>'
       + '<tr><td><code style="background:var(--surface-2);padding:2px 6px;border-radius:5px;">'+MASTER_USER+'</code></td>'
       + '<td><code style="background:var(--surface-2);padding:2px 6px;border-radius:5px;">'+MASTER_PASS+'</code></td></tr>'
-      + '</tbody></table>'
-      + '</div>';
+      + '</tbody></table></div>';
   } else if(ui.settingsTab==='nuvem' && admin){
     html += '<div class="section-card"><h3>Sincronização na nuvem</h3>';
     const hasDefault = !!(DEFAULT_CLOUD_CONFIG.url && DEFAULT_CLOUD_CONFIG.anonKey);
     if(cloudStatus==='connected'){
-      html += '<p class="hint" style="margin-top:-2px;">☁ Conectado'+(usingDefaultCloud?' à nuvem padrão deste site':' a uma nuvem configurada manualmente neste navegador')+'.</p>'
-        + '<button class="btn btn-danger btn-sm" data-action="cloud-disconnect" style="margin-top:10px;">Desconectar (voltar a salvar só neste navegador)</button>';
+      html += '<p class="hint">☁ Conectado'+(usingDefaultCloud?' à nuvem padrão deste site':' a uma nuvem configurada manualmente')+'.</p>'
+        + '<button class="btn btn-danger btn-sm" data-action="cloud-disconnect">Desconectar</button>';
     } else {
       if(cloudStatus==='error') html += '<div class="error-msg">'+esc(cloudErrorMsg)+'</div>';
       if(hasDefault){
-        html += '<p class="hint" style="margin-top:-2px;">Este navegador está configurado para salvar só localmente.</p>'
+        html += '<p class="hint">Este navegador está configurado para salvar só localmente.</p>'
           + '<button class="btn btn-primary btn-sm" data-action="cloud-reconnect-default" style="margin-bottom:16px;">Reconectar à nuvem deste site</button>';
-      } else {
-        html += '<p class="hint" style="margin-top:-2px;">Por padrão, os dados ficam salvos só neste navegador.</p>';
       }
       html += '<form data-form="cloud-config">'
-        + '<div class="field"><label>Project URL</label><input type="text" name="url" placeholder="https://xxxxx.supabase.co" value="'+esc(cloudConfig?cloudConfig.url:'')+'" required></div>'
-        + '<div class="field"><label>Anon public key</label><input type="text" name="anonKey" placeholder="eyJhbGci..." value="'+esc(cloudConfig?cloudConfig.anonKey:'')+'" required></div>'
+        + '<div class="field"><label>Project URL</label><input type="text" name="url" value="'+esc(cloudConfig?cloudConfig.url:'')+'" required></div>'
+        + '<div class="field"><label>Anon public key</label><input type="text" name="anonKey" value="'+esc(cloudConfig?cloudConfig.anonKey:'')+'" required></div>'
         + '<div class="form-actions"><span style="flex:1;"></span><button type="submit" class="btn btn-primary">Conectar</button></div>'
         + '</form>';
     }
@@ -2516,24 +2242,21 @@ function renderModal(){
   const m = ui.modal;
   let inner = '';
   if(m.type==='analyst-new' || m.type==='analyst-edit'){
-    if(!isAdminUser()){
-      return '<div class="overlay"><div class="modal"><p>Sem permissão para esta ação.</p><div class="form-actions"><button class="btn btn-primary" data-action="close-modal">Fechar</button></div></div></div>';
-    }
+    if(!isAdminUser()){ return '<div class="overlay"><div class="modal"><p>Sem permissão.</p></div></div>'; }
     const a = m.type==='analyst-edit' ? getAnalyst(m.id) : null;
     const isSelf = a && currentUser && currentUser.analystId===a.id;
     const editingAdmin = a && a.isAdmin;
     const canToggleAdmin = isAdminUser() && !editingAdmin;
     inner = '<div class="modal-header"><h3>'+(a?'Editar analista':'Novo analista')+'</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
-      + (editingAdmin ? '<div class="hint" style="background:var(--gold-soft);color:var(--gold);border-radius:8px;padding:8px 11px;font-weight:600;margin-bottom:12px;">Este é o analista administrador do sistema.</div>' : '')
       + '<form data-form="analyst" data-id="'+(a?a.id:'')+'">'
       + '<div class="field"><label>Nome</label><input type="text" name="name" value="'+esc(a?a.name:'')+'" required></div>'
       + '<div class="field-row">'
-      + '<div class="field"><label>Usuário (login)</label><input type="text" name="username" value="'+esc(a?a.username:'')+'" placeholder="ex: joao.silva" required autocomplete="off"></div>'
-      + '<div class="field"><label>Cor (destaca no calendário)</label><input type="color" name="color" value="'+(a?a.color:colorForIndex(state.analysts.length))+'"></div>'
+      + '<div class="field"><label>Usuário (login)</label><input type="text" name="username" value="'+esc(a?a.username:'')+'" required autocomplete="off"></div>'
+      + '<div class="field"><label>Cor</label><input type="color" name="color" value="'+(a?a.color:colorForIndex(state.analysts.length))+'"></div>'
       + '</div>'
       + '<div class="field-row">'
-      + '<div class="field"><label>'+(a?'Nova senha (deixe em branco para manter)':'Senha')+'</label><input type="password" name="password" placeholder="'+(a?'••••••••':'Mínimo 4 caracteres')+'" '+(a?'':'required')+' minlength="4" autocomplete="new-password"></div>'
-      + '<div class="field"><label>'+(a?'Confirmar nova senha':'Confirmar senha')+'</label><input type="password" name="passwordConfirm" placeholder="Repita a senha" '+(a?'':'required')+' minlength="4" autocomplete="new-password"></div>'
+      + '<div class="field"><label>'+(a?'Nova senha (em branco mantém)':'Senha')+'</label><input type="password" name="password" '+(a?'':'required')+' minlength="4" autocomplete="new-password"></div>'
+      + '<div class="field"><label>Confirmar senha</label><input type="password" name="passwordConfirm" '+(a?'':'required')+' minlength="4" autocomplete="new-password"></div>'
       + '</div>'
       + (canToggleAdmin ? '<div class="field"><label class="check-pill" style="width:fit-content;"><input type="checkbox" name="isAdmin"> Conceder perfil de administrador</label></div>' : '')
       + (isSelf ? '<div class="hint">Você está editando seu próprio usuário.</div>' : '')
@@ -2542,30 +2265,29 @@ function renderModal(){
     const c = m.type==='client-edit' ? getClient(m.id) : null;
     const ctype = c ? (c.clientType||'novo') : 'novo';
     inner = '<div class="modal-header"><h3>'+(c?'Editar cliente':'Novo cliente')+'</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
-      + '<form data-form="client" data-id="'+(c?c.id:'')+'" data-then="'+(m.then||'')+'">'
-      + '<div class="field-row"><div class="field"><label>Código</label><input type="text" name="code" value="'+esc(c?c.code:'')+'" placeholder="Código único do cliente"></div><div class="field"><label>Tipo de cliente</label><select name="clientType">'
-        + '<option value="novo" '+(ctype==='novo'?'selected':'')+'>Cliente novo</option>'
-        + '<option value="base" '+(ctype==='base'?'selected':'')+'>Cliente da base</option>'
-        + '</select></div></div>'
+      + '<form data-form="client" data-id="'+(c?c.id:'')+'">'
+      + '<div class="field-row"><div class="field"><label>Código</label><input type="text" name="code" value="'+esc(c?c.code:'')+'"></div><div class="field"><label>Tipo</label><select name="clientType">'
+        + '<option value="novo" '+(ctype==='novo'?'selected':'')+'>Novo</option>'
+        + '<option value="base" '+(ctype==='base'?'selected':'')+'>Base</option>'
+      + '</select></div></div>'
       + '<div class="field"><label>Nome fantasia</label><input type="text" name="name" value="'+esc(c?c.name:'')+'" required></div>'
       + '<div class="field"><label>Razão social</label><input type="text" name="companyName" value="'+esc(c?c.companyName:'')+'"></div>'
-      + '<div class="field-row"><div class="field"><label>CNPJ</label><input type="text" name="cnpj" value="'+esc(c?c.cnpj:'')+'" placeholder="00.000.000/0000-00"></div><div class="field"><label>IE</label><input type="text" name="ie" value="'+esc(c?c.ie:'')+'"></div></div>'
-      + '<div class="field-row"><div class="field"><label>Segmento</label><input type="text" name="segment" value="'+esc(c?c.segment:'')+'" placeholder="Ex: Varejo, Alimentício..."></div><div class="field"><label>Cidade</label><input type="text" name="city" value="'+esc(c?c.city:'')+'"></div></div>'
-      + '<div class="field"><label>Contato (pessoa)</label><input type="text" name="contact" value="'+esc(c?c.contact:'')+'"></div>'
+      + '<div class="field-row"><div class="field"><label>CNPJ</label><input type="text" name="cnpj" value="'+esc(c?c.cnpj:'')+'"></div><div class="field"><label>IE</label><input type="text" name="ie" value="'+esc(c?c.ie:'')+'"></div></div>'
+      + '<div class="field-row"><div class="field"><label>Segmento</label><input type="text" name="segment" value="'+esc(c?c.segment:'')+'"></div><div class="field"><label>Cidade</label><input type="text" name="city" value="'+esc(c?c.city:'')+'"></div></div>'
+      + '<div class="field"><label>Contato</label><input type="text" name="contact" value="'+esc(c?c.contact:'')+'"></div>'
       + '<div class="field-row"><div class="field"><label>E-mail</label><input type="email" name="email" value="'+esc(c?c.email:'')+'"></div><div class="field"><label>Telefone</label><input type="tel" name="phone" value="'+esc(c?c.phone:'')+'"></div></div>'
       + '<div class="form-actions"><button type="submit" class="btn btn-primary">Salvar</button></div></form>';
   } else if(m.type==='product-new' || m.type==='product-edit'){
     const p = m.type==='product-edit' ? byId(state.productTags, m.id) : null;
     inner = '<div class="modal-header"><h3>'+(p?'Editar produto':'Novo produto')+'</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
       + '<form data-form="product" data-id="'+(p?p.id:'')+'">'
-      + '<div class="field"><label>Nome do produto</label><input type="text" name="name" value="'+esc(p?p.name:'')+'" required></div>'
+      + '<div class="field"><label>Nome</label><input type="text" name="name" value="'+esc(p?p.name:'')+'" required></div>'
       + '<div class="field"><label>Cor</label><input type="color" name="color" value="'+(p?p.color:colorForIndex(state.productTags.length))+'"></div>'
       + '<div class="form-actions"><button type="submit" class="btn btn-primary">Salvar</button></div></form>';
   } else if(m.type==='module-new' || m.type==='module-edit'){
     const md = m.type==='module-edit' ? byId(state.modules, m.id) : null;
     inner = '<div class="modal-header"><h3>'+(md?'Editar módulo':'Novo módulo')+'</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
-      + '<form data-form="module" data-id="'+(md?md.id:'')+'">'
-      + '<div class="field"><label>Nome do módulo</label><input type="text" name="name" value="'+esc(md?md.name:'')+'" required></div>'
+      + '<form data-form="module" data-id="'+(md?md.id:'')+'"><div class="field"><label>Nome</label><input type="text" name="name" value="'+esc(md?md.name:'')+'" required></div>'
       + '<div class="form-actions"><button type="submit" class="btn btn-primary">Salvar</button></div></form>';
   } else if(m.type==='screen-new' || m.type==='screen-edit'){
     const scr = m.type==='screen-edit' ? byId(state.screens, m.id) : null;
@@ -2573,21 +2295,20 @@ function renderModal(){
       + '<form data-form="screen" data-id="'+(scr?scr.id:'')+'">'
       + '<div class="field"><label>Nome da tela</label><input type="text" name="name" value="'+esc(scr?scr.name:'')+'" required></div>'
       + '<div class="field"><label>Módulo</label><select name="moduleId">';
-    state.modules.forEach(md=> inner += '<option value="'+md.id+'" '+(scr && scr.moduleId===md.id?'selected':'')+'>'+esc(md.name)+(md.inactive?' (inativo)':'')+'</option>');
-    inner += '</select></div>'
-      + '<div class="form-actions"><button type="submit" class="btn btn-primary">Salvar</button></div></form>';
+    state.modules.forEach(md=> inner += '<option value="'+md.id+'" '+(scr && scr.moduleId===md.id?'selected':'')+'>'+esc(md.name)+'</option>');
+    inner += '</select></div><div class="form-actions"><button type="submit" class="btn btn-primary">Salvar</button></div></form>';
   } else if(m.type==='type-new' || m.type==='type-edit'){
     const tp = m.type==='type-edit' ? byId(state.agendaTypes, m.id) : null;
     const isInt = tp ? !!tp.isInternal : false;
     const isSrv = tp ? !!tp.isServico : false;
     inner = '<div class="modal-header"><h3>'+(tp?'Editar tipo':'Novo tipo')+'</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
       + '<form data-form="agenda-type" data-id="'+(tp?tp.id:'')+'">'
-      + '<div class="field"><label>Nome do tipo</label><input type="text" name="name" value="'+esc(tp?tp.name:'')+'" required></div>'
-      + '<div class="field"><label>Categoria</label><select name="catKind" id="type-cat-kind">'
+      + '<div class="field"><label>Nome</label><input type="text" name="name" value="'+esc(tp?tp.name:'')+'" required></div>'
+      + '<div class="field"><label>Categoria</label><select name="catKind">'
         + '<option value="implantacao" '+(!isInt && !isSrv?'selected':'')+'>Implantação</option>'
-        + '<option value="interna" '+(isInt?'selected':'')+'>Interna (não faturável)</option>'
+        + '<option value="interna" '+(isInt?'selected':'')+'>Interna</option>'
         + '<option value="servico" '+(isSrv?'selected':'')+'>Serviço</option>'
-        + '</select><span class="hint" style="margin-top:2px;">Cada tipo pertence a uma das três categorias. Tipos internos chamados <strong>Férias</strong> contam apenas dias úteis (seg–sex), 8h48/dia.</span></div>'
+      + '</select></div>'
       + '<div class="form-actions"><button type="submit" class="btn btn-primary">Salvar</button></div></form>';
   } else if(m.type==='list-new'){
     inner = '<div class="modal-header"><h3>Nova lista</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
@@ -2600,13 +2321,26 @@ function renderModal(){
     const cnHours = cdraft.contractedHours!=null ? cdraft.contractedHours : 0;
     const cnStart = cdraft.startDate || todayISO();
     const cnNewName = cdraft.newClientName || '';
+    const cnUseBalance = cdraft.useExistingBalance === 'on' || cdraft.useExistingBalance === true;
+    /* Saldo consolidado do cliente selecionado (se houver) */
+    const selClient = cnClientId ? getClient(cnClientId) : null;
+    const previousBalance = selClient ? clientConsolidatedBalanceHours(selClient.id) : 0;
+    const hasPrevious = selClient ? clientHasPastCards(selClient.id) : false;
     inner = '<div class="modal-header"><h3>Novo cliente no quadro</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
       + '<form data-form="card-new" data-board="'+m.board+'" data-list="'+(m.list||board.lists[0].id)+'">'
       + '<div class="field"><label>Cliente</label>'+renderClientPicker('clientId', cnClientId, m.clientQuery)+'</div>';
     if(!cnClientId){
-      inner += '<div class="field" id="new-client-name-field"><label>Nome do novo cliente</label><input type="text" name="newClientName" value="'+esc(cnNewName)+'" placeholder="Obrigatório se não selecionar um cliente acima"></div>';
+      inner += '<div class="field"><label>Nome do novo cliente</label><input type="text" name="newClientName" value="'+esc(cnNewName)+'" placeholder="Obrigatório se não selecionar um cliente acima"></div>';
     }
-    inner += '<div class="field-row"><div class="field"><label>Horas contratadas</label><input type="number" min="0" step="0.5" name="contractedHours" value="'+esc(cnHours)+'"></div><div class="field"><label>Início da implantação</label><input type="date" name="startDate" value="'+esc(cnStart)+'"></div></div>'
+    if(selClient && hasPrevious){
+      inner += '<div class="choice-box">'
+        + '<div class="choice-title">💡 Cliente já possui histórico</div>'
+        + '<div class="choice-desc">Saldo consolidado anterior: <strong>'+minToHM(previousBalance*60)+'</strong> em '+state.cards.filter(c=>c.clientId===selClient.id).length+' card(s).</div>'
+        + '<label class="check-pill" style="margin-top:8px;"><input type="checkbox" name="useExistingBalance" '+(cnUseBalance?'checked':'')+'> Usar as horas disponíveis anteriores neste novo card</label>'
+        + '</div>';
+    }
+    inner += '<div class="field-row"><div class="field"><label>Horas contratadas</label><input type="number" min="0" step="0.5" name="contractedHours" value="'+esc(cnHours)+'"></div>'
+      + '<div class="field"><label>Início</label><input type="date" name="startDate" value="'+esc(cnStart)+'"></div></div>'
       + '<div class="form-actions"><button type="submit" class="btn btn-primary">Criar card</button></div></form>';
   } else if(m.type==='schedule-new' || m.type==='schedule-edit'){
     inner = renderScheduleForm(m);
@@ -2615,15 +2349,13 @@ function renderModal(){
     const dur = scheduleMinutes(s);
     const nAnalysts = scheduleAnalystIds(s).length || 1;
     const perAnalyst = scheduleMinutesPerAnalyst(s);
-    const detailMsg = nAnalysts > 1
-      ? ' (base: '+minToHM(perAnalyst)+' × '+nAnalysts+' analistas)'
-      : '';
+    const detailMsg = nAnalysts > 1 ? ' (base: '+minToHM(perAnalyst)+' × '+nAnalysts+' analistas)' : '';
     inner = '<div class="modal-header"><h3>Confirmar conclusão</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
-      + '<p class="hint" style="margin-top:-6px;">'+(s.title? '<strong>'+esc(s.title)+'</strong> · ':'')+scheduleDateText(s)+' · '+(s.allDay?'Dia todo':s.startTime+'–'+s.endTime)+' · '+esc(s.type)+'</p>'
+      + '<p class="hint">'+(s.title? '<strong>'+esc(s.title)+'</strong> · ':'')+scheduleDateText(s)+' · '+(s.allDay?'Dia todo':s.startTime+'–'+s.endTime)+' · '+esc(s.type)+'</p>'
       + '<form data-form="confirm-complete" data-id="'+s.id+'">'
-      + '<div class="field"><label>Minutos a abater do saldo'+detailMsg+'</label><input type="number" min="0" name="deductMinutes" value="'+dur+'"></div>'
-      + '<div class="field"><label>Observação (opcional)</label><textarea name="notes">'+esc(s.notes||'')+'</textarea></div>'
-      + '<div class="form-actions"><button type="submit" class="btn btn-primary">Confirmar conclusão</button></div></form>';
+      + '<div class="field"><label>Minutos a abater'+detailMsg+'</label><input type="number" min="0" name="deductMinutes" value="'+dur+'"></div>'
+      + '<div class="field"><label>Observação</label><textarea name="notes">'+esc(s.notes||'')+'</textarea></div>'
+      + '<div class="form-actions"><button type="submit" class="btn btn-primary">Confirmar</button></div></form>';
   } else if(m.type==='schedule-report'){
     inner = renderScheduleReportContent(m.id);
   } else if(m.type==='internal-ask-board'){
@@ -2633,12 +2365,8 @@ function renderModal(){
     inner = '<div class="modal-header"><h3>Vincular a um quadro?</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
       + '<div class="choice-box">'
         + '<div class="choice-title">'+esc(client?client.name:'(cliente)')+' — '+esc(s?s.type:'')+'</div>'
-        + '<div class="choice-desc">'+(s?scheduleDateText(s):'')+' · '+(s&&s.allDay?'Dia todo':(s?s.startTime+'–'+s.endTime:''))+' · '+minToHM(dur)+' · '+esc(s?scheduleAnalystNames(s):'')+'</div>'
-        + '<div class="choice-desc" style="margin-top:8px;">Esta é uma <strong>agenda interna</strong> vinculada a um cliente. Deseja <strong>criar um card/quadro</strong> para registrar as horas e abater do saldo contratado?</div>'
-        + '<div class="choice-desc" style="margin-top:6px;background:#fff;border:1px dashed var(--border);border-radius:8px;padding:8px 10px;">'
-          + '<strong>Sim</strong> → cria card no quadro do analista e as horas <strong>consomem o saldo</strong>.<br>'
-          + '<strong>Não</strong> → as horas ficam como <span class="nao-abatido">não abatidas</span> (não consomem o saldo).'
-        + '</div>'
+        + '<div class="choice-desc">'+(s?scheduleDateText(s):'')+' · '+(s&&s.allDay?'Dia todo':(s?s.startTime+'–'+s.endTime:''))+' · '+minToHM(dur)+'</div>'
+        + '<div class="choice-desc" style="margin-top:8px;">Esta é uma <strong>agenda interna</strong> vinculada a um cliente. Deseja criar um <strong>card/quadro</strong> para abater do saldo?</div>'
       + '</div>'
       + '<div class="choice-actions">'
         + '<button class="btn btn-ghost" data-action="internal-answer-no">Não, apenas registrar</button>'
@@ -2646,22 +2374,162 @@ function renderModal(){
       + '</div>';
   } else if(m.type==='after-complete-print'){
     const s = m.payload && m.payload.scheduleId ? byId(state.schedules, m.payload.scheduleId) : null;
-    if(!s){ return '<div class="overlay"><div class="modal"><p>Agendamento não encontrado.</p><div class="form-actions"><button class="btn btn-primary" data-action="close-modal">Fechar</button></div></div></div>'; }
-    const client = s.clientId ? getClient(s.clientId) : null;
+    if(!s) return '<div class="overlay"><div class="modal"><p>Agendamento não encontrado.</p></div></div>';
     const dur = scheduleMinutes(s);
     inner = '<div class="modal-header"><h3>✓ Agenda concluída</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
+      + '<div class="choice-box"><div class="choice-title">'+esc(scheduleDisplayTitle(s))+'</div>'
+        + '<div class="choice-desc">'+scheduleDateText(s)+' · '+(s.allDay?'Dia todo':s.startTime+'–'+s.endTime)+' · '+minToHM(dur)+' abatido(s)</div>'
+        + '<div class="choice-desc" style="margin-top:8px;">Deseja imprimir o relatório do atendimento?</div></div>'
+      + '<div class="choice-actions"><button class="btn btn-ghost" data-action="after-complete-no-print">Não</button>'
+        + '<button class="btn btn-primary" data-action="after-complete-print">🖨 Sim</button></div>';
+  } else if(m.type==='card-conclude-confirm'){
+    const c = m.payload && m.payload.cardId ? getCard(m.payload.cardId) : null;
+    if(!c) return '<div class="overlay"><div class="modal"><p>Card não encontrado.</p></div></div>';
+    const client = getClient(c.clientId);
+    const used = cardUsedMinutes(c);
+    const bal = cardBalanceHours(c);
+    inner = '<div class="modal-header"><h3>Concluir implantação?</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
       + '<div class="choice-box">'
-        + '<div class="choice-title">'+esc(scheduleDisplayTitle(s))+'</div>'
-        + '<div class="choice-desc">'+scheduleDateText(s)+' · '+(s.allDay?'Dia todo':s.startTime+'–'+s.endTime)+' · '+minToHM(dur)+' abatido(s) · '+esc(scheduleAnalystNames(s))+'</div>'
-        + (client?'<div class="choice-desc" style="margin-top:8px;">Cliente: <strong>'+esc(client.name)+'</strong></div>':'')
-        + '<div class="choice-desc" style="margin-top:8px;">Deseja <strong>imprimir o relatório</strong> deste atendimento agora?</div>'
+        + '<div class="choice-title">'+esc(client?client.name:'')+'</div>'
+        + '<div class="choice-desc">Tempo usado: <strong>'+minToHM(used)+'</strong> de <strong>'+c.contractedHours+'h</strong> contratadas.</div>'
+        + '<div class="choice-desc">Saldo que ficará disponível para futuras implantações/serviços: <strong style="color:'+(bal<0?'var(--danger)':'var(--ok)')+';">'+minToHM(bal*60)+'</strong>.</div>'
+        + '<div class="choice-desc" style="margin-top:8px;">Ao confirmar, geraremos o <strong>relatório de fechamento da implantação</strong> com dados do cliente, produtos, módulos/telas e tempo gasto.</div>'
       + '</div>'
-      + '<div class="choice-actions">'
-        + '<button class="btn btn-ghost" data-action="after-complete-no-print">Não, obrigado</button>'
-        + '<button class="btn btn-primary" data-action="after-complete-print">🖨 Sim, imprimir relatório</button>'
-      + '</div>';
+      + '<div class="choice-actions"><button class="btn btn-ghost" data-action="close-modal">Cancelar</button>'
+        + '<button class="btn btn-primary" data-action="card-conclude-confirm">✓ Concluir e gerar relatório</button></div>';
+  } else if(m.type==='card-closing-report'){
+    inner = renderCardClosingReport(m.payload && m.payload.cardId);
+  } else if(m.type==='card-forecast-report'){
+    inner = renderCardForecastReport(m.payload && m.payload.cardId);
   }
-  return '<div class="overlay"><div class="modal'+(m.type&&m.type.startsWith('schedule')?' wide':'')+'">'+inner+'</div></div>';
+  return '<div class="overlay"><div class="modal'+(m.type && (m.type.startsWith('schedule') || m.type==='card-closing-report' || m.type==='card-forecast-report')?' wide':'')+'">'+inner+'</div></div>';
+}
+
+/* Relatório de fechamento da implantação */
+function renderCardClosingReport(cardId){
+  const c = getCard(cardId);
+  if(!c) return '<div class="modal-header"><h3>Card não encontrado</h3><button class="modal-close" data-action="close-modal">✕</button></div>';
+  const client = getClient(c.clientId);
+  const board = getBoard(c.boardId);
+  const analyst = board ? getAnalyst(board.analystId) : null;
+  const products = (c.productTags||[]).map(id => byId(state.productTags, id)).filter(Boolean);
+  const trained = collectTrainedFromCard(c);
+  const used = cardUsedMinutes(c);
+  const bal = cardBalanceHours(c);
+  const startDate = c.startDate;
+  const endDate = c.conclusionDate || todayISO();
+
+  /* Agendas vinculadas ao card, no período da implantação */
+  const cardSchedules = schedulesForCard(c.id).filter(s=> s.status==='concluida');
+  /* Agendas internas do cliente no período (inclui órfãs e as do próprio card) */
+  const internalSchedulesInPeriod = state.schedules.filter(s=>{
+    if(!s.clientId || s.clientId!==c.clientId) return false;
+    if(!isInternalType(s.type)) return false;
+    if(s.status!=='concluida') return false;
+    return s.date >= startDate && s.date <= endDate;
+  });
+  const internalMinutes = internalSchedulesInPeriod.reduce((sum,s)=> sum + scheduleMinutes(s), 0);
+
+  let html = '<div class="modal-header no-print"><h3>Relatório de fechamento da implantação</h3><button class="modal-close" data-action="close-modal">✕</button></div>';
+  html += '<div id="print-report">'
+    + '<h2 style="margin-bottom:2px;">Relatório de Fechamento — Implantação</h2>'
+    + '<p class="hint" style="margin:0 0 16px;">Documento gerado em '+fmtDT(Date.now())+'</p>'
+    + '<h3 style="font-size:14px;margin:12px 0 6px;">Dados do cliente</h3>'
+    + '<table><tbody>'
+    + '<tr><td style="font-weight:700;width:34%;">Nome fantasia</td><td>'+esc(client?client.name:'—')+'</td></tr>'
+    + '<tr><td style="font-weight:700;">Razão social</td><td>'+esc(client?client.companyName||'—':'—')+'</td></tr>'
+    + '<tr><td style="font-weight:700;">CNPJ / IE</td><td>'+esc(client?client.cnpj||'—':'—')+' / '+esc(client?client.ie||'—':'—')+'</td></tr>'
+    + '<tr><td style="font-weight:700;">Cidade / Segmento</td><td>'+esc(client?client.city||'—':'—')+' / '+esc(client?client.segment||'—':'—')+'</td></tr>'
+    + '<tr><td style="font-weight:700;">Contato / Telefone</td><td>'+esc(client?client.contact||'—':'—')+' / '+esc(client?client.phone||'—':'—')+'</td></tr>'
+    + '<tr><td style="font-weight:700;">E-mail</td><td>'+esc(client?client.email||'—':'—')+'</td></tr>'
+    + '</tbody></table>'
+    + '<h3 style="font-size:14px;margin:16px 0 6px;">Implantação</h3>'
+    + '<table><tbody>'
+    + '<tr><td style="font-weight:700;width:34%;">Analista responsável</td><td>'+esc(analyst?analyst.name:'—')+'</td></tr>'
+    + '<tr><td style="font-weight:700;">Data de início</td><td>'+fmtDateBR(startDate)+'</td></tr>'
+    + '<tr><td style="font-weight:700;">Data de conclusão</td><td>'+fmtDateBR(endDate)+'</td></tr>'
+    + '</tbody></table>'
+    + '<h3 style="font-size:14px;margin:16px 0 6px;">Produtos contratados</h3>'
+    + '<table><tbody>'
+    + (products.length ? products.map(p=>'<tr><td>'+esc(p.name)+'</td></tr>').join('') : '<tr><td><em>Nenhum produto registrado.</em></td></tr>')
+    + '</tbody></table>'
+    + '<h3 style="font-size:14px;margin:16px 0 6px;">Módulos / Telas</h3>'
+    + '<table><thead><tr><th>Módulos previstos</th><th>Módulos treinados</th></tr></thead><tbody>'
+    + '<tr><td>'+((c.expectedModules||[]).map(esc).join(', ') || '—')+'</td><td>'+((trained.modules||[]).map(esc).join(', ') || '—')+'</td></tr>'
+    + '</tbody><thead><tr><th>Telas previstas</th><th>Telas treinadas</th></tr></thead><tbody>'
+    + '<tr><td>'+((c.expectedScreens||[]).map(esc).join(', ') || '—')+'</td><td>'+((trained.screens||[]).map(esc).join(', ') || '—')+'</td></tr>'
+    + '</tbody></table>'
+    + '<h3 style="font-size:14px;margin:16px 0 6px;">Tempo gasto por agenda</h3>'
+    + '<table><thead><tr><th>Data</th><th>Título / Tipo</th><th>Analista(s)</th><th>Duração</th></tr></thead><tbody>'
+    + (cardSchedules.length ? cardSchedules.map(s=>{
+        const dur = scheduleMinutes(s);
+        return '<tr><td>'+scheduleDateText(s)+'</td><td>'+esc(scheduleDisplayTitle(s))+'</td><td>'+esc(scheduleAnalystNames(s))+'</td><td>'+minToHM(dur)+'</td></tr>';
+      }).join('') : '<tr><td colspan="4"><em>Nenhuma agenda concluída vinculada ao card.</em></td></tr>')
+    + '</tbody></table>'
+    + '<h3 style="font-size:14px;margin:16px 0 6px;">Saldo</h3>'
+    + '<table><tbody>'
+    + '<tr><td style="font-weight:700;width:34%;">Horas contratadas</td><td>'+c.contractedHours+'h</td></tr>'
+    + '<tr><td style="font-weight:700;">Tempo gasto na implantação</td><td>'+minToHM(used)+'</td></tr>'
+    + '<tr><td style="font-weight:700;">Saldo disponível para o cliente</td><td><strong>'+minToHM(bal*60)+'</strong></td></tr>'
+    + '</tbody></table>'
+    + '<h3 style="font-size:14px;margin:16px 0 6px;">Tempo em agendas internas vinculadas ao cliente</h3>'
+    + '<p class="hint" style="margin:0 0 6px;">Período: '+fmtDateBR(startDate)+' a '+fmtDateBR(endDate)+'.</p>'
+    + '<table><thead><tr><th>Data</th><th>Título / Tipo</th><th>Analista(s)</th><th>Duração</th></tr></thead><tbody>'
+    + (internalSchedulesInPeriod.length ? internalSchedulesInPeriod.map(s=>{
+        const dur = scheduleMinutes(s);
+        return '<tr><td>'+scheduleDateText(s)+'</td><td>'+esc(scheduleDisplayTitle(s))+'</td><td>'+esc(scheduleAnalystNames(s))+'</td><td>'+minToHM(dur)+'</td></tr>';
+      }).join('') : '<tr><td colspan="4"><em>Nenhuma agenda interna no período.</em></td></tr>')
+    + '</tbody></table>'
+    + '<p style="margin-top:12px;font-weight:700;">Total de horas em agendas internas: '+minToHM(internalMinutes)+'</p>'
+    + '</div>';
+  html += '<div class="form-actions no-print"><span style="flex:1;"></span><button class="btn btn-primary" data-action="print-report">🖨 Imprimir / Salvar PDF</button></div>';
+  return html;
+}
+
+/* Relatório comparativo de módulos/telas previstos x treinados */
+function renderCardForecastReport(cardId){
+  const c = getCard(cardId);
+  if(!c) return '<div class="modal-header"><h3>Card não encontrado</h3><button class="modal-close" data-action="close-modal">✕</button></div>';
+  const client = getClient(c.clientId);
+  const expectedM = c.expectedModules||[];
+  const expectedS = c.expectedScreens||[];
+  const trained = collectTrainedFromCard(c);
+  const trainedMSet = new Set(trained.modules);
+  const trainedSSet = new Set(trained.screens);
+  const expectedMSet = new Set(expectedM);
+  const expectedSSet = new Set(expectedS);
+  let html = '<div class="modal-header no-print"><h3>Relatório comparativo — Previsto × Treinado</h3><button class="modal-close" data-action="close-modal">✕</button></div>';
+  html += '<div id="print-report">'
+    + '<h2 style="margin-bottom:2px;">Relatório Comparativo — Previsto × Treinado</h2>'
+    + '<p class="hint" style="margin:0 0 16px;">Cliente: <strong>'+esc(client?client.name:'—')+'</strong> · Gerado em '+fmtDT(Date.now())+'</p>'
+    + '<h3 style="font-size:14px;margin:12px 0 6px;">Módulos</h3>'
+    + '<table><thead><tr><th>Módulo</th><th>Previsto</th><th>Treinado</th><th>Status</th></tr></thead><tbody>';
+  const allMods = [...new Set([...expectedM, ...trained.modules])];
+  if(!allMods.length) html += '<tr><td colspan="4"><em>Nenhum módulo registrado.</em></td></tr>';
+  allMods.forEach(name=>{
+    const prev = expectedMSet.has(name) ? 'Sim' : '—';
+    const tr = trainedMSet.has(name) ? 'Sim' : '—';
+    let st = 'OK';
+    if(expectedMSet.has(name) && !trainedMSet.has(name)) st = 'Pendente';
+    else if(!expectedMSet.has(name) && trainedMSet.has(name)) st = 'Extra';
+    html += '<tr><td>'+esc(name)+'</td><td>'+prev+'</td><td>'+tr+'</td><td>'+st+'</td></tr>';
+  });
+  html += '</tbody></table>'
+    + '<h3 style="font-size:14px;margin:16px 0 6px;">Telas</h3>'
+    + '<table><thead><tr><th>Tela</th><th>Previsto</th><th>Treinado</th><th>Status</th></tr></thead><tbody>';
+  const allScr = [...new Set([...expectedS, ...trained.screens])];
+  if(!allScr.length) html += '<tr><td colspan="4"><em>Nenhuma tela registrada.</em></td></tr>';
+  allScr.forEach(name=>{
+    const prev = expectedSSet.has(name) ? 'Sim' : '—';
+    const tr = trainedSSet.has(name) ? 'Sim' : '—';
+    let st = 'OK';
+    if(expectedSSet.has(name) && !trainedSSet.has(name)) st = 'Pendente';
+    else if(!expectedSSet.has(name) && trainedSSet.has(name)) st = 'Extra';
+    html += '<tr><td>'+esc(name)+'</td><td>'+prev+'</td><td>'+tr+'</td><td>'+st+'</td></tr>';
+  });
+  html += '</tbody></table></div>';
+  html += '<div class="form-actions no-print"><span style="flex:1;"></span><button class="btn btn-primary" data-action="print-report">🖨 Imprimir / Salvar PDF</button></div>';
+  return html;
 }
 
 function renderScheduleReportContent(scheduleId){
@@ -2675,7 +2543,6 @@ function renderScheduleReportContent(scheduleId){
   const duration = scheduleMinutes(s);
   const perAnalyst = scheduleMinutesPerAnalyst(s);
   const nAnalysts = Math.max(1, scheduleAnalystIds(s).length);
-  const isOrphanInternal = isInternalType(s.type) && s.clientId && !s.cardId;
   const analystsList = analysts.length ? analysts.map(a=>esc(a.name)).join(', ') : '—';
   const durDetail = nAnalysts > 1 ? minToHM(duration)+' ('+minToHM(perAnalyst)+' × '+nAnalysts+')' : minToHM(duration);
   let html = '<div class="modal-header no-print"><h3>Relatório de atendimento</h3><button class="modal-close" data-action="close-modal">✕</button></div>';
@@ -2684,17 +2551,16 @@ function renderScheduleReportContent(scheduleId){
     + '<h2 style="margin-bottom:2px;">Relatório de Atendimento</h2>'
     + '<p class="hint" style="margin:0 0 16px;">Documento gerado em '+fmtDT(Date.now())+'</p>'
     + '<table><tbody>'
-    + '<tr><td style="font-weight:700;white-space:nowrap;">Cliente</td><td>'+esc(client?client.name:'Interno / sem cliente')+'</td></tr>'
+    + '<tr><td style="font-weight:700;">Cliente</td><td>'+esc(client?client.name:'Interno / sem cliente')+'</td></tr>'
     + '<tr><td style="font-weight:700;">Analista(s)</td><td>'+analystsList+'</td></tr>'
     + '<tr><td style="font-weight:700;">Data</td><td>'+scheduleDateText(s)+'</td></tr>'
     + '<tr><td style="font-weight:700;">Horário</td><td>'+(s.allDay? 'Dia todo' : s.startTime+' – '+s.endTime)+' — '+durDetail+'</td></tr>'
-    + '<tr><td style="font-weight:700;">Tipo de agenda</td><td>'+esc(s.type)+(isOrphanInternal?' — <em>não abatido</em>':'')+'</td></tr>'
-    + '<tr><td style="font-weight:700;">Módulo(s) abordado(s)</td><td>'+esc(modules)+'</td></tr>'
+    + '<tr><td style="font-weight:700;">Tipo de agenda</td><td>'+esc(s.type)+'</td></tr>'
+    + '<tr><td style="font-weight:700;">Módulo(s)</td><td>'+esc(modules)+'</td></tr>'
     + '<tr><td style="font-weight:700;">Tela(s) treinada(s)</td><td>'+esc(screens)+'</td></tr>'
     + '<tr><td style="font-weight:700;">Usuário(s) treinado(s)</td><td>'+esc(users)+'</td></tr>'
     + '<tr><td style="font-weight:700;vertical-align:top;">Observações</td><td>'+esc(s.notes||'—')+'</td></tr>'
-    + '</tbody></table>'
-    + '</div>';
+    + '</tbody></table></div>';
   html += '<div class="form-actions no-print"><span style="flex:1;"></span><button class="btn btn-primary" data-action="print-report">🖨 Imprimir / Salvar PDF</button></div>';
   return html;
 }
@@ -2724,7 +2590,6 @@ function renderClientPicker(fieldName, selectedClientId, query){
 
 function renderScheduleForm(m){
   const editing = m.type==='schedule-edit' ? byId(state.schedules, m.id) : null;
-  const readOnly = false;
   const cardCtx = m.card ? getCard(m.card) : (editing && editing.cardId ? getCard(editing.cardId) : null);
   const fixedAnalystId = cardCtx ? getBoard(cardCtx.boardId).analystId : (editing ? editing.analystId : '');
   const draft = m.values || null;
@@ -2750,38 +2615,35 @@ function renderScheduleForm(m){
     notes: draft ? (draft.notes||'') : (editing ? editing.notes : '')
   };
   let html = '<div class="modal-header"><h3>'+(editing?'Editar agendamento':'Novo agendamento')+'</h3><button class="modal-close" data-action="close-modal">✕</button></div>';
-  if(editing) html += '<p class="hint" style="margin-top:-8px;">Status: <span class="badge '+editing.status+'">'+statusLabel(editing.status)+'</span>'+(editing.status==='concluida'? ' · '+minToHM(editing.deductMinutes)+' abatido(s)':'')+'</p>';
   if(ui.formErr){ html += '<div class="error-msg">'+esc(ui.formErr)+'</div>'; }
   html += '<form data-form="schedule" data-id="'+(editing?editing.id:'')+'" data-card="'+(cardCtx?cardCtx.id:'')+'">';
-
-  html += '<div class="field"><label>Título da agenda (opcional)</label><input type="text" name="title" value="'+esc(eff.title)+'" placeholder="Ex: Treinamento PDV — equipe manhã"></div>';
-
-  html += '<div class="field"><label>Categoria da agenda</label><select name="category">'
+  html += '<div class="field"><label>Título</label><input type="text" name="title" value="'+esc(eff.title)+'"></div>';
+  html += '<div class="field"><label>Categoria</label><select name="category">'
     + '<option value="implantacao" '+(eff.category==='implantacao'?'selected':'')+'>Implantação</option>'
     + '<option value="interna" '+(eff.category==='interna'?'selected':'')+'>Interna</option>'
     + '<option value="servico" '+(eff.category==='servico'?'selected':'')+'>Serviço</option>'
-    + '</select><span class="hint" style="margin-top:2px;">Interna = trabalho não faturável. Serviço = atividades de serviço vinculadas a cliente.</span></div>';
+    + '</select></div>';
 
   if(cardCtx){
     const client = getClient(cardCtx.clientId);
     html += '<div class="field"><label>Cliente</label><input type="text" value="'+esc(client?client.name:'')+'" disabled></div>';
   } else {
-    html += '<div class="field"><label>Cliente (opcional — deixe em branco para agenda sem cliente)</label>'+renderClientPicker('clientId', eff.clientId, m.clientQuery)+'</div>';
+    html += '<div class="field"><label>Cliente (opcional)</label>'+renderClientPicker('clientId', eff.clientId, m.clientQuery)+'</div>';
     if(eff.clientId){
       const existingCards = state.cards.filter(c=>c.clientId===eff.clientId);
       if(existingCards.length){
         html += '<div class="field"><label>Vincular ao card</label><select name="linkCardId">'
-          + '<option value="__new__" '+(eff.linkCardId==='__new__'?'selected':'')+'>+ Criar novo card no quadro</option>';
+          + '<option value="__new__" '+(eff.linkCardId==='__new__'?'selected':'')+'>+ Criar novo card</option>';
         existingCards.forEach(c=>{
           const b = getBoard(c.boardId); const an = b ? getAnalyst(b.analystId) : null; const list = b ? byId(b.lists, c.listId) : null;
-          html += '<option value="'+c.id+'" '+(eff.linkCardId===c.id?'selected':'')+'>Card no quadro de '+esc(an?an.name:'—')+(list?' — '+esc(list.name):'')+'</option>';
+          html += '<option value="'+c.id+'" '+(eff.linkCardId===c.id?'selected':'')+'>Card de '+esc(an?an.name:'—')+(list?' — '+esc(list.name):'')+'</option>';
         });
         html += '</select></div>';
       }
     }
   }
 
-  html += '<div class="field"><label>Analista(s) responsável(is)</label><div class="multi-analyst-grid">';
+  html += '<div class="field"><label>Analista(s)</label><div class="multi-analyst-grid">';
   state.analysts.forEach(a=>{
     const checked = eff.analystIds.includes(a.id);
     const showInactive = a.inactive && checked;
@@ -2789,39 +2651,32 @@ function renderScheduleForm(m){
     html += '<label class="multi-analyst-item'+(checked?' checked':'')+'" style="'+(checked?'border-color:'+a.color+';background:'+a.color+'14;color:'+darkenColor(a.color,.25)+';':'')+'">'
       + '<input type="checkbox" name="analystIds" value="'+a.id+'" '+(checked?'checked':'')+'>'
       + '<span class="m-dot" style="background:'+(a.inactive?'#B9CAD5':a.color)+'"></span>'
-      + '<span>'+esc(a.name)+(a.inactive?' (inativo)':'')+(a.isAdmin?' · ADMIN':'')+'</span>'
+      + '<span>'+esc(a.name)+(a.isAdmin?' · ADMIN':'')+'</span>'
       + '</label>';
   });
-  html += '</div><div class="multi-hint">Marque um ou mais analistas. Cada analista terá a agenda exibida com sua própria cor no calendário; o tempo é contado por analista no relatório.</div></div>';
+  html += '</div></div>';
 
   html += '<div class="field-row">'
     + '<div class="field"><label>'+(eff.allDay?'Dia inicial':'Data')+'</label><input type="date" name="date" value="'+esc(eff.date)+'"></div>'
     + '<div class="field" style="justify-content:flex-end;">'
     +   '<label class="allday-toggle"><input type="checkbox" name="allDay" '+(eff.allDay?'checked':'')+'> Dia todo</label>'
-    + '</div>'
-    + '</div>';
+    + '</div></div>';
 
   if(eff.allDay){
-    html += '<div class="field-row" id="schedule-enddate-row">'
-      + '<div class="field"><label>Dia final</label><input type="date" name="endDate" value="'+esc(eff.endDate)+'"></div>'
-      + '</div>';
+    html += '<div class="field-row"><div class="field"><label>Dia final</label><input type="date" name="endDate" value="'+esc(eff.endDate)+'"></div></div>';
     const isFerias = isFeriasType(eff.type);
     let detail;
     if(isFerias){
       const wd = countWeekdaysBetweenISO(eff.date, eff.endDate||eff.date);
-      detail = 'Férias — considera '+wd+' dia(s) útil(eis) × 8h48 = <strong>'+minToHM(wd*FERIAS_MIN_PER_WEEKDAY)+'</strong> por analista.';
+      detail = 'Férias — '+wd+' dia(s) útil(eis) × 8h48 = <strong>'+minToHM(wd*FERIAS_MIN_PER_WEEKDAY)+'</strong> por analista.';
     } else {
       const daysCount = scheduleDayCount({allDay:true, date:eff.date, endDate:eff.endDate||eff.date});
-      detail = daysCount > 1
-        ? (daysCount+' dias corridos — 8h por dia = <strong>'+minToHM(8*60*daysCount)+'</strong> por analista.')
-        : 'considera 8h corridas para abatimento, sem horário específico.';
+      detail = daysCount > 1 ? (daysCount+' dias corridos = <strong>'+minToHM(8*60*daysCount)+'</strong> por analista.') : '8h corridas por analista.';
     }
-    html += '<div class="allday-banner">📅 <span class="allday-time">Agenda de dia todo</span> — '+detail+'</div>';
+    html += '<div class="allday-banner">📅 '+detail+'</div>';
   } else {
-    html += '<div class="field-row" id="schedule-time-row">'
-      + '<div class="field"><label>Início</label><input type="time" name="startTime" value="'+esc(eff.startTime)+'"></div>'
-      + '<div class="field"><label>Fim</label><input type="time" name="endTime" value="'+esc(eff.endTime)+'"></div>'
-      + '</div>';
+    html += '<div class="field-row"><div class="field"><label>Início</label><input type="time" name="startTime" value="'+esc(eff.startTime)+'"></div>'
+      + '<div class="field"><label>Fim</label><input type="time" name="endTime" value="'+esc(eff.endTime)+'"></div></div>';
   }
 
   html += '<div class="field"><label>Tipo</label><select name="type">';
@@ -2832,57 +2687,43 @@ function renderScheduleForm(m){
     else if(catFilter==='servico') matchCat = !!t.isServico;
     else matchCat = !t.isInternal && !t.isServico;
     if(!matchCat && !(editing && editing.type===t.name)) return;
-    const isInactive = t.inactive;
-    const isCurrent = (eff.type===t.name);
-    if(isInactive && !isCurrent) return;
-    html += '<option value="'+esc(t.name)+'" '+(isCurrent?'selected':'')+'>'+esc(t.name)+(isInactive?' (inativo)':'')+'</option>';
+    if(t.inactive && !(editing && editing.type===t.name)) return;
+    html += '<option value="'+esc(t.name)+'" '+(eff.type===t.name?'selected':'')+'>'+esc(t.name)+'</option>';
   });
   html += '</select></div>';
 
-  html += '<div class="field"><label>Módulo(s) do sistema</label><div class="check-grid">';
+  html += '<div class="field"><label>Módulo(s)</label><div class="check-grid">';
   state.modules.forEach(mod=>{
-    const isInactive = mod.inactive;
     const isChecked = eff.modules.includes(mod.name);
-    if(isInactive && !isChecked) return;
-    const checked = isChecked ? 'checked':'';
-    html += '<label class="check-pill" style="'+(isInactive?'opacity:.6;':'')+'"><input type="checkbox" name="modules" value="'+esc(mod.name)+'" '+checked+'>'+esc(mod.name)+(isInactive?' <small style="color:var(--ink-faint);">(inativo)</small>':'')+'</label>';
+    if(mod.inactive && !isChecked) return;
+    html += '<label class="check-pill"><input type="checkbox" name="modules" value="'+esc(mod.name)+'" '+(isChecked?'checked':'')+'>'+esc(mod.name)+'</label>';
   });
-  html += '</div>';
-  if(!readOnly){
-    html += '<div style="display:flex;gap:6px;margin-top:9px;">'
-      + '<input type="text" class="quick-add-input" data-for="module" placeholder="Novo módulo...">'
-      + '<button type="button" class="btn btn-sm btn-primary" data-action="quick-add-module">+ Adicionar</button>'
-      + '</div>';
-  }
-  html += '</div>';
+  html += '</div></div>';
 
-  const checkedModules = state.modules.filter(m=> eff.modules.includes(m.name));
+  const checkedModules = state.modules.filter(mo=> eff.modules.includes(mo.name));
   checkedModules.forEach(mod=>{
     const screensForMod = screensForModule(mod.id);
     if(!screensForMod.length) return;
-    html += '<div class="field"><label>Telas treinadas — '+esc(mod.name)+'</label><div class="check-grid">';
+    html += '<div class="field"><label>Telas — '+esc(mod.name)+'</label><div class="check-grid">';
     screensForMod.forEach(scr=>{
       const isChecked = eff.trainedScreens.includes(scr.name);
       if(scr.inactive && !isChecked) return;
-      const checked = isChecked ? 'checked':'';
-      html += '<label class="check-pill" style="'+(scr.inactive?'opacity:.6;':'')+'"><input type="checkbox" name="trainedScreens" value="'+esc(scr.name)+'" '+checked+'>'+esc(scr.name)+(scr.inactive?' <small style="color:var(--ink-faint);">(inativo)</small>':'')+'</label>';
+      html += '<label class="check-pill"><input type="checkbox" name="trainedScreens" value="'+esc(scr.name)+'" '+(isChecked?'checked':'')+'>'+esc(scr.name)+'</label>';
     });
     html += '</div></div>';
   });
 
-  html += '<div class="field"><label>Usuários treinados</label><textarea name="trainedUsers" placeholder="Nomes separados por vírgula">'+esc(eff.trainedUsers)+'</textarea></div>';
+  html += '<div class="field"><label>Usuários treinados</label><textarea name="trainedUsers">'+esc(eff.trainedUsers)+'</textarea></div>';
   html += '<div class="field"><label>Observações</label><textarea name="notes">'+esc(eff.notes)+'</textarea></div>';
-  if(!readOnly){
-    let quick = '';
-    if(editing && editing.status==='pendente'){
-      quick = '<button type="button" class="btn btn-sm btn-primary" data-action="open-modal" data-modal="confirm-complete" data-id="'+editing.id+'">Concluir agora</button>'
-        + '<button type="button" class="btn btn-sm btn-ghost" data-action="mark-not-done" data-id="'+editing.id+'">Não realizada</button>';
-    } else if(editing){
-      quick = '<button type="button" class="btn btn-sm btn-ghost" data-action="revert-to-pending" data-id="'+editing.id+'">'+(editing.status==='concluida'?'Reverter conclusão':'Reverter p/ pendente')+'</button>';
-      if(editing.status==='concluida') quick += '<button type="button" class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="schedule-report" data-id="'+editing.id+'">🖨 Relatório</button>';
-    }
-    html += '<div class="form-actions">'+quick+(editing?'<button type="button" class="btn btn-danger" data-action="delete-schedule" data-id="'+editing.id+'">Excluir</button>':'')+'<span style="flex:1;"></span><button type="submit" class="btn btn-primary">Salvar agendamento</button></div>';
+
+  let quick = '';
+  if(editing && editing.status==='pendente'){
+    quick = '<button type="button" class="btn btn-sm btn-primary" data-action="open-modal" data-modal="confirm-complete" data-id="'+editing.id+'">Concluir agora</button>'
+      + '<button type="button" class="btn btn-sm btn-ghost" data-action="mark-not-done" data-id="'+editing.id+'">Não realizada</button>';
+  } else if(editing){
+    quick = '<button type="button" class="btn btn-sm btn-ghost" data-action="revert-to-pending" data-id="'+editing.id+'">Reverter</button>';
   }
+  html += '<div class="form-actions">'+quick+(editing?'<button type="button" class="btn btn-danger" data-action="delete-schedule" data-id="'+editing.id+'">Excluir</button>':'')+'<span style="flex:1;"></span><button type="submit" class="btn btn-primary">Salvar</button></div>';
   html += '</form>';
   return html;
 }
@@ -2898,8 +2739,7 @@ function renderConfirmDialog(){
     : '<button class="btn btn-ghost" data-action="confirm-cancel">Cancelar</button><button class="btn btn-primary" data-action="confirm-ok">Confirmar</button>';
   return '<div class="overlay confirm-overlay"><div class="modal" style="max-width:420px;">'
     + '<p style="margin:4px 0 18px;white-space:pre-line;">'+esc(d.message)+'</p>'
-    + '<div class="form-actions">'+buttons+'</div>'
-    + '</div></div>';
+    + '<div class="form-actions">'+buttons+'</div></div></div>';
 }
 
 document.addEventListener('click', function(e){
@@ -2917,14 +2757,10 @@ document.addEventListener('click', function(e){
   if(!el){ if(needsRender) render(); return; }
   const a = el.dataset.action;
 
-  if(a==='goto-view'){
-    ui.view = el.dataset.view; ui.showNotif=false; ui.sidebarOpen=false;
-    refreshFromCloudIfChanged('view-change').finally(()=>render());
-  }
+  if(a==='goto-view'){ ui.view = el.dataset.view; ui.showNotif=false; ui.sidebarOpen=false; refreshFromCloudIfChanged('view-change').finally(()=>render()); }
   else if(a==='board-analyst-filter'){
     const id = el.dataset.id || el.value || 'all';
-    ui.view='board';
-    ui.boardAnalystFilter = id;
+    ui.view='board'; ui.boardAnalystFilter = id;
     if(id!=='all'){ const b = boardOfAnalyst(id); ui.currentBoardId = b ? b.id : null; }
     else { ui.currentBoardId = state.boards[0] ? state.boards[0].id : null; }
     ui.search='';
@@ -2943,146 +2779,79 @@ document.addEventListener('click', function(e){
   else if(a==='confirm-cancel'){ ui.confirmDialog=null; render(); }
   else if(a==='close-card'){ ui.openCardId=null; ui.cardDraft=null; render(); }
   else if(a==='toggle-notif'){ ui.showNotif = !ui.showNotif; render(); }
-  else if(a==='open-card'){ const holder = el.closest('[data-card-id]'); if(holder){ if(ui.cardDraft && ui.cardDraft.cardId!==holder.dataset.cardId) ui.cardDraft=null; ui.openCardId = holder.dataset.cardId; ui.cardTab='info'; render(); } }
+  else if(a==='open-card'){ const holder = el.closest('[data-card-id]'); if(holder){ ui.openCardId = holder.dataset.cardId; ui.cardTab='info'; render(); } }
   else if(a==='card-tab'){ ui.cardTab = el.dataset.tab; render(); }
-  else if(a==='delete-card'){
-    const id = el.dataset.id;
-    showConfirm('Excluir este card e seus agendamentos vinculados?', function(){ deleteCard(id); ui.openCardId=null; ui.cardDraft=null; ui.modal=null; });
+  else if(a==='delete-card'){ const id = el.dataset.id; showConfirm('Excluir este card e seus agendamentos vinculados?', function(){ deleteCard(id); ui.openCardId=null; ui.cardDraft=null; ui.modal=null; }); }
+  else if(a==='card-conclude'){ ui.modal = {type:'card-conclude-confirm', payload:{cardId: el.dataset.id}}; render(); }
+  else if(a==='card-conclude-confirm'){
+    const id = ui.modal && ui.modal.payload ? ui.modal.payload.cardId : null;
+    if(id){ concludeCard(id); ui.modal = {type:'card-closing-report', payload:{cardId:id}}; }
+    render();
   }
+  else if(a==='card-reopen'){ const id = el.dataset.id; showConfirm('Reabrir esta implantação?', function(){ reopenCard(id); ui.modal=null; }); }
+  else if(a==='card-print-closing'){ ui.modal = {type:'card-closing-report', payload:{cardId: el.dataset.id}}; render(); }
+  else if(a==='card-print-forecast'){ ui.modal = {type:'card-forecast-report', payload:{cardId: el.dataset.id}}; render(); }
   else if(a==='quick-add-product'){
     const form = el.closest('form[data-form="card-info"]');
     const input = form.querySelector('.quick-add-input[data-for="product"]');
     const colorInput = form.querySelector('.quick-add-color[data-for="product"]');
     const name = (input.value||'').trim();
     if(!name){ input.focus(); return; }
-    const values = captureFormValues(form);
     const newTag = {id:uid('pt'), name, color: colorInput ? colorInput.value : colorForIndex(state.productTags.length), inactive:false};
     state.productTags.push(newTag);
-    values.productTags = (values.productTags||[]).concat(newTag.id);
-    ui.cardDraft = {cardId: form.dataset.card, values};
     render();
   }
   else if(a==='client-picker-select'){
-    const form = el.closest('form');
-    const field = el.dataset.field;
+    const form = el.closest('form'); const field = el.dataset.field;
     const values = captureFormValues(form);
     values[field] = el.dataset.id;
-    if(field==='clientId'){ delete values.newClientName; delete values.linkCardId; }
+    if(field==='clientId') delete values.newClientName;
     if(ui.modal){ ui.modal.clientQuery = ''; ui.modal.values = values; render(); }
   }
   else if(a==='client-picker-clear'){
-    const form = el.closest('form');
-    const field = el.dataset.field;
-    const values = captureFormValues(form);
-    values[field] = '';
-    if(field==='clientId') delete values.linkCardId;
+    const form = el.closest('form'); const field = el.dataset.field;
+    const values = captureFormValues(form); values[field] = '';
     if(ui.modal){ ui.modal.clientQuery = ''; ui.modal.values = values; render(); }
-  }
-  else if(a==='quick-add-module'){
-    const form = el.closest('form[data-form="schedule"]');
-    const input = form.querySelector('.quick-add-input[data-for="module"]');
-    const name = (input.value||'').trim();
-    if(!name){ input.focus(); return; }
-    const values = captureFormValues(form);
-    if(!state.modules.some(m=>m.name===name)) state.modules.push({id:uid('md'), name, inactive:false});
-    values.modules = (values.modules||[]).concat(name);
-    ui.modal.values = values;
-    render();
   }
   else if(a==='delete-list'){ deleteListFromBoard(el.dataset.board, el.dataset.list); render(); }
   else if(a==='delete-analyst'){
-    if(!isAdminUser()){ showAlert('Apenas administradores podem excluir analistas.'); return; }
+    if(!isAdminUser()){ showAlert('Apenas administradores.'); return; }
     const id = el.dataset.id;
     const an = getAnalyst(id);
     if(!an) return;
-    if(an.isAdmin){ showAlert('O analista administrador do sistema não pode ser excluído.'); return; }
+    if(an.isAdmin){ showAlert('O administrador não pode ser excluído.'); return; }
     const linkedScheds = schedulesForAnalyst(id).length;
     const board = boardOfAnalyst(id);
     const boardCards = board ? cardsInBoard(board.id).length : 0;
-    if(linkedScheds > 0){ showAlert('Não é possível excluir "'+an.name+'": há '+linkedScheds+' agendamento(s) vinculado(s). Inative o analista em vez de excluir.'); return; }
-    if(boardCards > 0){ showAlert('Não é possível excluir "'+an.name+'": há '+boardCards+' card(s) no quadro deste analista.'); return; }
+    if(linkedScheds > 0){ showAlert('Há '+linkedScheds+' agendamento(s). Inative.'); return; }
+    if(boardCards > 0){ showAlert('Há '+boardCards+' card(s).'); return; }
     showConfirm('Excluir este analista?', function(){ deleteAnalyst(id); if(ui.currentBoardId && !getBoard(ui.currentBoardId)) ui.currentBoardId = state.boards[0]?state.boards[0].id:null; });
   }
   else if(a==='toggle-entity-active'){
-    const kind = el.dataset.kind;
-    const id = el.dataset.id;
-    const willBeActive = el.checked;
+    const kind = el.dataset.kind; const id = el.dataset.id; const willBeActive = el.checked;
     if(kind==='analyst'){
-      if(!isAdminUser()){ showAlert('Apenas administradores podem alterar o status de analistas.'); el.checked = !el.checked; return; }
+      if(!isAdminUser()){ el.checked = !el.checked; return; }
       const a2 = getAnalyst(id);
-      if(a2 && a2.isAdmin && !willBeActive){ showAlert('O analista administrador do sistema não pode ser inativado.'); el.checked = true; return; }
+      if(a2 && a2.isAdmin && !willBeActive){ showAlert('O administrador não pode ser inativado.'); el.checked = true; return; }
       setAnalystActive(id, willBeActive);
-    } else {
-      setEntityActive(kind, id, willBeActive);
-    }
+    } else { setEntityActive(kind, id, willBeActive); }
     render();
   }
-  else if(a==='delete-client'){
-    const id = el.dataset.id;
-    const cl = getClient(id);
-    if(!cl) return;
-    const linkedCards = cardsForClient(id).length;
-    const linkedScheds = schedulesForClient(id).length;
-    if(linkedCards > 0 || linkedScheds > 0){ showAlert('Não é possível excluir "'+cl.name+'": há vínculos.'); return; }
-    showConfirm('Excluir este cliente?', function(){ deleteClient(id); });
-  }
-  else if(a==='delete-schedule'){
-    const id = el.dataset.id;
-    showConfirm('Excluir este agendamento?', function(){ deleteSchedule(id); ui.modal=null; });
-  }
+  else if(a==='delete-client'){ const id = el.dataset.id; const cl = getClient(id); if(!cl) return; const links = cardsForClient(id).length + schedulesForClient(id).length; if(links){ showAlert('Há vínculos.'); return; } showConfirm('Excluir este cliente?', function(){ deleteClient(id); }); }
+  else if(a==='delete-schedule'){ const id = el.dataset.id; showConfirm('Excluir este agendamento?', function(){ deleteSchedule(id); ui.modal=null; }); }
   else if(a==='mark-not-done'){ markNotDone(el.dataset.id); render(); }
-  else if(a==='revert-to-pending'){
-    const id = el.dataset.id;
-    const s = byId(state.schedules, id);
-    const msg = s && s.status==='concluida'
-      ? 'Reverter a conclusão desta agenda? O saldo será estornado.'
-      : 'Reverter esta agenda para pendente?';
-    showConfirm(msg, function(){ revertToPending(id); ui.modal=null; });
-  }
-  else if(a==='delete-product'){
-    const tagId = el.dataset.id;
-    const linked = cardsUsingProduct(tagId);
-    if(linked.length){ showAlert('Não é possível excluir: há '+linked.length+' cliente(s) vinculado(s). Inative o produto.'); }
-    else { showConfirm('Excluir este produto?', function(){ state.productTags = state.productTags.filter(t=>t.id!==tagId); }); }
-  }
-  else if(a==='delete-module'){
-    const id = el.dataset.id;
-    const mod = byId(state.modules, id);
-    if(!mod) return;
-    const linked = schedulesUsingModule(mod.name);
-    const linkedScreens = screensForModule(id);
-    if(linked.length){ showAlert('Não é possível excluir: há '+linked.length+' agendamento(s). Inative o módulo.'); }
-    else if(linkedScreens.length){ showAlert('Não é possível excluir: há '+linkedScreens.length+' tela(s) cadastrada(s).'); }
-    else { showConfirm('Excluir este módulo?', function(){ state.modules = state.modules.filter(m=>m.id!==id); }); }
-  }
-  else if(a==='delete-screen'){
-    const id = el.dataset.id;
-    const scr = byId(state.screens, id);
-    if(!scr) return;
-    const linked = schedulesUsingScreen(scr.name);
-    if(linked.length){ showAlert('Não é possível excluir: há '+linked.length+' agendamento(s) usando esta tela. Inative a tela.'); }
-    else { showConfirm('Excluir esta tela?', function(){ state.screens = state.screens.filter(s=>s.id!==id); }); }
-  }
+  else if(a==='revert-to-pending'){ const id = el.dataset.id; const s = byId(state.schedules, id); showConfirm(s && s.status==='concluida' ? 'Reverter a conclusão?' : 'Reverter para pendente?', function(){ revertToPending(id); ui.modal=null; }); }
+  else if(a==='delete-product'){ const id = el.dataset.id; const linked = cardsUsingProduct(id); if(linked.length){ showAlert('Há clientes vinculados.'); } else { showConfirm('Excluir?', function(){ state.productTags = state.productTags.filter(t=>t.id!==id); }); } }
+  else if(a==='delete-module'){ const id = el.dataset.id; const mod = byId(state.modules, id); if(!mod) return; const linked = schedulesUsingModule(mod.name); const s = screensForModule(id); if(linked.length){ showAlert('Há agendamentos usando este módulo.'); } else if(s.length){ showAlert('Há telas neste módulo.'); } else { showConfirm('Excluir?', function(){ state.modules = state.modules.filter(m=>m.id!==id); }); } }
+  else if(a==='delete-screen'){ const id = el.dataset.id; const scr = byId(state.screens, id); if(!scr) return; if(schedulesUsingScreen(scr.name).length){ showAlert('Há agendamentos usando esta tela.'); } else { showConfirm('Excluir?', function(){ state.screens = state.screens.filter(s=>s.id!==id); }); } }
   else if(a==='cloud-disconnect'){ showConfirm('Desconectar da nuvem?', function(){ disconnectCloud(); }); }
   else if(a==='force-save'){ forceSaveNow(); }
-  else if(a==='import-clients-trigger'){ const el=document.getElementById('import-clients-file'); if(el) el.click(); }
+  else if(a==='import-clients-trigger'){ const el2=document.getElementById('import-clients-file'); if(el2) el2.click(); }
   else if(a==='download-client-template'){ downloadClientTemplate(); }
   else if(a==='print-report'){ window.print(); }
   else if(a==='cloud-reconnect-default'){ connectCloud(DEFAULT_CLOUD_CONFIG.url, DEFAULT_CLOUD_CONFIG.anonKey); }
-  else if(a==='delete-type'){
-    const id = el.dataset.id;
-    const tp = byId(state.agendaTypes, id);
-    if(!tp) return;
-    const linked = schedulesUsingType(tp.name);
-    if(linked.length){ showAlert('Não é possível excluir: há '+linked.length+' agendamento(s). Inative o tipo.'); }
-    else { showConfirm('Excluir este tipo?', function(){ state.agendaTypes = state.agendaTypes.filter(t=>t.id!==id); }); }
-  }
-  else if(a==='settings-tab'){
-    const tab = el.dataset.tab;
-    const adminOnly = ['analistas','acesso','nuvem'];
-    if(adminOnly.includes(tab) && !isAdminUser()){ showAlert('Apenas administradores podem acessar esta aba.'); return; }
-    ui.settingsTab = tab; render();
-  }
+  else if(a==='delete-type'){ const id = el.dataset.id; const tp = byId(state.agendaTypes, id); if(!tp) return; if(schedulesUsingType(tp.name).length){ showAlert('Há agendamentos usando este tipo.'); } else { showConfirm('Excluir?', function(){ state.agendaTypes = state.agendaTypes.filter(t=>t.id!==id); }); } }
+  else if(a==='settings-tab'){ const tab = el.dataset.tab; const adminOnly = ['analistas','acesso','nuvem']; if(adminOnly.includes(tab) && !isAdminUser()){ showAlert('Apenas administradores.'); return; } ui.settingsTab = tab; render(); }
   else if(a==='cal-nav'){ const dir=el.dataset.dir; if(dir==='0') ui.calStart=startOfWeekISO(todayISO()); else ui.calStart = addDaysISO(ui.calStart, 7*parseInt(dir,10)); render(); }
   else if(a==='cal-grid-click'){
     const rect = el.getBoundingClientRect();
@@ -3097,52 +2866,23 @@ document.addEventListener('click', function(e){
     const endTotal = Math.min(24*60, totalMin+60);
     const endH = Math.floor(endTotal/60), endM = endTotal%60;
     ui.formErr = '';
-    ui.modal = {
-      type:'schedule-new',
-      prefillDate: el.dataset.date,
-      prefillStart: pad(startH)+':'+pad(startM),
-      prefillEnd: pad(endH===24?23:endH)+':'+(endM===60?'59':pad(endM)),
-      prefillAnalyst: ui.calAnalyst!=='all' ? ui.calAnalyst : undefined
-    };
+    ui.modal = { type:'schedule-new', prefillDate: el.dataset.date, prefillStart: pad(startH)+':'+pad(startM), prefillEnd: pad(endH===24?23:endH)+':'+(endM===60?'59':pad(endM)), prefillAnalyst: ui.calAnalyst!=='all' ? ui.calAnalyst : undefined };
     render();
   }
-  else if(a==='toggle-show-pass'){
-    const id = el.dataset.id;
-    const a2 = getAnalyst(id);
-    if(a2) alert('Senha de "'+a2.name+'":\n\n'+(a2.password||'(vazia)'));
-  }
+  else if(a==='toggle-show-pass'){ const id = el.dataset.id; const a2 = getAnalyst(id); if(a2) alert('Senha: '+(a2.password||'(vazia)')); }
   else if(a==='internal-answer-yes'){
     const payload = ui.modal && ui.modal.payload ? ui.modal.payload : {};
     const s = byId(state.schedules, payload.scheduleId);
     ui.modal = null;
     if(s){
       const board = boardOfAnalyst(scheduleAnalystIds(s)[0]);
-      if(board){
-        const card = createCard(board.id, board.lists[0].id, s.clientId, {});
-        s.cardId = card.id;
-        addHistory(card, 'Card criado a partir de agenda interna vinculada ('+fmtDateBR(s.date)+')');
-      } else {
-        showAlert('O analista desta agenda não possui quadro. Não foi possível criar o card.');
-      }
+      if(board){ const card = createCard(board.id, board.lists[0].id, s.clientId, {}); s.cardId = card.id; addHistory(card, 'Card criado a partir de agenda interna vinculada'); }
     }
     render();
   }
-  else if(a==='internal-answer-no'){
-    const payload = ui.modal && ui.modal.payload ? ui.modal.payload : {};
-    const s = byId(state.schedules, payload.scheduleId);
-    ui.modal = null;
-    if(s){ s.keepUnlinkedInternal = true; }
-    render();
-  }
-  else if(a==='after-complete-print'){
-    const payload = ui.modal && ui.modal.payload ? ui.modal.payload : {};
-    ui.modal = { type:'schedule-report', id: payload.scheduleId };
-    render();
-  }
-  else if(a==='after-complete-no-print'){
-    ui.modal = null;
-    render();
-  }
+  else if(a==='internal-answer-no'){ const payload = ui.modal && ui.modal.payload ? ui.modal.payload : {}; const s = byId(state.schedules, payload.scheduleId); ui.modal = null; if(s){ s.keepUnlinkedInternal = true; } render(); }
+  else if(a==='after-complete-print'){ const payload = ui.modal && ui.modal.payload ? ui.modal.payload : {}; ui.modal = { type:'schedule-report', id: payload.scheduleId }; render(); }
+  else if(a==='after-complete-no-print'){ ui.modal = null; render(); }
   else if(a==='logout'){ logout(); }
   else { render(); }
 });
@@ -3151,25 +2891,31 @@ document.addEventListener('change', function(e){
   if(e.target.id==='cal-analyst-filter'){ ui.calAnalyst = e.target.value; render(); }
   else if(e.target.id==='cal-category-filter'){ ui.calCategory = e.target.value; render(); }
   else if(e.target.id==='import-clients-file'){
-    const file = e.target.files && e.target.files[0];
-    e.target.value = '';
-    if(file){ importClientsFromFile(file).catch(err=>{ showAlert('Erro ao importar o arquivo: '+(err && err.message ? err.message : err)); }); }
+    const file = e.target.files && e.target.files[0]; e.target.value = '';
+    if(file){ importClientsFromFile(file).catch(err=>{ showAlert('Erro: '+(err && err.message ? err.message : err)); }); }
   }
   else if(e.target.matches('select[name="moveTo"]')){
-    const cardId = e.target.closest('form').dataset.card;
+    const form = e.target.closest('form');
+    const cardId = form.dataset.card;
     const [boardId,listId] = e.target.value.split('::');
-    moveCard(cardId, boardId, listId);
+    const r = moveCard(cardId, boardId, listId);
+    /* Se moveu para lista concluída, pergunta se deseja concluir */
+    if(r && r.toList && isDoneListName(r.toList.name)){
+      const card = r.c;
+      if(!card.isConcluded){
+        ui.modal = {type:'card-conclude-confirm', payload:{cardId: card.id}};
+        render(); return;
+      }
+    }
     render();
   }
   else if(e.target.matches('form[data-form="schedule"] input[name="allDay"]')){
-    const form = e.target.closest('form');
-    const values = captureFormValues(form);
+    const form = e.target.closest('form'); const values = captureFormValues(form);
     values.allDay = e.target.checked ? 'on' : '';
     if(ui.modal){ ui.modal.values = values; render(); }
   }
   else if(e.target.matches('form[data-form="schedule"] select[name="category"]')){
-    const form = e.target.closest('form');
-    const values = captureFormValues(form);
+    const form = e.target.closest('form'); const values = captureFormValues(form);
     const newCategory = e.target.value;
     const validTypes = activeAgendaTypes().filter(t=>{
       if(newCategory==='interna') return !!t.isInternal;
@@ -3181,53 +2927,31 @@ document.addEventListener('change', function(e){
     if(ui.modal){ ui.modal.values = values; render(); }
   }
   else if(e.target.matches('form[data-form="schedule"] select[name="type"]')){
-    const form = e.target.closest('form');
-    const values = captureFormValues(form);
+    const form = e.target.closest('form'); const values = captureFormValues(form);
     if(ui.modal){ ui.modal.values = values; render(); }
   }
   else if(e.target.matches('form[data-form="schedule"] input[name="date"]')){
-    const form = e.target.closest('form');
-    const values = captureFormValues(form);
-    if(formValuesAllDay(values)){
-      if(!values.endDate || values.endDate < values.date) values.endDate = values.date;
-    }
+    const form = e.target.closest('form'); const values = captureFormValues(form);
+    if(formValuesAllDay(values)){ if(!values.endDate || values.endDate < values.date) values.endDate = values.date; }
     if(ui.modal){ ui.modal.values = values; render(); }
   }
   else if(e.target.matches('form[data-form="schedule"] input[name="endDate"]')){
-    const form = e.target.closest('form');
-    const values = captureFormValues(form);
+    const form = e.target.closest('form'); const values = captureFormValues(form);
     if(values.endDate < values.date) values.endDate = values.date;
     if(ui.modal){ ui.modal.values = values; render(); }
   }
   else if(e.target.matches('form[data-form="schedule"] input[name="analystIds"]')){
     const label = e.target.closest('.multi-analyst-item');
-    if(label){
-      if(e.target.checked) label.classList.add('checked');
-      else label.classList.remove('checked');
-    }
+    if(label){ if(e.target.checked) label.classList.add('checked'); else label.classList.remove('checked'); }
   }
 });
 
 document.addEventListener('input', function(e){
-  if(e.target.id==='search-input'){
-    ui.search = e.target.value;
-    ui._focus = {id:'search-input', pos: e.target.selectionStart};
-    render();
-  }
-  else if(e.target.id==='client-search-input'){
-    ui.clientSearch = e.target.value;
-    ui._focus = {id:'client-search-input', pos: e.target.selectionStart};
-    render();
-  }
+  if(e.target.id==='search-input'){ ui.search = e.target.value; ui._focus = {id:'search-input', pos: e.target.selectionStart}; render(); }
+  else if(e.target.id==='client-search-input'){ ui.clientSearch = e.target.value; ui._focus = {id:'client-search-input', pos: e.target.selectionStart}; render(); }
   else if(e.target.id==='client-picker-input'){
-    const form = e.target.closest('form');
-    const values = captureFormValues(form);
-    if(ui.modal){
-      ui.modal.clientQuery = e.target.value;
-      ui.modal.values = values;
-      ui._focus = {id:'client-picker-input', pos: e.target.selectionStart};
-      render();
-    }
+    const form = e.target.closest('form'); const values = captureFormValues(form);
+    if(ui.modal){ ui.modal.clientQuery = e.target.value; ui.modal.values = values; ui._focus = {id:'client-picker-input', pos: e.target.selectionStart}; render(); }
   }
 });
 
@@ -3248,81 +2972,63 @@ document.addEventListener('submit', async function(e){
   const fd = new FormData(form);
 
   if(type==='analyst'){
-    if(!isAdminUser()){ showAlert('Apenas administradores podem criar/editar analistas.'); return; }
-    const name = fd.get('name').trim();
-    const color = fd.get('color');
+    if(!isAdminUser()){ showAlert('Apenas administradores.'); return; }
+    const name = fd.get('name').trim(); const color = fd.get('color');
     const username = (fd.get('username')||'').trim().toLowerCase();
-    const password = fd.get('password')||'';
-    const passwordConfirm = fd.get('passwordConfirm')||'';
-    const id = form.dataset.id;
-    const wantsAdmin = fd.get('isAdmin')==='on';
-
-    if(!username){ showAlert('Informe o usuário (login).'); return; }
-    if(!/^[a-z0-9._-]+$/.test(username)){ showAlert('Usuário pode conter apenas letras, números, ponto, underscore e hífen.'); return; }
-    if(state.analysts.some(a=> a.username && a.username.toLowerCase()===username && a.id!==id)){
-      showAlert('Já existe um analista com o usuário "'+username+'".'); return;
-    }
-    if(!id && !password){ showAlert('Defina uma senha para o novo analista.'); return; }
+    const password = fd.get('password')||''; const passwordConfirm = fd.get('passwordConfirm')||'';
+    const id = form.dataset.id; const wantsAdmin = fd.get('isAdmin')==='on';
+    if(!username){ showAlert('Informe o usuário.'); return; }
+    if(!/^[a-z0-9._-]+$/.test(username)){ showAlert('Usuário inválido.'); return; }
+    if(state.analysts.some(a=> a.username && a.username.toLowerCase()===username && a.id!==id)){ showAlert('Usuário duplicado.'); return; }
+    if(!id && !password){ showAlert('Defina senha.'); return; }
     if(password || passwordConfirm){
-      if(password !== passwordConfirm){ showAlert('As senhas não coincidem.'); return; }
-      if(password.length < 4){ showAlert('A senha deve ter pelo menos 4 caracteres.'); return; }
+      if(password !== passwordConfirm){ showAlert('Senhas diferentes.'); return; }
+      if(password.length < 4){ showAlert('Mínimo 4 caracteres.'); return; }
     }
     if(id){
-      const a = getAnalyst(id);
-      if(!a) return;
+      const a = getAnalyst(id); if(!a) return;
       a.name = name; a.color = color; a.username = username;
       if(password) a.password = password;
       if(!a.isAdmin && wantsAdmin) a.isAdmin = true;
       const b = boardOfAnalyst(id); if(b) b.name = 'Quadro — '+name;
-    } else {
-      createAnalyst(name, color, username, password, wantsAdmin);
-    }
+    } else { createAnalyst(name, color, username, password, wantsAdmin); }
     ui.modal=null; render();
   }
   else if(type==='change-password'){
-    const id = form.dataset.id;
-    const a = getAnalyst(id);
-    if(!a) return;
-    const cur = fd.get('currentPassword')||'';
-    const nw = fd.get('newPassword')||'';
-    const cf = fd.get('confirmPassword')||'';
+    const id = form.dataset.id; const a = getAnalyst(id); if(!a) return;
+    const cur = fd.get('currentPassword')||''; const nw = fd.get('newPassword')||''; const cf = fd.get('confirmPassword')||'';
     if(a.password && a.password !== cur){ showAlert('Senha atual incorreta.'); return; }
-    if(nw.length < 4){ showAlert('A nova senha deve ter pelo menos 4 caracteres.'); return; }
-    if(nw !== cf){ showAlert('As senhas não coincidem.'); return; }
-    a.password = nw;
-    render();
-    showAlert('Senha alterada com sucesso.');
+    if(nw.length < 4){ showAlert('Mínimo 4 caracteres.'); return; }
+    if(nw !== cf){ showAlert('Senhas diferentes.'); return; }
+    a.password = nw; render(); showAlert('Senha alterada.');
   }
   else if(type==='client'){
     const data = {
       code: fd.get('code').trim(), name: fd.get('name').trim(), companyName: fd.get('companyName').trim(),
-      cnpj: fd.get('cnpj').trim(), ie: fd.get('ie').trim(),
-      contact: fd.get('contact').trim(), email: fd.get('email').trim(), phone: fd.get('phone').trim(),
-      segment: fd.get('segment').trim(), city: fd.get('city').trim(), clientType: fd.get('clientType')||'novo'
+      cnpj: fd.get('cnpj').trim(), ie: fd.get('ie').trim(), contact: fd.get('contact').trim(),
+      email: fd.get('email').trim(), phone: fd.get('phone').trim(), segment: fd.get('segment').trim(),
+      city: fd.get('city').trim(), clientType: fd.get('clientType')||'novo'
     };
     const id = form.dataset.id;
-    if(data.code && state.clients.some(c=>c.code===data.code && c.id!==id)){
-      showAlert('Já existe um cliente com o código "'+data.code+'".');
-      return;
-    }
+    if(data.code && state.clients.some(c=>c.code===data.code && c.id!==id)){ showAlert('Código duplicado.'); return; }
     if(id) updateClient(id, data); else createClient(data);
     ui.modal=null; render();
   }
-  else if(type==='list-new'){
-    addList(form.dataset.board, fd.get('name').trim());
-    ui.modal=null; render();
-  }
+  else if(type==='list-new'){ addList(form.dataset.board, fd.get('name').trim()); ui.modal=null; render(); }
   else if(type==='card-new'){
     let clientId = fd.get('clientId');
     if(!clientId){
       const newName = (fd.get('newClientName')||'').trim();
-      if(!newName){ showAlert('Selecione um cliente ou informe o nome do novo cliente.'); return; }
+      if(!newName){ showAlert('Selecione ou informe o cliente.'); return; }
       clientId = createClient({name:newName}).id;
     }
-    createCard(form.dataset.board, form.dataset.list, clientId, {
-      contractedHours: parseFloat(fd.get('contractedHours'))||0,
-      startDate: fd.get('startDate')||todayISO()
-    });
+    let hours = parseFloat(fd.get('contractedHours'))||0;
+    const useExisting = fd.get('useExistingBalance')==='on';
+    if(useExisting){
+      const prev = clientConsolidatedBalanceHours(clientId);
+      if(prev > 0) hours += prev;
+    }
+    createCard(form.dataset.board, form.dataset.list, clientId, { contractedHours: hours, startDate: fd.get('startDate')||todayISO() });
     ui.modal=null; render();
   }
   else if(type==='card-info'){
@@ -3331,13 +3037,25 @@ document.addEventListener('submit', async function(e){
     const newHours = parseFloat(fd.get('contractedHours'))||0;
     const newStart = fd.get('startDate');
     const newTags = fd.getAll('productTags');
+    const expectedModules = fd.getAll('expectedModules');
+    const expectedScreens = fd.getAll('expectedScreens');
     let histTexts = [];
-    if(newHours !== card.contractedHours) histTexts.push('Horas contratadas alteradas de '+card.contractedHours+'h para '+newHours+'h');
-    if(newStart !== card.startDate) histTexts.push('Data de início alterada para '+fmtDateBR(newStart));
+    if(newHours !== card.contractedHours) histTexts.push('Horas alteradas de '+card.contractedHours+'h para '+newHours+'h');
+    if(newStart !== card.startDate) histTexts.push('Início alterado para '+fmtDateBR(newStart));
     card.contractedHours = newHours; card.startDate = newStart; card.productTags = newTags;
+    card.expectedModules = expectedModules;
+    card.expectedScreens = expectedScreens;
     histTexts.forEach(t=> addHistory(card, t));
     const moveVal = fd.get('moveTo');
-    if(moveVal){ const [b,l] = moveVal.split('::'); moveCard(cardId, b, l); }
+    if(moveVal){
+      const [b,l] = moveVal.split('::');
+      const r = moveCard(cardId, b, l);
+      if(r && r.toList && isDoneListName(r.toList.name) && !card.isConcluded){
+        ui.cardDraft = null;
+        ui.modal = {type:'card-conclude-confirm', payload:{cardId: card.id}};
+        render(); return;
+      }
+    }
     ui.cardDraft = null;
     render();
   }
@@ -3348,153 +3066,89 @@ document.addEventListener('submit', async function(e){
     const date = fd.get('date');
     const allDay = fd.get('allDay')==='on';
     let endDate = allDay ? (fd.get('endDate')||date) : date;
-    if(allDay && endDate < date){ ui.formErr = 'O dia final não pode ser antes do dia inicial.'; render(); return; }
+    if(allDay && endDate < date){ ui.formErr = 'Dia final antes do inicial.'; render(); return; }
     const startTime = allDay ? '00:00' : (fd.get('startTime')||'09:00');
     const endTime = allDay ? '23:59' : (fd.get('endTime')||'10:00');
-    const typeName = fd.get('type');
-    const title = (fd.get('title')||'').trim();
+    const typeName = fd.get('type'); const title = (fd.get('title')||'').trim();
     let analystIds = fd.getAll('analystIds');
-    if(card){
-      const boardAnalyst = getBoard(card.boardId).analystId;
-      analystIds = [boardAnalyst];
-    }
-    if(!analystIds.length){ ui.formErr = 'Selecione pelo menos um analista.'; render(); return; }
+    if(card){ analystIds = [getBoard(card.boardId).analystId]; }
+    if(!analystIds.length){ ui.formErr = 'Selecione analista(s).'; render(); return; }
     const id = form.dataset.id;
 
-    if(!allDay){
-      if(hasAllDayBlocking(analystIds, date, id||null)){
-        ui.formErr = 'Um dos analistas selecionados já possui uma agenda de DIA TODO nesta data. Não é possível criar agendas com horário no mesmo dia.';
-        render(); return;
-      }
-    }
-
-    if(!allDay && timeToMin(endTime) <= timeToMin(startTime)){ ui.formErr = 'O horário de término deve ser depois do início.'; render(); return; }
-    if(!allDay && scheduleConflict(analystIds, date, startTime, endTime, id||null, false)){
-      ui.formErr = 'Um dos analistas selecionados já possui agendamento nesse horário.';
-      render(); return;
-    }
+    if(!allDay && hasAllDayBlocking(analystIds, date, id||null)){ ui.formErr = 'Há agenda de dia todo nesta data.'; render(); return; }
+    if(!allDay && timeToMin(endTime) <= timeToMin(startTime)){ ui.formErr = 'Horário inválido.'; render(); return; }
+    if(!allDay && scheduleConflict(analystIds, date, startTime, endTime, id||null, false)){ ui.formErr = 'Conflito de horário.'; render(); return; }
     ui.formErr = '';
 
     const isInternal = isInternalType(typeName);
     let resolvedCardId = cardIdFromCtx;
     let askAfterSave = false;
-
-    if(!resolvedCardId && clientId && isInternal){
-      askAfterSave = true;
-      resolvedCardId = null;
-    } else if(!resolvedCardId && clientId){
+    if(!resolvedCardId && clientId && isInternal){ askAfterSave = true; }
+    else if(!resolvedCardId && clientId){
       const linkChoice = fd.get('linkCardId');
       if(linkChoice === '__new__'){
         const board = boardOfAnalyst(analystIds[0]);
         if(board){ const newCard = createCard(board.id, board.lists[0].id, clientId, {}); resolvedCardId = newCard.id; }
-      } else if(linkChoice){
-        resolvedCardId = linkChoice;
-      } else {
+      } else if(linkChoice){ resolvedCardId = linkChoice; }
+      else {
         const existing = state.cards.find(c=>c.clientId===clientId);
         if(existing){ resolvedCardId = existing.id; }
-        else {
-          const board = boardOfAnalyst(analystIds[0]);
-          if(board){ const newCard = createCard(board.id, board.lists[0].id, clientId, {}); resolvedCardId = newCard.id; }
-        }
+        else { const board = boardOfAnalyst(analystIds[0]); if(board){ const newCard = createCard(board.id, board.lists[0].id, clientId, {}); resolvedCardId = newCard.id; } }
       }
     }
 
     const data = {
-      title: title,
-      analystId: analystIds[0],
-      analystIds: analystIds,
-      clientId: clientId,
-      cardId: resolvedCardId,
-      date: date,
-      endDate: allDay ? endDate : date,
-      allDay: allDay,
-      startTime: startTime,
-      endTime: endTime,
-      type: typeName,
-      category: fd.get('category')||'implantacao',
-      modules: fd.getAll('modules'),
-      trainedScreens: fd.getAll('trainedScreens'),
-      trainedUsers: fd.get('trainedUsers')||'',
-      notes: fd.get('notes')||''
+      title, analystId: analystIds[0], analystIds, clientId, cardId: resolvedCardId,
+      date, endDate: allDay ? endDate : date, allDay, startTime, endTime, type: typeName,
+      category: fd.get('category')||'implantacao', modules: fd.getAll('modules'),
+      trainedScreens: fd.getAll('trainedScreens'), trainedUsers: fd.get('trainedUsers')||'', notes: fd.get('notes')||''
     };
     let savedSchedule = null;
     if(id){ updateSchedule(id, data); savedSchedule = byId(state.schedules, id); }
-    else{ savedSchedule = createSchedule(data); }
+    else { savedSchedule = createSchedule(data); }
     ui.modal = null;
-    if(askAfterSave && savedSchedule && savedSchedule.clientId && !savedSchedule.cardId){
-      ui.modal = { type:'internal-ask-board', payload:{ scheduleId: savedSchedule.id } };
-    }
+    if(askAfterSave && savedSchedule && savedSchedule.clientId && !savedSchedule.cardId){ ui.modal = { type:'internal-ask-board', payload:{ scheduleId: savedSchedule.id } }; }
     render();
   }
   else if(type==='confirm-complete'){
     const minutes = parseInt(fd.get('deductMinutes'),10)||0;
     const id = form.dataset.id;
     completeSchedule(id, minutes, fd.get('notes'));
-    ui.modal = null;
     ui.modal = { type:'after-complete-print', payload:{ scheduleId: id } };
     render();
   }
   else if(type==='product'){
-    const name = fd.get('name').trim();
-    const color = fd.get('color');
-    const id = form.dataset.id;
+    const name = fd.get('name').trim(); const color = fd.get('color'); const id = form.dataset.id;
     if(id){ const p=byId(state.productTags,id); if(p){ p.name=name; p.color=color; } }
-    else{ state.productTags.push({id:uid('pt'), name, color, inactive:false}); }
+    else { state.productTags.push({id:uid('pt'), name, color, inactive:false}); }
     ui.modal=null; render();
   }
   else if(type==='module'){
-    const name = fd.get('name').trim();
-    const id = form.dataset.id;
-    if(state.modules.some(m=>m.name===name && m.id!==id)){
-      showAlert('Já existe um módulo chamado "'+name+'".');
-      return;
-    }
-    if(id){
-      const md = byId(state.modules, id);
-      if(md){ renameModuleEverywhere(md.name, name); md.name = name; }
-    } else if(name){
-      state.modules.push({id:uid('md'), name, inactive:false});
-    }
+    const name = fd.get('name').trim(); const id = form.dataset.id;
+    if(state.modules.some(m=>m.name===name && m.id!==id)){ showAlert('Módulo duplicado.'); return; }
+    if(id){ const md = byId(state.modules, id); if(md){ renameModuleEverywhere(md.name, name); md.name = name; } }
+    else if(name){ state.modules.push({id:uid('md'), name, inactive:false}); }
     ui.modal=null; render();
   }
   else if(type==='screen'){
-    const name = fd.get('name').trim();
-    const moduleId = fd.get('moduleId');
-    const id = form.dataset.id;
-    if(state.screens.some(s=>s.name===name && s.moduleId===moduleId && s.id!==id)){
-      showAlert('Já existe uma tela com esse nome nesse módulo.');
-      return;
-    }
-    if(id){
-      const scr = byId(state.screens, id);
-      if(scr){ renameScreenEverywhere(scr.name, name); scr.name = name; scr.moduleId = moduleId; }
-    } else if(name){
-      state.screens.push({id:uid('scr'), name, moduleId, inactive:false});
-    }
+    const name = fd.get('name').trim(); const moduleId = fd.get('moduleId'); const id = form.dataset.id;
+    if(state.screens.some(s=>s.name===name && s.moduleId===moduleId && s.id!==id)){ showAlert('Tela duplicada.'); return; }
+    if(id){ const scr = byId(state.screens, id); if(scr){ renameScreenEverywhere(scr.name, name); scr.name = name; scr.moduleId = moduleId; } }
+    else if(name){ state.screens.push({id:uid('scr'), name, moduleId, inactive:false}); }
     ui.modal=null; render();
   }
   else if(type==='agenda-type'){
-    const name = fd.get('name').trim();
-    const catKind = fd.get('catKind') || 'implantacao';
-    const isInternal = catKind==='interna';
-    const isServico = catKind==='servico';
+    const name = fd.get('name').trim(); const catKind = fd.get('catKind') || 'implantacao';
+    const isInternal = catKind==='interna'; const isServico = catKind==='servico';
     const id = form.dataset.id;
-    if(state.agendaTypes.some(t=>t.name===name && t.id!==id)){
-      showAlert('Já existe um tipo de agenda chamado "'+name+'".');
-      return;
-    }
-    if(id){
-      const tp = byId(state.agendaTypes, id);
-      if(tp){ renameTypeEverywhere(tp.name, name); tp.name = name; tp.isInternal = isInternal; tp.isServico = isServico; }
-    } else if(name){
-      state.agendaTypes.push({id:uid('at'), name, isInternal, isServico, inactive:false});
-    }
+    if(state.agendaTypes.some(t=>t.name===name && t.id!==id)){ showAlert('Tipo duplicado.'); return; }
+    if(id){ const tp = byId(state.agendaTypes, id); if(tp){ renameTypeEverywhere(tp.name, name); tp.name = name; tp.isInternal = isInternal; tp.isServico = isServico; } }
+    else if(name){ state.agendaTypes.push({id:uid('at'), name, isInternal, isServico, inactive:false}); }
     ui.modal=null; render();
   }
   else if(type==='cloud-config'){
-    if(!isAdminUser()){ showAlert('Apenas administradores podem configurar a nuvem.'); return; }
-    const url = fd.get('url').trim();
-    const anonKey = fd.get('anonKey').trim();
+    if(!isAdminUser()){ showAlert('Apenas administradores.'); return; }
+    const url = fd.get('url').trim(); const anonKey = fd.get('anonKey').trim();
     await connectCloud(url, anonKey);
   }
 });
@@ -3535,8 +3189,14 @@ document.addEventListener('drop', function(e){
         const listName = list.dataset.unifiedListName;
         const targetBoard = getBoard(card.boardId);
         const targetList = targetBoard && targetBoard.lists.find(l=>l.name===listName);
-        if(targetList){ moveCard(payload, targetBoard.id, targetList.id); render(); }
-        else { showAlert('Este estágio não existe no quadro do analista responsável.'); }
+        if(targetList){
+          const r = moveCard(payload, targetBoard.id, targetList.id);
+          if(r && r.toList && isDoneListName(r.toList.name) && !card.isConcluded){
+            ui.modal = {type:'card-conclude-confirm', payload:{cardId: card.id}};
+            render(); return;
+          }
+          render();
+        } else { showAlert('Este estágio não existe no quadro do analista responsável.'); }
       }
     }
     return;
@@ -3567,20 +3227,11 @@ function moveScheduleToGridPosition(schedId, daycolEl, clientY, grabOffset){
   const newEnd = pad(Math.floor(newEndTotal/60))+':'+pad(newEndTotal%60);
   const newDate = daycolEl.dataset.date;
   if(newDate===s.date && newStart===s.startTime) return;
-  if(hasAllDayBlocking(scheduleAnalystIds(s), newDate, s.id)){
-    showAlert('Um dos analistas desta agenda já possui uma agenda de DIA TODO nesta data.');
-    return;
-  }
-  if(scheduleConflict(scheduleAnalystIds(s), newDate, newStart, newEnd, s.id, false)){
-    showAlert('Um dos analistas desta agenda já possui agendamento nesse horário.');
-    return;
-  }
+  if(hasAllDayBlocking(scheduleAnalystIds(s), newDate, s.id)){ showAlert('Há agenda de dia todo nesta data.'); return; }
+  if(scheduleConflict(scheduleAnalystIds(s), newDate, newStart, newEnd, s.id, false)){ showAlert('Conflito de horário.'); return; }
   const oldDate = s.date, oldStart = s.startTime, oldEnd = s.endTime;
   s.date = newDate; s.startTime = newStart; s.endTime = newEnd;
-  if(s.cardId){
-    const c = getCard(s.cardId);
-    if(c) addHistory(c, 'Agenda reagendada de '+fmtDateBR(oldDate)+' '+oldStart+'–'+oldEnd+' para '+fmtDateBR(newDate)+' '+newStart+'–'+newEnd);
-  }
+  if(s.cardId){ const c = getCard(s.cardId); if(c) addHistory(c, 'Agenda reagendada de '+fmtDateBR(oldDate)+' '+oldStart+'–'+oldEnd+' para '+fmtDateBR(newDate)+' '+newStart+'–'+newEnd); }
   render();
 }
 
@@ -3605,11 +3256,7 @@ render = function(){
 
 /* Initial paint */
 currentUser = getStoredUser();
-if(currentUser){
-  boot();
-} else {
-  document.getElementById('app').innerHTML = renderLoginScreen();
-}
+if(currentUser){ boot(); } else { document.getElementById('app').innerHTML = renderLoginScreen(); }
 </script>
 </body>
 </html>
