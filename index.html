@@ -913,6 +913,7 @@ var ui = {
   cardDraft: null,
   cardModuleTab: null,
   scheduleModuleTab: null,
+  cardForecastModuleTab: null,
   confirmDialog: null,
   cardErr: '',
   modal: null,
@@ -1854,12 +1855,9 @@ function renderForecastCompare(card){
     return { okItems, missItems, extraItems };
   }
   const cmpM = compareList(expectedM, trained.modules);
-  const cmpS = compareList(expectedS, trained.screens);
 
-  function renderListSection(title, expectedArr, trainedArr, cmp){
-    let h = '<div class="compare-sections">';
-    h += '<div class="compare-section-title">'+esc(title)+'</div>';
-    h += '<div class="compare-grid">';
+  function renderCompareLists(expectedArr, trainedArr, cmp){
+    let h = '<div class="compare-grid">';
     h += '<div class="compare-col expected"><h4>Previsto</h4><div class="compare-list">';
     if(!expectedArr.length) h += '<div class="hint">Nenhum item previsto.</div>';
     expectedArr.forEach(name=>{
@@ -1880,13 +1878,57 @@ function renderForecastCompare(card){
       + (cmp.missItems.length? ' · <span style="color:var(--danger);font-weight:700;">'+cmp.missItems.length+' pendentes</span>' : '')
       + (cmp.extraItems.length? ' · <span style="color:var(--gold);font-weight:700;">'+cmp.extraItems.length+' extras</span>' : '')
       + '</div>';
-    h += '</div>';
     return h;
   }
 
   let html = '<p class="hint" style="margin-top:-4px;">Compara os itens previstos no card com os efetivamente treinados nas agendas concluídas.</p>';
-  html += renderListSection('Módulos', expectedM, trained.modules, cmpM);
-  html += renderListSection('Telas', expectedS, trained.screens, cmpS);
+
+  html += '<div class="compare-sections"><div class="compare-section-title">Módulos</div>'+renderCompareLists(expectedM, trained.modules, cmpM)+'</div>';
+
+  /* Telas agrupadas por módulo, em guias - mesmo padrão usado na seleção de Módulos/Telas. */
+  html += '<div class="compare-sections"><div class="compare-section-title">Telas (por módulo)</div>';
+  const screenNameToModuleId = new Map();
+  state.screens.forEach(scr=> screenNameToModuleId.set(scr.name, scr.moduleId));
+  const allScreenNames = [...new Set([...expectedS, ...trained.screens])];
+  const relevantModuleIds = new Set();
+  allScreenNames.forEach(name=>{ const mid = screenNameToModuleId.get(name); if(mid) relevantModuleIds.add(mid); });
+  const orphanScreens = allScreenNames.filter(name=> !screenNameToModuleId.has(name));
+  const relevantModules = state.modules.filter(m=> relevantModuleIds.has(m.id));
+
+  if(!relevantModules.length && !orphanScreens.length){
+    html += '<div class="hint">Nenhuma tela prevista ou treinada.</div>';
+  } else {
+    const tabIds = relevantModules.map(m=>m.id).concat(orphanScreens.length?['__orphan__']:[]);
+    const activeId = (ui.cardForecastModuleTab && tabIds.includes(ui.cardForecastModuleTab)) ? ui.cardForecastModuleTab : tabIds[0];
+    html += '<div class="module-tabs">';
+    relevantModules.forEach(mod=>{
+      const modScreenNames = screensForModule(mod.id).map(s=>s.name);
+      const expHere = expectedS.filter(n=>modScreenNames.includes(n));
+      const trHere = trained.screens.filter(n=>modScreenNames.includes(n));
+      const pend = expHere.filter(n=>!trHere.includes(n)).length;
+      html += '<button type="button" class="module-tab-btn'+(mod.id===activeId?' active':'')+'" data-action="module-tab-select" data-context="forecast" data-module-id="'+mod.id+'">'+esc(mod.name)+(pend?' <span class="tab-count" style="background:var(--danger);">'+pend+'</span>':'')+'</button>';
+    });
+    if(orphanScreens.length){
+      html += '<button type="button" class="module-tab-btn'+(activeId==='__orphan__'?' active':'')+'" data-action="module-tab-select" data-context="forecast" data-module-id="__orphan__">Sem módulo</button>';
+    }
+    html += '</div>';
+    html += '<div class="module-tab-panels">';
+    relevantModules.forEach(mod=>{
+      const modScreenNames = screensForModule(mod.id).map(s=>s.name);
+      const expHere = expectedS.filter(n=>modScreenNames.includes(n));
+      const trHere = trained.screens.filter(n=>modScreenNames.includes(n));
+      const cmpHere = compareList(expHere, trHere);
+      html += '<div class="module-tab-panel" data-module-id="'+mod.id+'" style="'+(mod.id===activeId?'':'display:none;')+'">'+renderCompareLists(expHere, trHere, cmpHere)+'</div>';
+    });
+    if(orphanScreens.length){
+      const expHere = expectedS.filter(n=>orphanScreens.includes(n));
+      const trHere = trained.screens.filter(n=>orphanScreens.includes(n));
+      const cmpHere = compareList(expHere, trHere);
+      html += '<div class="module-tab-panel" data-module-id="__orphan__" style="'+(activeId==='__orphan__'?'':'display:none;')+'">'+renderCompareLists(expHere, trHere, cmpHere)+'</div>';
+    }
+    html += '</div>';
+  }
+  html += '</div>';
   return html;
 }
 
@@ -2713,18 +2755,47 @@ function renderCardForecastReport(cardId){
     html += '<tr><td>'+esc(name)+'</td><td>'+prev+'</td><td>'+tr+'</td><td>'+st+'</td></tr>';
   });
   html += '</tbody></table>'
-    + '<h3 style="font-size:14px;margin:16px 0 6px;">Telas</h3>'
-    + '<table><thead><tr><th>Tela</th><th>Previsto</th><th>Treinado</th><th>Status</th></tr></thead><tbody>';
+    + '<h3 style="font-size:14px;margin:16px 0 6px;">Telas (por módulo)</h3>'
+    + '<table><thead><tr><th>Módulo</th><th>Tela</th><th>Previsto</th><th>Treinado</th><th>Status</th></tr></thead><tbody>';
   const allScr = [...new Set([...expectedS, ...trained.screens])];
-  if(!allScr.length) html += '<tr><td colspan="4"><em>Nenhuma tela registrada.</em></td></tr>';
-  allScr.forEach(name=>{
-    const prev = expectedSSet.has(name) ? 'Sim' : '—';
-    const tr = trainedSSet.has(name) ? 'Sim' : '—';
-    let st = 'OK';
-    if(expectedSSet.has(name) && !trainedSSet.has(name)) st = 'Pendente';
-    else if(!expectedSSet.has(name) && trainedSSet.has(name)) st = 'Extra';
-    html += '<tr><td>'+esc(name)+'</td><td>'+prev+'</td><td>'+tr+'</td><td>'+st+'</td></tr>';
-  });
+  if(!allScr.length){
+    html += '<tr><td colspan="5"><em>Nenhuma tela registrada.</em></td></tr>';
+  } else {
+    const screenNameToModuleId = new Map();
+    state.screens.forEach(scr=> screenNameToModuleId.set(scr.name, scr.moduleId));
+    const grouped = new Map();
+    const orphan = [];
+    allScr.forEach(name=>{
+      const mid = screenNameToModuleId.get(name);
+      if(mid){ if(!grouped.has(mid)) grouped.set(mid, []); grouped.get(mid).push(name); }
+      else orphan.push(name);
+    });
+    function screenRow(name, prev, tr, st){
+      return '<td>'+esc(name)+'</td><td>'+prev+'</td><td>'+tr+'</td><td>'+st+'</td></tr>';
+    }
+    state.modules.forEach(mod=>{
+      const names = grouped.get(mod.id);
+      if(!names || !names.length) return;
+      names.forEach((name,i)=>{
+        const prev = expectedSSet.has(name) ? 'Sim' : '—';
+        const tr = trainedSSet.has(name) ? 'Sim' : '—';
+        let st = 'OK';
+        if(expectedSSet.has(name) && !trainedSSet.has(name)) st = 'Pendente';
+        else if(!expectedSSet.has(name) && trainedSSet.has(name)) st = 'Extra';
+        html += '<tr>'+(i===0?'<td rowspan="'+names.length+'" style="font-weight:700;vertical-align:top;">'+esc(mod.name)+'</td>':'')+screenRow(name, prev, tr, st);
+      });
+    });
+    if(orphan.length){
+      orphan.forEach((name,i)=>{
+        const prev = expectedSSet.has(name) ? 'Sim' : '—';
+        const tr = trainedSSet.has(name) ? 'Sim' : '—';
+        let st = 'OK';
+        if(expectedSSet.has(name) && !trainedSSet.has(name)) st = 'Pendente';
+        else if(!expectedSSet.has(name) && trainedSSet.has(name)) st = 'Extra';
+        html += '<tr>'+(i===0?'<td rowspan="'+orphan.length+'" style="font-weight:700;vertical-align:top;"><em>Sem módulo</em></td>':'')+screenRow(name, prev, tr, st);
+      });
+    }
+  }
   html += '</tbody></table></div>';
   html += '<div class="form-actions no-print"><span style="flex:1;"></span><button class="btn btn-primary" data-action="print-report">🖨 Imprimir / Salvar PDF</button></div>';
   return html;
@@ -2957,9 +3028,9 @@ document.addEventListener('click', function(e){
   else if(a==='close-modal' || a==='close-modal-bg'){ closeModal(); }
   else if(a==='confirm-ok'){ const d=ui.confirmDialog; ui.confirmDialog=null; if(d && d.onConfirm) d.onConfirm(); render(); }
   else if(a==='confirm-cancel'){ ui.confirmDialog=null; render(); }
-  else if(a==='close-card'){ ui.openCardId=null; ui.cardDraft=null; ui.cardModuleTab=null; render(); }
+  else if(a==='close-card'){ ui.openCardId=null; ui.cardDraft=null; ui.cardModuleTab=null; ui.cardForecastModuleTab=null; render(); }
   else if(a==='toggle-notif'){ ui.showNotif = !ui.showNotif; render(); }
-  else if(a==='open-card'){ const holder = el.closest('[data-card-id]'); if(holder){ ui.openCardId = holder.dataset.cardId; ui.cardTab='info'; ui.cardModuleTab=null; render(); } }
+  else if(a==='open-card'){ const holder = el.closest('[data-card-id]'); if(holder){ ui.openCardId = holder.dataset.cardId; ui.cardTab='info'; ui.cardModuleTab=null; ui.cardForecastModuleTab=null; render(); } }
   else if(a==='card-tab'){ ui.cardTab = el.dataset.tab; render(); }
   else if(a==='delete-card'){ const id = el.dataset.id; showConfirm('Excluir este card e seus agendamentos vinculados?', function(){ deleteCard(id); ui.openCardId=null; ui.cardDraft=null; ui.modal=null; }); }
   else if(a==='card-conclude'){ ui.modal = {type:'card-conclude-confirm', payload:{cardId: el.dataset.id}}; render(); }
@@ -3003,11 +3074,12 @@ document.addEventListener('click', function(e){
     const context = el.dataset.context;
     if(context==='card') ui.cardModuleTab = moduleId;
     else if(context==='schedule') ui.scheduleModuleTab = moduleId;
+    else if(context==='forecast') ui.cardForecastModuleTab = moduleId;
     /* Troca de guia é só visual - não precisa de render(), então nada mais na tela se perde. */
-    const fieldWrap = el.closest('.field');
-    if(fieldWrap){
-      fieldWrap.querySelectorAll('.module-tab-btn').forEach(btn=> btn.classList.toggle('active', btn.dataset.moduleId===moduleId));
-      fieldWrap.querySelectorAll('.module-tab-panel').forEach(p=> { p.style.display = (p.dataset.moduleId===moduleId) ? '' : 'none'; });
+    const wrap = el.closest('.field') || el.closest('.compare-sections');
+    if(wrap){
+      wrap.querySelectorAll('.module-tab-btn').forEach(btn=> btn.classList.toggle('active', btn.dataset.moduleId===moduleId));
+      wrap.querySelectorAll('.module-tab-panel').forEach(p=> { p.style.display = (p.dataset.moduleId===moduleId) ? '' : 'none'; });
     }
   }
   else if(a==='quick-add-product'){
