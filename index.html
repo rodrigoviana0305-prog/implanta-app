@@ -157,7 +157,7 @@ h1,h2,h3,h4{ font-family:var(--font-head); margin:0; color:var(--ink); }
 .modal-close:hover{ color:var(--ink); }
 .field{ margin-bottom:13px; display:flex; flex-direction:column; gap:5px; }
 .field label{ font-size:12.5px; font-weight:700; color:var(--ink-soft); }
-.field input[type=text], .field input[type=date], .field input[type=time], .field input[type=number], .field input[type=email], .field input[type=tel], .field input[type=password], .field select, .field textarea{
+.field input[type=text], .field input[type=date], .field input[type=time], .field input[type=number], .field input[type=email], .field input[type=tel], .field select, .field textarea{
   border:1px solid var(--border); border-radius:8px; padding:9px 10px; background:var(--surface-2); color:var(--ink); outline:none; width:100%;
 }
 .field input:focus, .field select:focus, .field textarea:focus{ border-color:var(--brand); background:var(--surface); }
@@ -388,7 +388,7 @@ body{font-size:14px;color:var(--ink);}
 table{box-shadow:var(--shadow-1);}
 th{background:#F1F6F9;color:#607587;}
 .modal{border:1px solid #E1E8ED;}
-.field input[type=text],.field input[type=date],.field input[type=time],.field input[type=number],.field input[type=email],.field input[type=tel],.field input[type=password],.field select,.field textarea{background:#F7F9FB;border-color:#DCE5EB;border-radius:9px;}
+.field input[type=text],.field input[type=date],.field input[type=time],.field input[type=number],.field input[type=email],.field input[type=tel],.field select,.field textarea{background:#F7F9FB;border-color:#DCE5EB;border-radius:9px;}
 .field input:focus,.field select:focus,.field textarea:focus{border-color:#79AFCB;box-shadow:0 0 0 3px rgba(11,92,142,.07);}
 .tabs{border-color:var(--border);}
 .tab-btn.active{color:var(--brand);border-color:var(--brand);}
@@ -466,145 +466,18 @@ th{background:#F1F6F9;color:#607587;}
 .live-sync-indicator.show{opacity:.92;transform:translateY(0);}
 .live-sync-dot{width:6px;height:6px;border-radius:50%;background:var(--ok);}
 
-/* ================= LOGIN ================= */
-#login-screen{
-  position:fixed; inset:0; z-index:10000;
-  display:flex; align-items:center; justify-content:center;
-  background:linear-gradient(135deg,#073F63 0%,#0B5C8E 50%,#1684BD 100%);
-  padding:20px;
-}
-.login-card{
-  background:#fff; border-radius:20px; box-shadow:0 24px 64px rgba(7,63,99,.35);
-  width:100%; max-width:400px; padding:36px 32px 32px; text-align:center;
-}
-.login-brand{
-  display:flex; align-items:center; justify-content:center; gap:12px; margin-bottom:6px;
-}
-.login-brand-mark{
-  width:48px; height:48px; border-radius:14px;
-  background:linear-gradient(135deg,var(--brand),#1684BD);
-  display:flex; align-items:center; justify-content:center;
-  font-family:var(--font-head); font-weight:800; color:#fff; font-size:18px;
-  box-shadow:0 8px 20px rgba(11,92,142,.25);
-}
-.login-brand h1{ font-size:26px; color:var(--brand-dark); letter-spacing:-.5px; }
-.login-brand p{ font-size:11px; color:var(--ok); font-weight:800; letter-spacing:1.2px; margin:0; }
-.login-subtitle{ font-size:13px; color:var(--ink-soft); margin:8px 0 24px; }
-.login-card .field{ text-align:left; }
-.login-card .field label{ font-size:12.5px; font-weight:700; color:var(--ink-soft); }
-.login-card .field input{
-  border:1px solid var(--border); border-radius:10px; padding:11px 12px;
-  background:#F7F9FB; color:var(--ink); outline:none; width:100%;
-  font-size:14.5px; transition:.18s ease;
-}
-.login-card .field input:focus{
-  border-color:#79AFCB; box-shadow:0 0 0 3px rgba(11,92,142,.07); background:#fff;
-}
-.login-card .btn{
-  width:100%; justify-content:center; padding:12px; font-size:15px; margin-top:6px;
-}
-.login-error{
-  background:var(--danger-soft); color:var(--danger); border-radius:10px;
-  padding:10px 12px; font-size:12.5px; font-weight:600; margin-bottom:14px; text-align:left;
-}
-.login-footer{ margin-top:22px; font-size:11px; color:var(--ink-faint); }
-.login-footer a{ color:var(--brand); text-decoration:none; font-weight:600; cursor:pointer; }
-.login-footer a:hover{ text-decoration:underline; }
 </style>
 </head>
 <body>
-<div id="app">
-  <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;color:#5A635D;font-family:'Inter',sans-serif;">Carregando...</div>
-</div>
+<div id="app"><div style="min-height:100vh;display:flex;align-items:center;justify-content:center;color:#5A635D;font-family:'Inter',sans-serif;">Carregando...</div></div>
 
 <script>
-/* ============================= LOGIN ============================= */
-const LOGIN_KEY = 'implanta_logged_user_v1';
-/* Conta mestra de emergência — sempre funciona, independente dos analistas cadastrados.
-   Serve para o administrador conseguir entrar caso perca a própria senha. */
-const MASTER_USER = 'administrador';
-const MASTER_PASS = '71209403';
-
-var currentUser = null;
-
-function getStoredUser(){
-  try{ return JSON.parse(localStorage.getItem(LOGIN_KEY)); }catch(e){ return null; }
-}
-function setStoredUser(u){
-  currentUser = u;
-  if(u) localStorage.setItem(LOGIN_KEY, JSON.stringify(u));
-  else localStorage.removeItem(LOGIN_KEY);
-}
-
-function renderLoginScreen(errorMsg){
-  return '<div id="login-screen">'
-    + '<div class="login-card">'
-      + '<div class="login-brand"><div class="login-brand-mark">RT</div><div style="text-align:left;"><h1>Implanta</h1><p>REALTEC</p></div></div>'
-      + '<p class="login-subtitle">Entre com seu usuário para acessar o sistema</p>'
-      + (errorMsg ? '<div class="login-error">'+esc(errorMsg)+'</div>' : '')
-      + '<form id="login-form" onsubmit="event.preventDefault();doLogin();">'
-        + '<div class="field"><label>Usuário</label><input type="text" id="login-user" placeholder="Digite seu usuário" autocomplete="username" autofocus></div>'
-        + '<div class="field"><label>Senha</label><input type="password" id="login-pass" placeholder="Digite sua senha" autocomplete="current-password"></div>'
-        + '<button type="submit" class="btn btn-primary">Entrar</button>'
-      + '</form>'
-      + '<div class="login-footer">Acesso restrito — fale com o administrador se não tiver acesso.</div>'
-    + '</div>'
-  + '</div>';
-}
-
-function doLogin(){
-  const userEl = document.getElementById('login-user');
-  const passEl = document.getElementById('login-pass');
-  const u = (userEl.value||'').trim().toLowerCase();
-  const p = passEl.value||'';
-
-  if(!u || !p){
-    document.getElementById('app').innerHTML = renderLoginScreen('Preencha usuário e senha.');
-    return;
-  }
-
-  // 1) Conta mestra de emergência (sempre funciona)
-  if(u === MASTER_USER && p === MASTER_PASS){
-    setStoredUser({username:MASTER_USER, displayName:'Administrador', role:'admin', isMaster:true});
-    document.getElementById('app').innerHTML = '';
-    boot();
-    return;
-  }
-
-  // 2) Analistas cadastrados com login/senha próprios
-  const analyst = state.analysts.find(a=> a.username && a.username.toLowerCase() === u);
-  if(analyst){
-    if(!analyst.password || analyst.password !== p){
-      document.getElementById('app').innerHTML = renderLoginScreen('Usuário ou senha inválidos. Tente novamente.');
-      return;
-    }
-    setStoredUser({
-      username: analyst.username,
-      displayName: analyst.name,
-      role: analyst.isAdmin ? 'admin' : 'analyst',
-      analystId: analyst.id,
-      isAdmin: !!analyst.isAdmin
-    });
-    document.getElementById('app').innerHTML = '';
-    boot();
-    return;
-  }
-
-  document.getElementById('app').innerHTML = renderLoginScreen('Usuário ou senha inválidos. Tente novamente.');
-}
-
-function logout(){
-  setStoredUser(null);
-  document.getElementById('app').innerHTML = renderLoginScreen();
-}
-
 /* ============================= STATE ============================= */
 const STORAGE_KEY = 'implanta_v1';
 const PALETTE = ['#3E8E7E','#C99A2E','#7B4B94','#3E74B0','#B15577','#6E7B3B','#A05A2C','#52616B'];
-const ADMIN_ANALYST_NAME = 'Rodrigo Soares';
 
 function defaultState(){
-  const st = {
+  return {
     analysts: [],
     boards: [],
     clients: [],
@@ -625,72 +498,20 @@ function defaultState(){
       {id:uid('at'), name:'Interna', isInternal:true}
     ]
   };
-  // Vincula Rodrigo Soares como analista administrador já na primeira carga,
-  // garantindo que exista um usuário admin próprio do sistema (além da conta mestra).
-  const adminAnalyst = {id:uid('an'), name:ADMIN_ANALYST_NAME, color:'#0B5C8E', username:'rodrigo.soares', password:'71209403', isAdmin:true};
-  st.analysts.push(adminAnalyst);
-  st.boards.push({id:uid('bd'), name:'Quadro — '+ADMIN_ANALYST_NAME, analystId:adminAnalyst.id, lists:[
-    {id:uid('ls'), name:'Fila / Cadastro'},
-    {id:uid('ls'), name:'Em implantação'},
-    {id:uid('ls'), name:'Treinamento'},
-    {id:uid('ls'), name:'Concluído'}
-  ]});
-  return st;
 }
 function uid(p){ return p+'_'+Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4); }
-
-function ensureAdminAnalyst(s){
-  // Garante que o analista administrador (Rodrigo Soares) sempre exista e esteja
-  // marcado como admin, mesmo em estados antigos que não tinham esse conceito.
-  let admin = s.analysts.find(a=> a.isAdmin);
-  if(!admin){
-    admin = s.analysts.find(a=> a.name && a.name.toLowerCase() === ADMIN_ANALYST_NAME.toLowerCase());
-  }
-  if(!admin){
-    admin = {id:uid('an'), name:ADMIN_ANALYST_NAME, color:'#0B5C8E', username:'rodrigo.soares', password:'71209403', isAdmin:true};
-    s.analysts.push(admin);
-    s.boards.push({id:uid('bd'), name:'Quadro — '+ADMIN_ANALYST_NAME, analystId:admin.id, lists:[
-      {id:uid('ls'), name:'Fila / Cadastro'},
-      {id:uid('ls'), name:'Em implantação'},
-      {id:uid('ls'), name:'Treinamento'},
-      {id:uid('ls'), name:'Concluído'}
-    ]});
-  } else {
-    admin.isAdmin = true;
-    if(!admin.username) admin.username = 'rodrigo.soares';
-    if(!admin.password) admin.password = '71209403';
-  }
-  // Se o analista admin não tem quadro ainda, cria um
-  if(!s.boards.some(b=> b.analystId===admin.id)){
-    s.boards.push({id:uid('bd'), name:'Quadro — '+admin.name, analystId:admin.id, lists:[
-      {id:uid('ls'), name:'Fila / Cadastro'},
-      {id:uid('ls'), name:'Em implantação'},
-      {id:uid('ls'), name:'Treinamento'},
-      {id:uid('ls'), name:'Concluído'}
-    ]});
-  }
-  return s;
-}
-
 function normalizeState(raw){
   let s = raw;
   if(!s || typeof s!=='object') s = defaultState();
   ['analysts','boards','clients','cards','schedules','productTags','modules','screens','agendaTypes'].forEach(k=>{ if(!Array.isArray(s[k])) s[k]=defaultState()[k]; });
+  // Migrate modules/agendaTypes from old plain-string arrays to {id, name} objects, if needed.
   s.modules = s.modules.map(m=> (typeof m==='string') ? {id:uid('md'), name:m} : m);
   s.agendaTypes = s.agendaTypes.map(t=> {
     if(typeof t==='string') return {id:uid('at'), name:t, isInternal: t==='Interna'};
     if(t.isInternal===undefined) return Object.assign({}, t, {isInternal: t.name==='Interna'});
     return t;
   });
-  s.analysts = s.analysts.map(a=>{
-    const copy = Object.assign({}, a);
-    if(!copy.username) copy.username = '';
-    if(!copy.password) copy.password = '';
-    if(copy.isAdmin===undefined) copy.isAdmin = false;
-    return copy;
-  });
   s = dedupeRegistries(s);
-  s = ensureAdminAnalyst(s);
   return s;
 }
 function loadLocalState(){
@@ -700,6 +521,13 @@ function loadLocalState(){
   }catch(e){ return defaultState(); }
 }
 
+/* ---- Cloud (Supabase) config: optional. When configured, data is stored in a
+   Postgres table instead of (only) localStorage, so it can be shared across
+   devices/browsers. See the "Nuvem" tab in Configurações to set it up.
+   DEFAULT_CLOUD_CONFIG is baked into this file so every computer that opens
+   the published page connects automatically, with no per-browser setup.
+   The publishable key is meant to be public (protected by RLS/policies, not
+   by secrecy), so it's fine for it to live here in plain sight. ---- */
 const DEFAULT_CLOUD_CONFIG = {
   url: 'https://pfabqqdhvacakszoklxh.supabase.co',
   anonKey: 'sb_publishable_0lFYSvX-C7n3Y1FVZ4RWvQ_8HVOCxQI'
@@ -718,11 +546,11 @@ function loadCloudConfig(){
 var cloudConfig = loadCloudConfig();
 var usingDefaultCloud = !!(cloudConfig && DEFAULT_CLOUD_CONFIG.url && cloudConfig.url===DEFAULT_CLOUD_CONFIG.url && cloudConfig.anonKey===DEFAULT_CLOUD_CONFIG.anonKey);
 var sbClient = null;
-var cloudStatus = cloudConfig ? 'connecting' : 'local';
+var cloudStatus = cloudConfig ? 'connecting' : 'local'; // 'local' | 'connecting' | 'connected' | 'error'
 var cloudErrorMsg = '';
-var saveStatus = 'idle';
+var saveStatus = 'idle'; // 'idle' | 'pending' | 'saving' | 'saved' | 'error'
 var saveTimer = null;
-var lastKnownUpdatedAt = null;
+var lastKnownUpdatedAt = null; // updated_at of the cloud row as of our last successful read/write
 
 var realtimeChannel = null;
 var realtimePollTimer = null;
@@ -787,6 +615,9 @@ async function refreshFromCloudIfChanged(source){
     if(sameInstant(data.updated_at, lastKnownUpdatedAt)) return false;
 
     const remote = normalizeState(data.data);
+    // Se há uma alteração local ainda aguardando envio, preservamos a alteração local.
+    // Quando não há alteração local pendente, o estado remoto substitui o estado exibido,
+    // permitindo inclusive que exclusões feitas por outro usuário desapareçam imediatamente.
     if(saveStatus==='pending' || saveStatus==='saving'){
       state = mergeStates(remote, state);
     }else{
@@ -796,6 +627,7 @@ async function refreshFromCloudIfChanged(source){
     saveStatus = 'saved';
     changed = true;
 
+    // Atualiza a tela sem disparar um novo salvamento só por ter recebido dados.
     renderWithoutPersist();
     flashLiveUpdate();
     showLiveSyncIndicator();
@@ -824,6 +656,7 @@ function startRealtimeSync(){
   stopRealtimeSync();
   if(!sbClient || cloudStatus!=='connected') return;
 
+  // Atualização instantânea para todos os clientes conectados ao mesmo projeto Supabase.
   try{
     realtimeChannel = sbClient.channel('implanta-app-state-live')
       .on('postgres_changes',
@@ -841,6 +674,8 @@ function startRealtimeSync(){
     console.warn('Não foi possível iniciar a sincronização em tempo real', e);
   }
 
+  // Fallback silencioso: garante atualização mesmo se o Realtime não estiver habilitado
+  // para a tabela no projeto Supabase.
   realtimePollTimer = setInterval(()=>{
     if(document.visibilityState==='visible') refreshFromCloudIfChanged('poll');
   }, REALTIME_POLL_MS);
@@ -862,7 +697,7 @@ function sameInstant(a, b){
   if(!a || !b) return false;
   const ta = new Date(a).getTime(), tb = new Date(b).getTime();
   if(isNaN(ta) || isNaN(tb)) return false;
-  return Math.abs(ta - tb) < 1000;
+  return Math.abs(ta - tb) < 1000; // treat sub-second formatting/precision differences as "the same moment"
 }
 async function cloudSave(){
   if(!sbClient) return;
@@ -871,6 +706,12 @@ async function cloudSave(){
   try{
     const { data: fresh, error: fetchErr } = await sbClient.from('app_state').select('data, updated_at').eq('id', 1).maybeSingle();
     if(fetchErr) throw fetchErr;
+    // Only merge if someone else has actually saved since our last read/write - merging on every
+    // save is what caused deletions (of a module, an analyst, anything) to keep reappearing, since
+    // the just-deleted item still existed in the cloud copy being merged back in. When nothing has
+    // changed remotely, we're the single source of truth and can just overwrite outright.
+    // Comparing timestamps as exact strings was fragile (Postgres can format the same instant
+    // slightly differently than what we sent), so this compares them as actual points in time.
     if(fresh && fresh.updated_at && !sameInstant(fresh.updated_at, lastKnownUpdatedAt) && fresh.data){
       state = mergeStates(normalizeState(fresh.data), state);
     }
@@ -885,6 +726,12 @@ async function cloudSave(){
   }
   updateSaveStatusLine();
 }
+/* Best-effort merge, used only when the cloud row changed since we last read it (a genuine
+   concurrent edit from another tab/computer). Unions each entity array by id (same id on both
+   sides: local wins). This can't tell a real remote deletion apart from "hasn't synced yet", so
+   in that specific overlap window a deletion made on the other side could reappear - but this
+   path is now only hit on an actual detected conflict, not on every save, so it no longer blocks
+   ordinary deletes. */
 function mergeStates(remote, local){
   const merged = Object.assign({}, local);
   ['analysts','boards','clients','cards','schedules','productTags','modules','agendaTypes','screens'].forEach(key=>{
@@ -895,6 +742,11 @@ function mergeStates(remote, local){
   });
   return dedupeRegistries(merged);
 }
+/* One-time (idempotent) cleanup: collapses modules/agendaTypes/screens that ended up duplicated
+   by name (this happened for a while because of the object-vs-string merge bug above - safe to
+   run on already-clean data too, since it's a no-op then). Keeps the first occurrence of each
+   name and remaps any screen pointing at a removed duplicate module id to the surviving one, so
+   nothing gets orphaned. */
 function dedupeRegistries(s){
   function dedupeWithRemap(arr){
     const survivorByName = new Map();
@@ -941,6 +793,8 @@ async function forceSaveNow(){
     setForceSaveMsg('✓ Salvo neste navegador.');
   }
 }
+/* If the tab is being switched away from or closed while a save is still waiting on the debounce,
+   flush it immediately instead of risking losing the last change. */
 document.addEventListener('visibilitychange', function(){
   if(document.visibilityState==='hidden' && saveStatus==='pending' && sbClient){
     clearTimeout(saveTimer);
@@ -966,10 +820,6 @@ function disconnectCloud(){
   render();
 }
 async function boot(){
-  if(!currentUser){
-    document.getElementById('app').innerHTML = renderLoginScreen();
-    return;
-  }
   let needsImmediateResave = false;
   if(cloudConfig && window.supabase){
     try{
@@ -981,15 +831,19 @@ async function boot(){
         const beforeCounts = {
           modules: Array.isArray(before.modules) ? before.modules.length : 0,
           agendaTypes: Array.isArray(before.agendaTypes) ? before.agendaTypes.length : 0,
-          screens: Array.isArray(before.screens) ? before.screens.length : 0,
-          analysts: Array.isArray(before.analysts) ? before.analysts.length : 0
+          screens: Array.isArray(before.screens) ? before.screens.length : 0
         };
         state = normalizeState(before);
         lastKnownUpdatedAt = data.updated_at || null;
-        if(state.modules.length < beforeCounts.modules || state.agendaTypes.length < beforeCounts.agendaTypes || state.screens.length < beforeCounts.screens || state.analysts.length > beforeCounts.analysts){
+        // If normalizing/deduping actually removed something (duplicates from the earlier merge bug),
+        // push the cleaned-up version back right away instead of waiting for the user's next edit -
+        // otherwise the duplicates keep coming back from the still-dirty row on every future load.
+        if(state.modules.length < beforeCounts.modules || state.agendaTypes.length < beforeCounts.agendaTypes || state.screens.length < beforeCounts.screens){
           needsImmediateResave = true;
         }
       } else {
+        // First time connecting this project: seed the cloud with whatever is already stored locally,
+        // so existing work isn't lost when turning cloud sync on.
         state = loadLocalState();
         const nowIso = new Date().toISOString();
         const ins = await sbClient.from('app_state').insert({id:1, data: state, updated_at: nowIso});
@@ -1027,7 +881,7 @@ var ui = {
   cardDraft: null,
   confirmDialog: null,
   cardErr: '',
-  modal: null,
+  modal: null, // {type, payload}
   calAnalyst: 'all',
   calCategory: 'all',
   calStart: startOfWeekISO(todayISO()),
@@ -1098,14 +952,10 @@ function scheduleIsDue(s){ if(s.status!=='pendente') return false; const end=new
 function pendingConfirmations(analystId){ return state.schedules.filter(s=> scheduleIsDue(s) && (!analystId || s.analystId===analystId)); }
 function addHistory(card, text){ card.history = card.history||[]; card.history.unshift({ts:Date.now(), text}); }
 function colorForIndex(i){ return PALETTE[i % PALETTE.length]; }
-function isAdminUser(){ return !!(currentUser && (currentUser.isAdmin || currentUser.role==='admin')); }
 
 /* ============================= MUTATIONS ============================= */
-function createAnalyst(name, color, username, password, isAdmin){
-  const analyst = {
-    id:uid('an'), name, color: color || colorForIndex(state.analysts.length),
-    username: username||'', password: password||'', isAdmin: !!isAdmin
-  };
+function createAnalyst(name, color){
+  const analyst = {id:uid('an'), name, color: color || colorForIndex(state.analysts.length)};
   state.analysts.push(analyst);
   const board = {id:uid('bd'), name:'Quadro — '+name, analystId:analyst.id, lists:[
     {id:uid('ls'), name:'Fila / Cadastro'},
@@ -1117,8 +967,6 @@ function createAnalyst(name, color, username, password, isAdmin){
   return {analyst, board};
 }
 function deleteAnalyst(id){
-  const target = getAnalyst(id);
-  if(target && target.isAdmin){ showAlert('Não é possível excluir o analista administrador do sistema.'); return; }
   const board = boardOfAnalyst(id);
   if(board){
     const cardIds = cardsInBoard(board.id).map(c=>c.id);
@@ -1247,10 +1095,6 @@ function deleteListFromBoard(boardId, listId){
 /* ============================= RENDER ROOT ============================= */
 function render(){
   persist();
-  if(!currentUser){
-    document.getElementById('app').innerHTML = renderLoginScreen();
-    return;
-  }
   const app = document.getElementById('app');
   app.innerHTML = renderShell();
   if(ui._focus){
@@ -1284,7 +1128,7 @@ function renderSidebar(){
     const pend = pendingConfirmations(a.id).length;
     const active = ui.view==='board' && ui.boardAnalystFilter===a.id;
     html += '<button class="side-item'+(active?' active':'')+'" data-action="board-analyst-filter" data-id="'+a.id+'">'
-      + '<span class="side-dot" style="background:'+a.color+'"></span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+esc(a.name)+(a.isAdmin?' <span style="font-size:9px;font-weight:800;color:#F0A72F;letter-spacing:.5px;">ADMIN</span>':'')+'</span>'
+      + '<span class="side-dot" style="background:'+a.color+'"></span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+esc(a.name)+'</span>'
       + (pend? '<span class="side-badge">'+pend+'</span>' : '')
       + '</button>';
   });
@@ -1299,10 +1143,7 @@ function renderSidebar(){
   html += navItem('settings','⚙','Configurações');
   html += '</div>';
   html += '<div class="side-spacer"></div>';
-  html += '<div class="side-foot" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">'
-    + '<span id="save-status-line" style="flex:1;">'+(cloudStatus==='connected' ? '☁ Sincronizado com a nuvem' : 'Dados salvos neste navegador.')+'</span>'
-    + '<button class="btn btn-sm btn-ghost" data-action="logout" title="Sair" style="color:#9FB6AC;">Sair</button>'
-    + '</div>';
+  html += '<div class="side-foot" id="save-status-line">'+(cloudStatus==='connected' ? '☁ Sincronizado com a nuvem' : 'Dados salvos neste navegador.')+'</div>';
   return html;
 }
 function totalPendingBoardBadge(){ return pendingConfirmations(null).length; }
@@ -1349,11 +1190,7 @@ function renderTopbar(){
   } else if(ui.view==='settings'){
     left = '<div class="topbar-title"><h2>Configurações</h2></div>';
   }
-  let right = '';
-  if(currentUser){
-    right += '<span style="font-size:12.5px;color:var(--ink-soft);font-weight:600;margin-right:4px;">👤 '+esc(currentUser.displayName||currentUser.username||'')+(isAdminUser()?' <span class="badge" style="background:var(--gold-soft);color:var(--gold);">ADMIN</span>':'')+'</span>';
-  }
-  right += '<div class="icon-btn" data-action="toggle-notif" title="Notificações">🔔'+(totalPend? '<span class="notif-dot">'+totalPend+'</span>':'')+'</div>';
+  let right = '<div class="icon-btn" data-action="toggle-notif" title="Notificações">🔔'+(totalPend? '<span class="notif-dot">'+totalPend+'</span>':'')+'</div>';
   if(ui.showNotif) right += renderNotifPanel();
   return hamburger + left + '<div class="topbar-right">'+right+'</div>';
 }
@@ -1405,12 +1242,16 @@ function renderBoardView(){
   const selectedBoard = selectedAnalyst ? boardOfAnalyst(filterId) : null;
   const q = ui.search.trim().toLowerCase();
 
+  // The persisted boards remain one per analyst. The unified view only combines
+  // their lists/cards for display; no board records are merged or rewritten.
   const boards = filterId==='all'
     ? state.boards.slice()
     : (selectedBoard ? [selectedBoard] : []);
 
   if(!boards.length) return '<div class="empty-state"><h3>Nenhum quadro disponível</h3></div>';
 
+  // Build columns from list names, preserving the order used by the first board
+  // and adding any custom lists that exist on other boards.
   const listDefs = [];
   const seenNames = new Set();
   boards.forEach(b=>{
@@ -1590,7 +1431,7 @@ function renderSchedRow(s){
 }
 function statusLabel(st){ return st==='pendente'?'Pendente': st==='concluida'?'Concluída':'Não realizada'; }
 
-/* ============================= CALENDAR VIEW ============================= */
+/* ============================= CALENDAR VIEW (day/time grid, Google Calendar style) ============================= */
 function calcCalTimeRange(scheds){
   let minH = 7, maxH = 21;
   scheds.forEach(s=>{
@@ -1707,6 +1548,7 @@ function renderCalendarView(){
 /* ============================= REPORTS VIEW ============================= */
 function renderReportsView(){
   let html = '';
+  // 1. Saldo de horas por cliente
   html += '<div class="section-card"><h3>Saldo de horas por cliente</h3><table><thead><tr><th>Cliente</th><th>Analista</th><th>Contratadas</th><th>Usadas</th><th>Saldo</th></tr></thead><tbody>';
   if(!state.cards.length) html += '<tr><td colspan="5" class="hint">Nenhum cliente em implantação ainda.</td></tr>';
   state.cards.forEach(c=>{
@@ -1716,6 +1558,7 @@ function renderReportsView(){
   });
   html += '</tbody></table></div>';
 
+  // 2. Módulos treinados por cliente
   html += '<div class="section-card"><h3>Módulos treinados por cliente</h3><table><thead><tr><th>Cliente</th><th>Módulos treinados</th><th>Telas treinadas</th><th>Usuários treinados</th></tr></thead><tbody>';
   const anyTrained = state.cards.some(c=> state.schedules.some(s=>s.cardId===c.id && s.status==='concluida' && s.type==='Treinamento'));
   if(!anyTrained) html += '<tr><td colspan="4" class="hint">Nenhum treinamento concluído registrado ainda.</td></tr>';
@@ -1739,6 +1582,7 @@ function renderReportsView(){
   });
   html += '</tbody></table></div>';
 
+  // 3. Horas por analista
   html += '<div class="section-card"><h3>Horas realizadas por analista</h3><table><thead><tr><th>Analista</th><th>Sessões concluídas</th><th>Total de horas</th></tr></thead><tbody>';
   if(!state.analysts.length) html += '<tr><td colspan="3" class="hint">Nenhum analista cadastrado.</td></tr>';
   state.analysts.forEach(a=>{
@@ -1748,6 +1592,7 @@ function renderReportsView(){
   });
   html += '</tbody></table></div>';
 
+  // 4. Analista x Clientes
   html += '<div class="section-card"><h3>Analista × Clientes</h3><table><thead><tr><th>Analista</th><th>Clientes em implantação</th></tr></thead><tbody>';
   if(!state.analysts.length) html += '<tr><td colspan="2" class="hint">Nenhum analista cadastrado.</td></tr>';
   state.analysts.forEach(a=>{
@@ -1758,6 +1603,7 @@ function renderReportsView(){
   });
   html += '</tbody></table></div>';
 
+  // 5. Agendas internas vinculadas a cliente
   const internalWithClient = state.schedules.filter(s=> isInternalType(s.type) && s.clientId);
   html += '<div class="section-card"><h3>Agendas internas vinculadas a cliente</h3>'
     + '<p class="hint" style="margin-top:-4px;">Agendas de tipo interno (não são atendimento direto) que ainda assim foram vinculadas a um cliente específico.</p>'
@@ -1800,8 +1646,7 @@ function renderClientsView(){
 /* ============================= SETTINGS VIEW ============================= */
 function renderSettingsView(){
   let html = '<div class="settings-tabs">';
-  [['analistas','Analistas'],['produtos','Produtos'],['modulos','Módulos do sistema'],['telas','Telas'],['tipos','Tipos de agenda'],['acesso','Acesso'],['nuvem','Nuvem']].forEach(([k,l])=>{
-    if(k==='nuvem' && !isAdminUser()) return; // apenas admin vê a aba Nuvem
+  [['analistas','Analistas'],['produtos','Produtos'],['modulos','Módulos do sistema'],['telas','Telas'],['tipos','Tipos de agenda'],['nuvem','Nuvem']].forEach(([k,l])=>{
     html += '<button class="btn btn-sm'+(ui.settingsTab===k?' btn-primary':'')+'" data-action="settings-tab" data-tab="'+k+'">'+l+'</button>';
   });
   html += '</div>';
@@ -1814,20 +1659,11 @@ function renderSettingsView(){
   }
 
   if(ui.settingsTab==='analistas'){
-    html += '<div class="section-card"><h3>Analistas</h3>'
-      + '<p class="hint" style="margin-top:-4px;">Cada analista precisa de um login e senha próprios para acessar o sistema.</p>'
-      + '<table><thead><tr><th></th><th>Nome</th><th>Usuário</th><th>Quadro</th><th>Perfil</th><th></th></tr></thead><tbody>';
+    html += '<div class="section-card"><h3>Analistas</h3><table><thead><tr><th></th><th>Nome</th><th>Quadro</th><th></th></tr></thead><tbody>';
     state.analysts.forEach(a=>{
       const board = boardOfAnalyst(a.id);
-      html += '<tr><td><span class="side-dot" style="background:'+a.color+';display:inline-block;"></span></td>'
-        + '<td>'+esc(a.name)+'</td>'
-        + '<td>'+(a.username? '<code style="font-size:12px;background:var(--surface-2);padding:2px 6px;border-radius:5px;">'+esc(a.username)+'</code>' : '<span class="hint">Não definido</span>')+'</td>'
-        + '<td>'+esc(board?board.name:'—')+'</td>'
-        + '<td>'+(a.isAdmin? '<span class="badge" style="background:var(--gold-soft);color:var(--gold);">Administrador</span>' : '<span class="badge" style="background:var(--brand-soft);color:var(--brand);">Analista</span>')+'</td>'
-        + '<td><div class="row-actions">'
-          + '<button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="analyst-edit" data-id="'+a.id+'">Editar</button>'
-          + (a.isAdmin?'':'<button class="btn btn-sm btn-danger" data-action="delete-analyst" data-id="'+a.id+'">Excluir</button>')
-          + '</div></td></tr>';
+      html += '<tr><td><span class="side-dot" style="background:'+a.color+';display:inline-block;"></span></td><td>'+esc(a.name)+'</td><td>'+esc(board?board.name:'—')+'</td>'
+        + '<td><div class="row-actions"><button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="analyst-edit" data-id="'+a.id+'">Editar</button><button class="btn btn-sm btn-danger" data-action="delete-analyst" data-id="'+a.id+'">Excluir</button></div></td></tr>';
     });
     html += '</tbody></table><div style="margin-top:12px;"><button class="btn btn-primary btn-sm" data-action="open-modal" data-modal="analyst-new">+ Novo analista</button></div></div>';
   } else if(ui.settingsTab==='produtos'){
@@ -1920,52 +1756,6 @@ function renderSettingsView(){
       html += '</tbody></table>';
     }
     html += '<div style="margin-top:12px;"><button class="btn btn-primary btn-sm" data-action="open-modal" data-modal="type-new">+ Novo tipo</button></div></div>';
-  } else if(ui.settingsTab==='acesso'){
-    // Aba "Acesso": resumo de credenciais + troca de própria senha
-    const meAnalyst = currentUser && currentUser.analystId ? getAnalyst(currentUser.analystId) : null;
-    html += '<div class="section-card"><h3>Credenciais de acesso</h3>'
-      + '<p class="hint" style="margin-top:-4px;">Todos os logins cadastrados no sistema. As senhas ficam salvas junto aos dados (visíveis apenas nesta tela de configuração).</p>';
-    if(!state.analysts.length){
-      html += '<p class="hint">Nenhum analista cadastrado.</p>';
-    } else {
-      html += '<table><thead><tr><th>Nome</th><th>Usuário (login)</th><th>Senha</th><th>Perfil</th><th></th></tr></thead><tbody>';
-      state.analysts.forEach(a=>{
-        html += '<tr>'
-          + '<td style="font-weight:700;">'+esc(a.name)+(a.isAdmin?' <span class="badge" style="background:var(--gold-soft);color:var(--gold);">ADMIN</span>':'')+'</td>'
-          + '<td>'+(a.username? '<code style="font-size:12px;background:var(--surface-2);padding:2px 6px;border-radius:5px;">'+esc(a.username)+'</code>' : '<span class="hint">Não definido</span>')+'</td>'
-          + '<td>'+(a.password? '•••••••• <button class="btn btn-sm btn-ghost" data-action="toggle-show-pass" data-id="'+a.id+'" style="font-size:11px;">👁 ver</button>' : '<span class="hint">Não definida</span>')+'</td>'
-          + '<td>'+(a.isAdmin?'Administrador':'Analista')+'</td>'
-          + '<td><button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="analyst-edit" data-id="'+a.id+'">Editar</button></td>'
-          + '</tr>';
-      });
-      html += '</tbody></table>';
-    }
-    html += '</div>';
-
-    // Troca da própria senha (analista logado)
-    if(meAnalyst){
-      html += '<div class="section-card"><h3>Trocar minha senha</h3>'
-        + '<p class="hint" style="margin-top:-4px;">Logado como <strong>'+esc(meAnalyst.name)+'</strong> ('+esc(meAnalyst.username||'—')+').</p>'
-        + '<form data-form="change-password" data-id="'+meAnalyst.id+'">'
-        + '<div class="field-row">'
-        + '<div class="field"><label>Senha atual</label><input type="password" name="currentPassword" required></div>'
-        + '<div class="field"><label>Nova senha</label><input type="password" name="newPassword" minlength="4" required></div>'
-        + '<div class="field"><label>Confirmar nova senha</label><input type="password" name="confirmPassword" minlength="4" required></div>'
-        + '</div>'
-        + '<div class="form-actions"><button type="submit" class="btn btn-primary">Alterar senha</button></div>'
-        + '</form></div>';
-    }
-
-    // Conta mestra (só admin vê)
-    if(isAdminUser()){
-      html += '<div class="section-card"><h3>Conta mestra de emergência</h3>'
-        + '<p class="hint" style="margin-top:-4px;">Esta conta sempre funciona, mesmo que todas as credenciais de analistas sejam perdidas. Guarde com segurança.</p>'
-        + '<table><thead><tr><th>Usuário</th><th>Senha</th></tr></thead><tbody>'
-        + '<tr><td><code style="background:var(--surface-2);padding:2px 6px;border-radius:5px;">'+MASTER_USER+'</code></td>'
-        + '<td><code style="background:var(--surface-2);padding:2px 6px;border-radius:5px;">'+MASTER_PASS+'</code></td></tr>'
-        + '</tbody></table>'
-        + '</div>';
-    }
   } else if(ui.settingsTab==='nuvem'){
     html += '<div class="section-card"><h3>Sincronização na nuvem</h3>';
     const hasDefault = !!(DEFAULT_CLOUD_CONFIG.url && DEFAULT_CLOUD_CONFIG.anonKey);
@@ -1998,24 +1788,10 @@ function renderModal(){
   let inner = '';
   if(m.type==='analyst-new' || m.type==='analyst-edit'){
     const a = m.type==='analyst-edit' ? getAnalyst(m.id) : null;
-    const isSelf = a && currentUser && currentUser.analystId===a.id;
-    const editingAdmin = a && a.isAdmin;
-    // Só o próprio admin (ou quem já é admin) pode conceder/retirar perfil admin de outros.
-    const canToggleAdmin = isAdminUser() && !editingAdmin;
     inner = '<div class="modal-header"><h3>'+(a?'Editar analista':'Novo analista')+'</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
-      + (editingAdmin ? '<div class="hint" style="background:var(--gold-soft);color:var(--gold);border-radius:8px;padding:8px 11px;font-weight:600;margin-bottom:12px;">Este é o analista administrador do sistema. O login e a senha são usados para acessar como administrador.</div>' : '')
       + '<form data-form="analyst" data-id="'+(a?a.id:'')+'">'
       + '<div class="field"><label>Nome</label><input type="text" name="name" value="'+esc(a?a.name:'')+'" required></div>'
-      + '<div class="field-row">'
-      + '<div class="field"><label>Usuário (login)</label><input type="text" name="username" value="'+esc(a?a.username:'')+'" placeholder="ex: joao.silva" required autocomplete="off"></div>'
       + '<div class="field"><label>Cor</label><input type="color" name="color" value="'+(a?a.color:colorForIndex(state.analysts.length))+'"></div>'
-      + '</div>'
-      + '<div class="field-row">'
-      + '<div class="field"><label>'+(a?'Nova senha (deixe em branco para manter)':'Senha')+'</label><input type="password" name="password" placeholder="'+(a?'••••••••':'Mínimo 4 caracteres')+'" '+(a?'':'required')+' minlength="4" autocomplete="new-password"></div>'
-      + '<div class="field"><label>'+(a?'Confirmar nova senha':'Confirmar senha')+'</label><input type="password" name="passwordConfirm" placeholder="Repita a senha" '+(a?'':'required')+' minlength="4" autocomplete="new-password"></div>'
-      + '</div>'
-      + (canToggleAdmin ? '<div class="field"><label class="check-pill" style="width:fit-content;"><input type="checkbox" name="isAdmin"> Conceder perfil de administrador</label></div>' : '')
-      + (isSelf ? '<div class="hint">Você está editando seu próprio usuário.</div>' : '')
       + '<div class="form-actions"><button type="submit" class="btn btn-primary">Salvar</button></div></form>';
   } else if(m.type==='client-new' || m.type==='client-edit'){
     const c = m.type==='client-edit' ? getClient(m.id) : null;
@@ -2467,13 +2243,6 @@ document.addEventListener('click', function(e){
     };
     render();
   }
-  else if(a==='toggle-show-pass'){
-    // Revela a senha numa janela simples (não usamos alert para não expor em logs)
-    const id = el.dataset.id;
-    const a2 = getAnalyst(id);
-    if(a2) alert('Senha de "'+a2.name+'":\n\n'+(a2.password||'(vazia)'));
-  }
-  else if(a==='logout'){ logout(); }
   else { render(); }
 });
 
@@ -2492,10 +2261,14 @@ document.addEventListener('change', function(e){
     render();
   }
   else if(e.target.matches('form[data-form="schedule"] input[name="modules"]')){
+    // Re-render so the "telas treinadas" sub-section appears/disappears for the module just
+    // (un)checked, without losing anything else already filled in on this form.
     const form = e.target.closest('form');
     if(ui.modal){ ui.modal.values = captureFormValues(form); render(); }
   }
   else if(e.target.matches('form[data-form="schedule"] select[name="category"]')){
+    // Switching between Implantação/Interna changes which Tipos are valid - reset the Tipo
+    // selection if the one currently chosen doesn't belong to the new category.
     const form = e.target.closest('form');
     const values = captureFormValues(form);
     const newCategory = e.target.value;
@@ -2505,6 +2278,9 @@ document.addEventListener('change', function(e){
     if(ui.modal){ ui.modal.values = values; render(); }
   }
   else if(e.target.matches('form[data-form="schedule"] select[name="clientId"]')){
+    // Changing the client changes which existing cards can be linked - clear any previous choice so
+    // the form recomputes a sensible default (the client's existing card, if there is exactly a
+    // history of one) for the newly selected client, without losing anything else already filled in.
     const form = e.target.closest('form');
     const values = captureFormValues(form);
     delete values.linkCardId;
@@ -2541,7 +2317,6 @@ document.addEventListener('keydown', function(e){
     const btn = e.target.parentElement.querySelector('button[data-action]');
     if(btn) btn.click();
   }
-  if(e.key==='Enter' && e.target.id==='login-pass'){ doLogin(); }
 });
 
 document.addEventListener('submit', async function(e){
@@ -2552,55 +2327,11 @@ document.addEventListener('submit', async function(e){
   const fd = new FormData(form);
 
   if(type==='analyst'){
-    const name = fd.get('name').trim();
-    const color = fd.get('color');
-    const username = (fd.get('username')||'').trim().toLowerCase();
-    const password = fd.get('password')||'';
-    const passwordConfirm = fd.get('passwordConfirm')||'';
+    const name = fd.get('name').trim(); const color = fd.get('color');
     const id = form.dataset.id;
-    const wantsAdmin = fd.get('isAdmin')==='on';
-
-    if(!username){ showAlert('Informe o usuário (login).'); return; }
-    if(!/^[a-z0-9._-]+$/.test(username)){ showAlert('O usuário pode conter apenas letras, números, ponto, underscore e hífen.'); return; }
-
-    // Impede username duplicado em outro analista
-    if(state.analysts.some(a=> a.username && a.username.toLowerCase()===username && a.id!==id)){
-      showAlert('Já existe um analista com o usuário "'+username+'". Escolha outro.'); return;
-    }
-
-    // Senha: obrigatória na criação; na edição, só se preenchida
-    if(!id && !password){ showAlert('Defina uma senha para o novo analista.'); return; }
-    if(password || passwordConfirm){
-      if(password !== passwordConfirm){ showAlert('As senhas não coincidem.'); return; }
-      if(password.length < 4){ showAlert('A senha deve ter pelo menos 4 caracteres.'); return; }
-    }
-
-    if(id){
-      const a = getAnalyst(id);
-      if(!a) return;
-      a.name = name; a.color = color; a.username = username;
-      if(password) a.password = password;
-      if(!a.isAdmin && wantsAdmin) a.isAdmin = true; // só o admin logado consegue conceder (campo nem aparece senão)
-      const b = boardOfAnalyst(id); if(b) b.name = 'Quadro — '+name;
-    } else {
-      createAnalyst(name, color, username, password, wantsAdmin);
-    }
+    if(id){ const a=getAnalyst(id); if(a){ a.name=name; a.color=color; const b=boardOfAnalyst(id); if(b) b.name='Quadro — '+name; } }
+    else { createAnalyst(name, color); }
     ui.modal=null; render();
-  }
-  else if(type==='change-password'){
-    const id = form.dataset.id;
-    const a = getAnalyst(id);
-    if(!a) return;
-    const cur = fd.get('currentPassword')||'';
-    const nw = fd.get('newPassword')||'';
-    const cf = fd.get('confirmPassword')||'';
-    if(a.password && a.password !== cur){ showAlert('Senha atual incorreta.'); return; }
-    if(nw.length < 4){ showAlert('A nova senha deve ter pelo menos 4 caracteres.'); return; }
-    if(nw !== cf){ showAlert('As senhas não coincidem.'); return; }
-    a.password = nw;
-    if(currentUser && currentUser.analystId===a.id) currentUser.password = nw;
-    render();
-    showAlert('Senha alterada com sucesso.');
   }
   else if(type==='client'){
     const data = {
@@ -2664,6 +2395,9 @@ document.addEventListener('submit', async function(e){
     }
     ui.formErr = '';
 
+    // Resolve which card (if any) this schedule links to. When creating a standalone schedule for
+    // a client that already has card(s) - possibly under a different analyst's board - the user
+    // explicitly picks which one via "linkCardId", instead of the app assuming a new card is needed.
     let resolvedCardId = cardIdFromCtx;
     if(!resolvedCardId && clientId){
       const linkChoice = fd.get('linkCardId');
@@ -2673,6 +2407,9 @@ document.addEventListener('submit', async function(e){
       } else if(linkChoice){
         resolvedCardId = linkChoice;
       } else {
+        // The linkCardId field wasn't present in the submitted form (e.g. no client was selected
+        // yet when the modal first rendered) - fall back to checking for an existing card so a
+        // duplicate is never created silently.
         const existing = state.cards.find(c=>c.clientId===clientId);
         if(existing){
           resolvedCardId = existing.id;
@@ -2756,7 +2493,7 @@ document.addEventListener('submit', async function(e){
   }
 });
 
-/* Drag and drop */
+/* Drag and drop for cards, and for pending schedules on the calendar grid */
 document.addEventListener('dragstart', function(e){
   const card = e.target.closest('.card-mini');
   if(card){ e.dataTransfer.setData('text/plain', card.dataset.cardId); e.dataTransfer.effectAllowed='move'; setTimeout(()=>card.classList.add('dragging'),0); return; }
@@ -2841,7 +2578,7 @@ function moveScheduleToGridPosition(schedId, daycolEl, clientY, grabOffset){
   render();
 }
 
-/* Card detail overlay */
+/* Card detail overlay is rendered as an extra modal layer appended after main render */
 function renderCardDetailOverlay(){
   const existing = document.getElementById('card-detail-overlay');
   if(existing) existing.remove();
@@ -2854,19 +2591,12 @@ function renderCardDetailOverlay(){
   wrap.innerHTML = '<div class="modal wide">'+renderCardModalContent(card)+'</div>';
   document.body.appendChild(wrap);
 }
+/* Re-render overlay after any global render if a card is open (keep it in sync) */
 const _origRender = render;
-render = function(){
-  _origRender();
-  if(ui.openCardId){ renderCardDetailOverlay(); } else { const ex=document.getElementById('card-detail-overlay'); if(ex) ex.remove(); }
-};
+render = function(){ _origRender(); if(ui.openCardId){ renderCardDetailOverlay(); } else { const ex=document.getElementById('card-detail-overlay'); if(ex) ex.remove(); } };
 
 /* Initial paint */
-currentUser = getStoredUser();
-if(currentUser){
-  boot();
-} else {
-  document.getElementById('app').innerHTML = renderLoginScreen();
-}
+boot();
 </script>
 </body>
 </html>
