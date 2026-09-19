@@ -670,30 +670,12 @@ function logout(){
 
 /* ============================= STATE ============================= */
 const STORAGE_KEY = 'implanta_v1';
-/* Paleta expandida e com maior contraste — cada analista recebe uma cor
-   distinta e saturada. As cores foram ordenadas para máxima diferenciação
-   perceptiva (evita tons muito próximos). */
 const PALETTE = [
-  '#0B5C8E', // azul forte
-  '#C0392B', // vermelho queimado
-  '#1E8449', // verde escuro
-  '#8E44AD', // roxo
-  '#E67E22', // laranja
-  '#16A085', // turquesa
-  '#C2185B', // magenta
-  '#2980B9', // azul claro
-  '#7B3F00', // marrom café
-  '#5D6D7E', // azul acinzentado
-  '#D35400', // laranja escuro
-  '#27AE60', // verde claro
-  '#884EA0', // lilás
-  '#B7950B', // mostarda
-  '#138D75'  // verde azulado
+  '#0B5C8E','#C0392B','#1E8449','#8E44AD','#E67E22','#16A085','#C2185B','#2980B9',
+  '#7B3F00','#5D6D7E','#D35400','#27AE60','#884EA0','#B7950B','#138D75'
 ];
 const ADMIN_ANALYST_NAME = 'Rodrigo Soares';
-/* Tipo de agenda cujo cálculo de dias considera apenas seg–sex (8h48 por dia) */
 const FERIAS_TYPE_NAME = 'Férias';
-/* Minutos por dia útil para cálculo de férias: 8h48 = 528 min */
 const FERIAS_MIN_PER_WEEKDAY = 8*60 + 48;
 
 function defaultState(){
@@ -780,7 +762,6 @@ function normalizeState(raw){
   if(!s.agendaTypes.some(t=> t.isServico)){
     s.agendaTypes.push({id:uid('at'), name:'Serviço', isInternal:false, isServico:true, inactive:false});
   }
-  /* Garantir existência do tipo Férias (categoria interna) para o cálculo especial */
   if(!s.agendaTypes.some(t=> t.name && t.name.toLowerCase()===FERIAS_TYPE_NAME.toLowerCase())){
     s.agendaTypes.push({id:uid('at'), name:FERIAS_TYPE_NAME, isInternal:true, isServico:false, inactive:false});
   }
@@ -1181,15 +1162,13 @@ function formValuesAllDay(values){
   if(Array.isArray(v)) return v.length > 0;
   return v === 'on' || v === true;
 }
-/* Verifica se a data ISO corresponde a um dia útil (seg–sex). */
 function isWeekdayISO(iso){
   if(!iso) return false;
   const [y,m,d]=iso.split('-').map(Number);
   const dt = new Date(y, m-1, d);
-  const dow = dt.getDay(); // 0=dom, 1=seg, ..., 6=sáb
+  const dow = dt.getDay();
   return dow !== 0 && dow !== 6;
 }
-/* Conta dias úteis (seg–sex) entre duas datas ISO, incluindo ambas. */
 function countWeekdaysBetweenISO(startIso, endIso){
   if(!startIso) return 0;
   if(!endIso) endIso = startIso;
@@ -1236,6 +1215,14 @@ function scheduleAnalysts(s){
 function scheduleAnalystNames(s){
   return scheduleAnalysts(s).map(a=>a.name).join(', ');
 }
+/* Retorna UMA entrada por analista da agenda, cada uma com o mesmo schedule
+   e um analystId específico. Usado para renderizar a agenda múltiplas vezes
+   no calendário (uma por cor de analista). */
+function schedulePerAnalystEntries(s){
+  const ids = scheduleAnalystIds(s);
+  if(!ids.length) return [{ schedule:s, analystId:null }];
+  return ids.map(id => ({ schedule:s, analystId:id }));
+}
 function isFeriasType(typeName){
   return !!(typeName && typeName.toLowerCase() === FERIAS_TYPE_NAME.toLowerCase());
 }
@@ -1247,10 +1234,6 @@ function scheduleDayCount(s){
   const diff = Math.round((end-start)/86400000)+1;
   return Math.max(1, diff);
 }
-/* Minutos de uma agenda para UM analista (sem multiplicador ainda).
-   - Agenda normal: diferença entre início/fim
-   - Dia todo normal: 8h × dias corridos
-   - Dia todo Férias: 8h48 (528 min) por dia ÚTIL (seg-sex) */
 function scheduleMinutesPerAnalyst(s){
   if(s.allDay){
     if(isFeriasType(s.type)){
@@ -1261,7 +1244,6 @@ function scheduleMinutesPerAnalyst(s){
   }
   return timeToMin(s.endTime)-timeToMin(s.startTime);
 }
-/* Minutos totais da agenda, considerando todos os analistas. */
 function scheduleMinutes(s){
   if(s.deductMinutes!=null) return s.deductMinutes;
   const perAnalyst = scheduleMinutesPerAnalyst(s);
@@ -1302,8 +1284,6 @@ function renameTypeEverywhere(oldName, newName){
   if(oldName===newName) return;
   state.schedules.forEach(s=>{ if(s.type===oldName) s.type = newName; });
 }
-/* Conflito entre agendas normais (com horário). Não considera agendas de dia todo
-   (nem como bloqueadoras nem como bloqueadas). */
 function scheduleConflict(analystIds, date, start, end, excludeId, allDay){
   if(allDay) return false;
   if(!Array.isArray(analystIds)) analystIds = analystIds ? [analystIds] : [];
@@ -1312,7 +1292,6 @@ function scheduleConflict(analystIds, date, start, end, excludeId, allDay){
     if(s.id===excludeId) return false;
     if(s.status==='nao_realizada') return false;
     if(s.allDay) return false;
-    // A agenda cobre o dia s.date; verifica se o dia bate
     if(s.date!==date) return false;
     const overlap = !(e0<=timeToMin(s.startTime) || s0>=timeToMin(s.endTime));
     if(!overlap) return false;
@@ -1320,7 +1299,6 @@ function scheduleConflict(analystIds, date, start, end, excludeId, allDay){
     return sIds.some(id=> analystIds.includes(id));
   });
 }
-/* Verifica se algum dos analistas já tem uma agenda de DIA TODO cobrindo a data informada. */
 function hasAllDayBlocking(analystIds, dateISO, excludeId){
   if(!Array.isArray(analystIds)) analystIds = analystIds ? [analystIds] : [];
   return state.schedules.some(s=>{
@@ -1344,22 +1322,16 @@ function activeScreens(){ return state.screens.filter(s=> !s.inactive); }
 function activeAgendaTypes(){ return state.agendaTypes.filter(t=> !t.inactive); }
 function activeProductTags(){ return state.productTags.filter(t=> !t.inactive); }
 
-/* Retorna a cor "principal" da agenda: se 1 analista, a cor dele;
-   se múltiplos, a cor do primeiro; se nenhum, usa a cor padrão do sistema. */
-function schedulePrimaryColor(s){
-  const ids = scheduleAnalystIds(s);
-  if(ids.length===1){ const a = getAnalyst(ids[0]); if(a && a.color) return a.color; }
-  if(ids.length>1){ const a = getAnalyst(ids[0]); if(a && a.color) return a.color; }
-  return '#0B5C8E';
-}
-/* Cores especiais por categoria quando não há analista definido */
 function scheduleFallbackColor(s){
   if(isServicoType(s.type)) return '#8E44AD';
   if(isInternalType(s.type)) return '#B7950B';
   return '#0B5C8E';
 }
-/* Cor final usada para pintar o evento no calendário e nos cards */
-function scheduleColor(s){
+function scheduleColorForAnalyst(s, analystId){
+  if(analystId){
+    const a = getAnalyst(analystId);
+    if(a && a.color) return a.color;
+  }
   const ids = scheduleAnalystIds(s);
   if(ids.length){
     const a = getAnalyst(ids[0]);
@@ -1367,7 +1339,6 @@ function scheduleColor(s){
   }
   return scheduleFallbackColor(s);
 }
-/* Cor mais escura para borda/realce */
 function darkenColor(hex, amount){
   if(!hex) return '#0B5C8E';
   const h = hex.replace('#','');
@@ -1377,7 +1348,6 @@ function darkenColor(hex, amount){
   b = Math.max(0, Math.round(b*(1-amount)));
   return '#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');
 }
-/* Cor de texto legível (preto/branco) baseada no fundo */
 function readableTextColor(hex){
   if(!hex) return '#fff';
   const h = hex.replace('#','');
@@ -1884,6 +1854,8 @@ function renderCardModalContent(card){
 }
 function tabBtn(key,label){ return '<button class="tab-btn'+(ui.cardTab===key?' active':'')+'" data-action="card-tab" data-tab="'+key+'">'+label+'</button>'; }
 function balanceItem(num,lbl){ return '<div class="balance-item"><div class="num">'+num+'</div><div class="lbl">'+lbl+'</div></div>'; }
+/* Card de agenda no modal do cliente — mostra uma linha por analista,
+   com a cor respectiva, para refletir a mesma visão do calendário. */
 function renderSchedRow(s){
   const due = scheduleIsDue(s);
   const modules = (s.modules||[]).join(', ');
@@ -1892,9 +1864,9 @@ function renderSchedRow(s){
   const isServico = isServicoType(s.type);
   const isOrphanInternal = isInterna && s.clientId && !s.cardId;
   const title = scheduleDisplayTitle(s);
-  const analystsNames = scheduleAnalystNames(s);
-  const color = scheduleColor(s);
-  const txt = readableTextColor(color);
+  const analysts = scheduleAnalysts(s);
+  const analystsList = analysts.length ? analysts : [null];
+
   let actions = '';
   if(s.status==='pendente'){
     actions = '<button class="btn btn-sm btn-primary" data-action="open-modal" data-modal="confirm-complete" data-id="'+s.id+'">Concluir</button>'
@@ -1906,18 +1878,28 @@ function renderSchedRow(s){
   }
   if(s.status==='concluida') actions += '<button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="schedule-report" data-id="'+s.id+'">🖨 Relatório</button>';
   actions += '<button class="btn btn-sm btn-ghost" data-action="delete-schedule" data-id="'+s.id+'">🗑</button>';
-  return '<div class="sched-row'+(due?' due':'')+'" style="border-left:4px solid '+color+';">'
-    + '<div class="sched-main">'
-    + (title? '<div style="font-weight:800;font-size:13px;color:var(--brand-dark);">'+esc(title)+'</div>' : '')
-    + '<div class="sched-time">'+scheduleDateText(s)+' · '+(s.allDay?'<span class="allday-badge">Dia todo</span>':s.startTime+'–'+s.endTime)
-    + ' <span class="badge '+s.status+'">'+statusLabel(s.status)+'</span>'
-    + ' <span class="badge" style="background:'+color+';color:'+txt+';text-transform:none;letter-spacing:0;">'+esc(s.type)+'</span>'
-    + (isOrphanInternal?' <span class="nao-abatido-pill">Não abatido</span>':'')+'</div>'
-    + '<div class="sched-sub">👤 '+esc(analystsNames||'—')+(modules? ' · '+esc(modules) : '')+(s.status==='concluida' && s.cardId? ' · '+minToHM(s.deductMinutes)+' abatido':'')+'</div>'
-    + (screens? '<div class="sched-sub">🖥 '+esc(screens)+'</div>' : '')
-    + (s.trainedUsers? '<div class="sched-sub">🙋 '+esc(s.trainedUsers)+'</div>' : '')
-    + '</div>'
-    + '<div class="row-actions">'+actions+'</div></div>';
+
+  /* Uma linha por analista (ou única linha se não houver analista) */
+  let rowsHtml = '';
+  analystsList.forEach(a=>{
+    const color = scheduleColorForAnalyst(s, a?a.id:null);
+    const txt = readableTextColor(color);
+    const analystName = a ? a.name : '—';
+    rowsHtml += '<div class="sched-row'+(due?' due':'')+'" style="border-left:4px solid '+color+';">'
+      + '<div class="sched-main">'
+      + (title? '<div style="font-weight:800;font-size:13px;color:var(--brand-dark);">'+esc(title)+'</div>' : '')
+      + '<div class="sched-time">'+scheduleDateText(s)+' · '+(s.allDay?'<span class="allday-badge">Dia todo</span>':s.startTime+'–'+s.endTime)
+      + ' <span class="badge '+s.status+'">'+statusLabel(s.status)+'</span>'
+      + ' <span class="badge" style="background:'+color+';color:'+txt+';text-transform:none;letter-spacing:0;">'+esc(s.type)+'</span>'
+      + (isOrphanInternal?' <span class="nao-abatido-pill">Não abatido</span>':'')+'</div>'
+      + '<div class="sched-sub">👤 <strong>'+esc(analystName)+'</strong>'+(modules? ' · '+esc(modules) : '')+(s.status==='concluida' && s.cardId? ' · '+minToHM(s.deductMinutes)+' abatido':'')+'</div>'
+      + (screens? '<div class="sched-sub">🖥 '+esc(screens)+'</div>' : '')
+      + (s.trainedUsers? '<div class="sched-sub">🙋 '+esc(s.trainedUsers)+'</div>' : '')
+      + '</div>'
+      + (a === analystsList[0] ? '<div class="row-actions">'+actions+'</div>' : '')
+      + '</div>';
+  });
+  return rowsHtml;
 }
 function statusLabel(st){ return st==='pendente'?'Pendente': st==='concluida'?'Concluída':'Não realizada'; }
 
@@ -1990,16 +1972,43 @@ function renderCalendarView(){
     if(ui.calCategory==='servico') return isServicoType(s.type);
     return !isInternalType(s.type) && !isServicoType(s.type);
   }
-  function matchesAnalyst(s){
-    if(ui.calAnalyst==='all') return true;
-    return scheduleAnalystIds(s).includes(ui.calAnalyst);
+  function matchesAnalystId(s, analystId){
+    if(!analystId) return true; // 'all'
+    return scheduleAnalystIds(s).includes(analystId);
+  }
+  /* Retorna as "entradas" (schedule + analystId específico) que devem ser
+     renderizadas no calendário. Se o filtro for 'todos', expande cada
+     schedule em UMA entrada por analista, para colorir cada uma com a cor
+     do respectivo analista. Se o filtro for específico, apenas 1 entrada
+     daquele analista. */
+  function expandSchedulesForCalendar(scheds){
+    const out = [];
+    scheds.forEach(s=>{
+      if(ui.calAnalyst==='all'){
+        const ids = scheduleAnalystIds(s);
+        if(ids.length){
+          ids.forEach(id => out.push({ schedule:s, analystId:id }));
+        } else {
+          out.push({ schedule:s, analystId:null });
+        }
+      } else {
+        out.push({ schedule:s, analystId: ui.calAnalyst });
+      }
+    });
+    return out;
   }
 
   const days = [];
   for(let i=0;i<7;i++) days.push(addDaysISO(ui.calStart, i));
-  let weekScheds = [];
-  days.forEach(d=>{ weekScheds = weekScheds.concat(state.schedules.filter(s=>scheduleSpansDate(s,d) && matchesAnalyst(s) && inCategory(s))); });
-  const {startHour, endHour} = calcCalTimeRange(weekScheds);
+  /* Coleta todos os schedules únicos que "caem" na semana (sem expandir) */
+  const uniqueWeekSchedules = state.schedules.filter(s=>{
+    const inAnyDay = days.some(d => scheduleSpansDate(s, d));
+    if(!inAnyDay) return false;
+    if(!inCategory(s)) return false;
+    if(ui.calAnalyst==='all') return true;
+    return scheduleAnalystIds(s).includes(ui.calAnalyst);
+  });
+  const {startHour, endHour} = calcCalTimeRange(uniqueWeekSchedules);
   const pxPerHour = 48;
   const pxPerMin = pxPerHour/60;
   const alldayHeight = 26;
@@ -2013,14 +2022,21 @@ function renderCalendarView(){
   });
   html += '</div>';
 
-  let anyAllday = days.some(d=> state.schedules.some(s=>s.allDay && scheduleSpansDate(s,d) && matchesAnalyst(s) && inCategory(s)));
+  /* Faixa de dia todo — expandida por analista */
+  let anyAllday = false;
+  days.forEach(d=>{
+    const raw = state.schedules.filter(s=>s.allDay && scheduleSpansDate(s, d) && inCategory(s) && (ui.calAnalyst==='all' || scheduleAnalystIds(s).includes(ui.calAnalyst)));
+    if(expandSchedulesForCalendar(raw).length) anyAllday = true;
+  });
   if(anyAllday){
     html += '<div class="cal-tg-headerrow" style="background:var(--surface-2);"><div style="padding:6px 8px;font-size:10px;color:var(--ink-faint);font-weight:800;text-transform:uppercase;display:flex;align-items:center;">Dia todo</div>';
     days.forEach(d=>{
-      const dayAllday = state.schedules.filter(s=>s.allDay && scheduleSpansDate(s,d) && matchesAnalyst(s) && inCategory(s));
+      const raw = state.schedules.filter(s=>s.allDay && scheduleSpansDate(s, d) && inCategory(s) && (ui.calAnalyst==='all' || scheduleAnalystIds(s).includes(ui.calAnalyst)));
+      const entries = expandSchedulesForCalendar(raw);
       html += '<div style="min-height:'+alldayHeight+'px;border-left:1px solid var(--border);padding:3px 4px;display:flex;flex-direction:column;gap:3px;">';
-      dayAllday.forEach(s=>{
-        const color = scheduleColor(s);
+      entries.forEach(entry=>{
+        const s = entry.schedule;
+        const color = scheduleColorForAnalyst(s, entry.analystId);
         const txt = readableTextColor(color);
         const due = scheduleIsDue(s);
         const title = scheduleDisplayTitle(s);
@@ -2028,11 +2044,13 @@ function renderCalendarView(){
         const isMulti = (s.endDate && s.endDate !== s.date);
         const cls = 'cal-tg-event allday'+(due?' due':'')+(isMulti?' multiday':'')+(isContinuation?' continuation':'');
         const arrow = isContinuation ? '↳ ' : '';
+        const analyst = entry.analystId ? getAnalyst(entry.analystId) : null;
+        const analystPrefix = analyst ? analyst.name+' · ' : '';
         const colorStyle = due
           ? 'background:var(--danger);color:#fff;border-left-color:var(--danger);'
           : 'background:'+color+';color:'+txt+';border-left-color:'+darkenColor(color,.25)+';';
-        html += '<div class="'+cls+'" style="position:static;left:auto;width:auto;'+colorStyle+'" data-action="open-modal" data-modal="schedule-edit" data-id="'+s.id+'" title="'+esc(title+' · '+scheduleAnalystNames(s))+'">'
-          + '<div class="t">'+arrow+esc(title)+'</div>'
+        html += '<div class="'+cls+'" style="position:static;left:auto;width:auto;'+colorStyle+'" data-action="open-modal" data-modal="schedule-edit" data-id="'+s.id+'" title="'+esc(title+' · '+(analyst?analyst.name:'—')+' · '+scheduleDateText(s))+'">'
+          + '<div class="t">'+arrow+esc(analystPrefix+title)+'</div>'
           + '</div>';
       });
       html += '</div>';
@@ -2051,8 +2069,34 @@ function renderCalendarView(){
   const nowMin = now.getHours()*60+now.getMinutes();
 
   days.forEach(d=>{
-    const scheds = state.schedules.filter(s=>!s.allDay && scheduleSpansDate(s,d) && matchesAnalyst(s) && inCategory(s));
-    const laidOut = layoutDayEvents(scheds);
+    /* Schedules únicos do dia (com horário) */
+    const rawScheds = state.schedules.filter(s=>!s.allDay && scheduleSpansDate(s, d) && inCategory(s) && (ui.calAnalyst==='all' || scheduleAnalystIds(s).includes(ui.calAnalyst)));
+    /* Expande cada schedule em 1 "pseudo-schedule" por analista, para o
+       layoutDayEvents distribuir cada cópia como um evento separado.
+       Importante: quando filtro='todos', duas cópias do mesmo schedule têm
+       os MESMOS horários, então o layoutDayEvents as coloca em lanes
+       adjacentes (side-by-side), cada uma colorida com a cor do seu
+       analista. */
+    const expandedScheds = [];
+    rawScheds.forEach(s=>{
+      const ids = scheduleAnalystIds(s);
+      if(ui.calAnalyst==='all'){
+        if(!ids.length){
+          /* Sem analista: mantém como está */
+          const copy = Object.assign({}, s, {__viewAnalystId:null});
+          expandedScheds.push(copy);
+        } else {
+          ids.forEach((anId, idx)=>{
+            const copy = Object.assign({}, s, {__viewAnalystId: anId, __viewIdx: idx});
+            expandedScheds.push(copy);
+          });
+        }
+      } else {
+        const copy = Object.assign({}, s, {__viewAnalystId: ui.calAnalyst});
+        expandedScheds.push(copy);
+      }
+    });
+    const laidOut = layoutDayEvents(expandedScheds);
     html += '<div class="cal-tg-daycol" data-action="cal-grid-click" data-date="'+d+'" data-start-hour="'+startHour+'" data-px-per-hour="'+pxPerHour+'" style="height:'+gridHeight+'px;--hour-px:'+pxPerHour+'px;">';
     laidOut.forEach(item=>{
       const s = item.sched;
@@ -2061,16 +2105,18 @@ function renderCalendarView(){
       const height = Math.max((item.end-item.start)*pxPerMin, 20);
       const widthPct = 100/item.lanes;
       const leftPct = item.lane*widthPct;
-      const color = scheduleColor(s);
+      const viewAnalystId = s.__viewAnalystId || null;
+      const color = scheduleColorForAnalyst(s, viewAnalystId);
       const txt = readableTextColor(color);
       const draggable = s.status==='pendente';
       const title = scheduleDisplayTitle(s);
+      const analyst = viewAnalystId ? getAnalyst(viewAnalystId) : null;
       const colorStyle = due
         ? 'background:var(--danger);color:#fff;border-left-color:#8a2018;'
         : 'background:'+color+';color:'+txt+';border-left-color:'+darkenColor(color,.25)+';';
-      html += '<div class="cal-tg-event" draggable="'+(draggable?'true':'false')+'" data-draggable="'+(draggable?'1':'0')+'" style="top:'+top+'px;height:'+height+'px;left:'+leftPct+'%;width:calc('+widthPct+'% - 4px);'+colorStyle+'" data-action="open-modal" data-modal="schedule-edit" data-id="'+s.id+'" title="'+esc(title+' · '+s.startTime+'–'+s.endTime+' · '+scheduleAnalystNames(s))+'">'
+      html += '<div class="cal-tg-event" draggable="'+(draggable?'true':'false')+'" data-draggable="'+(draggable?'1':'0')+'" style="top:'+top+'px;height:'+height+'px;left:'+leftPct+'%;width:calc('+widthPct+'% - 4px);'+colorStyle+'" data-action="open-modal" data-modal="schedule-edit" data-id="'+s.id+'" title="'+esc(title+' · '+(analyst?analyst.name:'—')+' · '+s.startTime+'–'+s.endTime)+'">'
         + '<div class="t">'+s.startTime+' '+esc(title)+'</div>'
-        + (height>34? '<div class="s">'+esc(scheduleAnalystNames(s))+'</div>' : '')
+        + (height>34? '<div class="s">'+esc(analyst?analyst.name:scheduleAnalystNames(s))+'</div>' : '')
         + '</div>';
     });
     if(d===today && nowMin>=startHour*60 && nowMin<=endHour*60){
@@ -2746,7 +2792,7 @@ function renderScheduleForm(m){
       + '<span>'+esc(a.name)+(a.inactive?' (inativo)':'')+(a.isAdmin?' · ADMIN':'')+'</span>'
       + '</label>';
   });
-  html += '</div><div class="multi-hint">Marque um ou mais analistas. Se marcar 2+ analistas, o tempo da agenda será multiplicado pelo número de analistas no relatório.</div></div>';
+  html += '</div><div class="multi-hint">Marque um ou mais analistas. Cada analista terá a agenda exibida com sua própria cor no calendário; o tempo é contado por analista no relatório.</div></div>';
 
   html += '<div class="field-row">'
     + '<div class="field"><label>'+(eff.allDay?'Dia inicial':'Data')+'</label><input type="date" name="date" value="'+esc(eff.date)+'"></div>'
@@ -3116,9 +3162,6 @@ document.addEventListener('change', function(e){
     render();
   }
   else if(e.target.matches('form[data-form="schedule"] input[name="allDay"]')){
-    // Alterna entre dia todo e horário específico — re-renderiza com o formulário atualizado.
-    // Normalizamos o allDay para string 'on'/'' porque captureFormValues
-    // trata checkboxes como array (getAll) e isso quebraria a checagem depois.
     const form = e.target.closest('form');
     const values = captureFormValues(form);
     values.allDay = e.target.checked ? 'on' : '';
@@ -3138,7 +3181,6 @@ document.addEventListener('change', function(e){
     if(ui.modal){ ui.modal.values = values; render(); }
   }
   else if(e.target.matches('form[data-form="schedule"] select[name="type"]')){
-    // Re-renderiza para recalcular o banner de dia todo quando o tipo for Férias
     const form = e.target.closest('form');
     const values = captureFormValues(form);
     if(ui.modal){ ui.modal.values = values; render(); }
@@ -3146,7 +3188,6 @@ document.addEventListener('change', function(e){
   else if(e.target.matches('form[data-form="schedule"] input[name="date"]')){
     const form = e.target.closest('form');
     const values = captureFormValues(form);
-    // Se allDay e endDate < date, sincroniza
     if(formValuesAllDay(values)){
       if(!values.endDate || values.endDate < values.date) values.endDate = values.date;
     }
@@ -3320,8 +3361,6 @@ document.addEventListener('submit', async function(e){
     if(!analystIds.length){ ui.formErr = 'Selecione pelo menos um analista.'; render(); return; }
     const id = form.dataset.id;
 
-    /* Bloqueio: se for agenda COM HORÁRIO, não permite se algum analista
-       já tiver uma agenda de DIA TODO cobrindo a data. */
     if(!allDay){
       if(hasAllDayBlocking(analystIds, date, id||null)){
         ui.formErr = 'Um dos analistas selecionados já possui uma agenda de DIA TODO nesta data. Não é possível criar agendas com horário no mesmo dia.';
