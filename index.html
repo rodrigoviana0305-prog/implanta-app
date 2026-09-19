@@ -213,6 +213,9 @@ input[type=color]{ width:38px; height:32px; padding:2px; border:1px solid var(--
 .cal-tg-event.due{ background:var(--danger-soft); border-left-color:var(--danger); }
 .cal-tg-event.internal{ background:var(--gold-soft); }
 .cal-tg-event.internal.due{ background:var(--danger-soft); }
+.cal-tg-event.servico{ background:#EDE7F6; border-left-color:#7B4B94; }
+.cal-tg-event.servico.due{ background:var(--danger-soft); }
+.cal-tg-event.allday{ background:#E0F2F1; border-left-color:#00897B; border-left-width:4px; }
 .cal-tg-event .t{ font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .cal-tg-now{ position:absolute; left:0; right:0; height:0; border-top:2px solid var(--danger); z-index:5; pointer-events:none; }
 .cal-tg-now::before{ content:''; position:absolute; left:-4px; top:-4px; width:8px; height:8px; border-radius:50%; background:var(--danger); }
@@ -522,7 +525,7 @@ th{background:#F1F6F9;color:#607587;}
 .status-label.active{ color:var(--ok); }
 .status-label.inactive{ color:var(--ink-faint); }
 
-/* Escolha Sim/Não em modal (usada para "criar quadro?" de agenda interna) */
+/* Escolha Sim/Não em modal */
 .choice-box{
   background:var(--surface-2); border:1px solid var(--border); border-radius:10px;
   padding:14px 16px; margin-bottom:14px;
@@ -531,11 +534,53 @@ th{background:#F1F6F9;color:#607587;}
 .choice-box .choice-desc{ font-size:12.5px; color:var(--ink-soft); line-height:1.5; }
 .choice-actions{ display:flex; gap:8px; justify-content:flex-end; margin-top:14px; }
 
-/* Destaque sutil para horas não abatidas no relatório */
 .nao-abatido{ color:var(--gold); font-weight:700; }
 .nao-abatido-pill{
   background:var(--gold-soft); color:var(--gold); font-size:10.5px; font-weight:800;
   padding:2px 8px; border-radius:20px; margin-left:6px; letter-spacing:.2px;
+}
+
+/* Analistas — seleção múltipla */
+.multi-analyst-grid{
+  display:flex; flex-wrap:wrap; gap:8px; padding:10px;
+  border:1px solid var(--border); border-radius:9px; background:var(--surface-2);
+}
+.multi-analyst-item{
+  display:flex; align-items:center; gap:8px; padding:6px 12px 6px 8px;
+  border:1px solid var(--border); border-radius:20px; background:var(--surface);
+  font-size:12.5px; font-weight:600; cursor:pointer; transition:.14s ease;
+}
+.multi-analyst-item:hover{ border-color:#79AFCB; }
+.multi-analyst-item input{ accent-color:var(--brand); }
+.multi-analyst-item.checked{ border-color:var(--brand); background:var(--brand-soft); color:var(--brand); }
+.multi-analyst-item .m-dot{ width:8px; height:8px; border-radius:50%; flex:0 0 auto; }
+.multi-hint{ font-size:11.5px; color:var(--ink-faint); margin-top:6px; }
+
+/* Dia todo */
+.allday-toggle{
+  display:flex; align-items:center; gap:8px; padding:8px 12px;
+  border:1px solid var(--border); border-radius:9px; background:var(--surface-2);
+  cursor:pointer; width:fit-content; font-size:12.5px; font-weight:600;
+}
+.allday-toggle input{ accent-color:var(--brand); }
+.field.is-hidden{ display:none; }
+.allday-banner{
+  background:#E0F2F1; color:#00695C; border-radius:8px; padding:8px 12px;
+  font-size:12.5px; font-weight:600; margin-bottom:10px;
+}
+.allday-banner .allday-time{ font-weight:800; color:#004D40; }
+.titulo-badge{
+  display:inline-block; background:var(--surface-2); border:1px solid var(--border);
+  border-radius:6px; padding:2px 8px; font-size:11.5px; font-weight:700;
+  color:var(--ink-soft); margin-right:6px;
+}
+.servico-badge{
+  background:#EDE7F6; color:#7B4B94; border-radius:20px;
+  padding:2px 8px; font-size:10.5px; font-weight:800; margin-left:4px;
+}
+.allday-badge{
+  background:#E0F2F1; color:#00897B; border-radius:20px;
+  padding:2px 8px; font-size:10.5px; font-weight:800; margin-left:4px;
 }
 </style>
 </head>
@@ -643,10 +688,11 @@ function defaultState(){
     modules: [],
     screens: [],
     agendaTypes: [
-      {id:uid('at'), name:'Treinamento', isInternal:false, inactive:false},
-      {id:uid('at'), name:'Reunião', isInternal:false, inactive:false},
-      {id:uid('at'), name:'Visita', isInternal:false, inactive:false},
-      {id:uid('at'), name:'Interna', isInternal:true, inactive:false}
+      {id:uid('at'), name:'Treinamento', isInternal:false, isServico:false, inactive:false},
+      {id:uid('at'), name:'Reunião', isInternal:false, isServico:false, inactive:false},
+      {id:uid('at'), name:'Visita', isInternal:false, isServico:false, inactive:false},
+      {id:uid('at'), name:'Interna', isInternal:true, isServico:false, inactive:false},
+      {id:uid('at'), name:'Serviço', isInternal:false, isServico:true, inactive:false}
     ]
   };
   const adminAnalyst = {id:uid('an'), name:ADMIN_ANALYST_NAME, color:'#0B5C8E', username:'rodrigo.soares', password:'71209403', isAdmin:true, inactive:false};
@@ -700,17 +746,32 @@ function normalizeState(raw){
   s.screens = s.screens.map(scr=> Object.assign({inactive:false}, scr));
   s.productTags = s.productTags.map(t=> Object.assign({inactive:false}, t));
   s.agendaTypes = s.agendaTypes.map(t=> {
-    if(typeof t==='string') return {id:uid('at'), name:t, isInternal: t==='Interna', inactive:false};
-    const copy = Object.assign({inactive:false}, t);
+    if(typeof t==='string') return {id:uid('at'), name:t, isInternal: t==='Interna', isServico: t==='Serviço', inactive:false};
+    const copy = Object.assign({inactive:false, isServico:false}, t);
     if(copy.isInternal===undefined) copy.isInternal = copy.name==='Interna';
+    if(copy.isServico===undefined) copy.isServico = false;
     return copy;
   });
+  // Garantir que exista o tipo "Serviço" para compatibilidade com registros antigos
+  if(!s.agendaTypes.some(t=> t.isServico)){
+    s.agendaTypes.push({id:uid('at'), name:'Serviço', isInternal:false, isServico:true, inactive:false});
+  }
   s.analysts = s.analysts.map(a=>{
     const copy = Object.assign({}, a);
     if(!copy.username) copy.username = '';
     if(!copy.password) copy.password = '';
     if(copy.isAdmin===undefined) copy.isAdmin = false;
     if(copy.inactive===undefined) copy.inactive = false;
+    return copy;
+  });
+  // Migrar schedules antigos: garantir campos novos
+  s.schedules = s.schedules.map(sc=>{
+    const copy = Object.assign({}, sc);
+    if(copy.allDay===undefined) copy.allDay = false;
+    if(copy.title===undefined) copy.title = '';
+    if(copy.category===undefined) copy.category = 'implantacao';
+    if(!Array.isArray(copy.analystIds)){ copy.analystIds = copy.analystId ? [copy.analystId] : []; }
+    if(copy.analystId===undefined && copy.analystIds.length) copy.analystId = copy.analystIds[0];
     return copy;
   });
   s = dedupeRegistries(s);
@@ -1097,20 +1158,38 @@ function schedulesUsingModule(name){ return state.schedules.filter(s=> (s.module
 function schedulesUsingType(name){ return state.schedules.filter(s=> s.type===name); }
 function screensForModule(moduleId){ return state.screens.filter(s=>s.moduleId===moduleId); }
 function schedulesUsingScreen(name){ return state.schedules.filter(s=> (s.trainedScreens||[]).includes(name)); }
-function schedulesForAnalyst(analystId){ return state.schedules.filter(s=> s.analystId===analystId); }
+function schedulesForAnalyst(analystId){
+  return state.schedules.filter(s=>{
+    if(Array.isArray(s.analystIds) && s.analystIds.length) return s.analystIds.includes(analystId);
+    return s.analystId===analystId;
+  });
+}
 function cardsForClient(clientId){ return state.cards.filter(c=>c.clientId===clientId); }
 function schedulesForClient(clientId){ return state.schedules.filter(s=> s.clientId===clientId); }
 
-/* Horas registradas em agendas internas, sem card vinculado (não abatidas) */
+/* Retorna todos os analistas de uma agenda (suporta múltiplos) */
+function scheduleAnalystIds(s){
+  if(Array.isArray(s.analystIds) && s.analystIds.length) return s.analystIds.slice();
+  return s.analystId ? [s.analystId] : [];
+}
+function scheduleAnalysts(s){
+  return scheduleAnalystIds(s).map(id=> getAnalyst(id)).filter(Boolean);
+}
+function scheduleAnalystNames(s){
+  return scheduleAnalysts(s).map(a=>a.name).join(', ');
+}
+/* Minutos efetivos de uma agenda (usa deductMinutes se houver, senão calcula pelo horário) */
+function scheduleMinutes(s){
+  if(s.deductMinutes!=null) return s.deductMinutes;
+  if(s.allDay) return 8*60; // dia todo = 8h
+  return timeToMin(s.endTime)-timeToMin(s.startTime);
+}
+
 function unlinkedInternalSchedulesForClient(clientId){
   return state.schedules.filter(s=> s.clientId===clientId && !s.cardId && isInternalType(s.type) && s.status==='concluida');
 }
 function unlinkedInternalMinutesForClient(clientId){
-  return unlinkedInternalSchedulesForClient(clientId).reduce((sum,s)=> sum + (s.deductMinutes!=null ? s.deductMinutes : (timeToMin(s.endTime)-timeToMin(s.startTime))), 0);
-}
-/* Horas internas sem card do cliente, ainda pendentes (contam na coluna "aguardando") */
-function pendingUnlinkedInternalSchedulesForClient(clientId){
-  return state.schedules.filter(s=> s.clientId===clientId && !s.cardId && isInternalType(s.type) && s.status!=='nao_realizada');
+  return unlinkedInternalSchedulesForClient(clientId).reduce((sum,s)=> sum + scheduleMinutes(s), 0);
 }
 
 function renameScreenEverywhere(oldName, newName){
@@ -1130,12 +1209,24 @@ function renameTypeEverywhere(oldName, newName){
   if(oldName===newName) return;
   state.schedules.forEach(s=>{ if(s.type===oldName) s.type = newName; });
 }
-function scheduleConflict(analystId, date, start, end, excludeId){
+/* Conflito considera todos os analistas da agenda */
+function scheduleConflict(analystIds, date, start, end, excludeId, allDay){
+  if(allDay) return false; // dia todo não entra em conflito
+  if(!Array.isArray(analystIds)) analystIds = analystIds ? [analystIds] : [];
   const s0=timeToMin(start), e0=timeToMin(end);
-  return state.schedules.some(s=> s.id!==excludeId && s.analystId===analystId && s.date===date && s.status!=='nao_realizada' && !(e0<=timeToMin(s.startTime) || s0>=timeToMin(s.endTime)));
+  return state.schedules.some(s=>{
+    if(s.id===excludeId) return false;
+    if(s.date!==date) return false;
+    if(s.status==='nao_realizada') return false;
+    if(s.allDay) return false;
+    const overlap = !(e0<=timeToMin(s.startTime) || s0>=timeToMin(s.endTime));
+    if(!overlap) return false;
+    const sIds = scheduleAnalystIds(s);
+    return sIds.some(id=> analystIds.includes(id));
+  });
 }
-function scheduleIsDue(s){ if(s.status!=='pendente') return false; const end=new Date(s.date+'T'+(s.endTime||'00:00')+':00'); return end.getTime() < Date.now(); }
-function pendingConfirmations(analystId){ return state.schedules.filter(s=> scheduleIsDue(s) && (!analystId || s.analystId===analystId)); }
+function scheduleIsDue(s){ if(s.status!=='pendente') return false; const end=new Date(s.date+'T'+(s.allDay ? '23:59' : (s.endTime||'00:00'))+':00'); return end.getTime() < Date.now(); }
+function pendingConfirmations(analystId){ return state.schedules.filter(s=> scheduleIsDue(s) && (!analystId || scheduleAnalystIds(s).includes(analystId))); }
 function addHistory(card, text){ card.history = card.history||[]; card.history.unshift({ts:Date.now(), text}); }
 function colorForIndex(i){ return PALETTE[i % PALETTE.length]; }
 function isAdminUser(){ return !!(currentUser && (currentUser.isAdmin || currentUser.role==='admin')); }
@@ -1273,7 +1364,14 @@ function moveCard(cardId, boardId, listId){
 }
 function deleteCard(id){ state.schedules = state.schedules.filter(s=>s.cardId!==id); state.cards = state.cards.filter(c=>c.id!==id); }
 function createSchedule(data){
-  const s = Object.assign({id:uid('sc'), status:'pendente', deductMinutes:null, modules:[], notes:'', category:'implantacao'}, data);
+  const s = Object.assign({
+    id:uid('sc'), status:'pendente', deductMinutes:null, modules:[], notes:'', category:'implantacao',
+    allDay:false, title:'', analystIds:[]
+  }, data);
+  if(!Array.isArray(s.analystIds) || !s.analystIds.length){
+    s.analystIds = s.analystId ? [s.analystId] : [];
+  }
+  if(s.analystIds.length && !s.analystId) s.analystId = s.analystIds[0];
   state.schedules.push(s);
   return s;
 }
@@ -1281,12 +1379,12 @@ function updateSchedule(id, patch){ const s=byId(state.schedules,id); if(s) Obje
 function completeSchedule(id, deductMinutes, note){
   const s=byId(state.schedules,id); if(!s) return;
   s.status='concluida'; s.deductMinutes=deductMinutes; if(note) s.notes = note;
-  if(s.cardId){ const c=getCard(s.cardId); if(c) addHistory(c, 'Agenda concluída ('+fmtDateBR(s.date)+' '+s.startTime+'–'+s.endTime+') — '+minToHM(deductMinutes)+' abatido(s)'); }
+  if(s.cardId){ const c=getCard(s.cardId); if(c) addHistory(c, 'Agenda concluída ('+fmtDateBR(s.date)+(s.allDay? ' (dia todo)' : ' '+s.startTime+'–'+s.endTime)+') — '+minToHM(deductMinutes)+' abatido(s)'); }
 }
 function markNotDone(id){
   const s=byId(state.schedules,id); if(!s) return;
   s.status='nao_realizada';
-  if(s.cardId){ const c=getCard(s.cardId); if(c) addHistory(c, 'Agenda marcada como não realizada ('+fmtDateBR(s.date)+' '+s.startTime+'–'+s.endTime+')'); }
+  if(s.cardId){ const c=getCard(s.cardId); if(c) addHistory(c, 'Agenda marcada como não realizada ('+fmtDateBR(s.date)+(s.allDay? ' (dia todo)' : ' '+s.startTime+'–'+s.endTime)+')'); }
 }
 function revertToPending(id){
   const s=byId(state.schedules,id); if(!s || s.status==='pendente') return;
@@ -1296,8 +1394,8 @@ function revertToPending(id){
   if(s.cardId){
     const c=getCard(s.cardId);
     if(c){
-      if(wasConcluida) addHistory(c, 'Conclusão revertida ('+fmtDateBR(s.date)+' '+s.startTime+'–'+s.endTime+') — '+minToHM(deducted||0)+' estornado(s)');
-      else addHistory(c, 'Agenda revertida para pendente ('+fmtDateBR(s.date)+' '+s.startTime+'–'+s.endTime+')');
+      if(wasConcluida) addHistory(c, 'Conclusão revertida ('+fmtDateBR(s.date)+') — '+minToHM(deducted||0)+' estornado(s)');
+      else addHistory(c, 'Agenda revertida para pendente ('+fmtDateBR(s.date)+')');
     }
   }
 }
@@ -1430,13 +1528,13 @@ function renderNotifPanel(){
   let html = '<div class="notif-panel">';
   if(!items.length){ html += '<div class="notif-empty">Nenhuma confirmação pendente.</div>'; }
   else{
-    items.sort((a,b)=> (a.date+a.startTime).localeCompare(b.date+b.startTime));
+    items.sort((a,b)=> (a.date+(a.startTime||'')).localeCompare(b.date+(b.startTime||'')));
     items.forEach(s=>{
-      const analyst = getAnalyst(s.analystId);
       const client = s.clientId ? getClient(s.clientId) : null;
+      const title = scheduleDisplayTitle(s);
       html += '<div class="notif-item">'
-        + '<div style="font-weight:700;font-size:13px;">'+esc(client? client.name : 'Interno')+' · '+esc(s.type)+'</div>'
-        + '<div style="font-size:11.5px;color:var(--ink-soft);margin:2px 0 6px;">'+fmtDateBR(s.date)+' '+s.startTime+'–'+s.endTime+' · '+esc(analyst? analyst.name:'')+'</div>'
+        + '<div style="font-weight:700;font-size:13px;">'+esc(title)+'</div>'
+        + '<div style="font-size:11.5px;color:var(--ink-soft);margin:2px 0 6px;">'+fmtDateBR(s.date)+' '+(s.allDay?'(dia todo)':s.startTime+'–'+s.endTime)+' · '+esc(scheduleAnalystNames(s))+'</div>'
         + '<div class="row-actions">'
           + '<button class="btn btn-sm btn-primary" data-action="open-modal" data-modal="confirm-complete" data-id="'+s.id+'">Confirmar</button>'
           + '<button class="btn btn-sm btn-ghost" data-action="mark-not-done" data-id="'+s.id+'">Não realizada</button>'
@@ -1643,7 +1741,10 @@ function renderSchedRow(s){
   const modules = (s.modules||[]).join(', ');
   const screens = (s.trainedScreens||[]).join(', ');
   const isInterna = isInternalType(s.type);
+  const isServico = isServicoType(s.type);
   const isOrphanInternal = isInterna && s.clientId && !s.cardId;
+  const title = scheduleDisplayTitle(s);
+  const analystsNames = scheduleAnalystNames(s);
   let actions = '';
   if(s.status==='pendente'){
     actions = '<button class="btn btn-sm btn-primary" data-action="open-modal" data-modal="confirm-complete" data-id="'+s.id+'">Concluir</button>'
@@ -1656,19 +1757,32 @@ function renderSchedRow(s){
   if(s.status==='concluida') actions += '<button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="schedule-report" data-id="'+s.id+'">🖨 Relatório</button>';
   actions += '<button class="btn btn-sm btn-ghost" data-action="delete-schedule" data-id="'+s.id+'">🗑</button>';
   return '<div class="sched-row'+(due?' due':'')+'">'
-    + '<div class="sched-main"><div class="sched-time">'+fmtDateBR(s.date)+' · '+s.startTime+'–'+s.endTime+' <span class="badge '+s.status+'">'+statusLabel(s.status)+'</span> <span class="badge" style="background:'+(isInterna?'var(--gold-soft)':'var(--brand-soft)')+';color:'+(isInterna?'var(--gold)':'var(--brand)')+';">'+(isInterna?'Interna':'Implantação')+'</span>'+(isOrphanInternal?' <span class="nao-abatido-pill">Não abatido</span>':'')+'</div>'
-    + '<div class="sched-sub">'+esc(s.type)+(modules? ' · '+esc(modules) : '')+(s.status==='concluida' && s.cardId? ' · '+minToHM(s.deductMinutes)+' abatido':'')+'</div>'
+    + '<div class="sched-main">'
+    + (title? '<div style="font-weight:800;font-size:13px;color:var(--brand-dark);">'+esc(title)+'</div>' : '')
+    + '<div class="sched-time">'+fmtDateBR(s.date)+' · '+(s.allDay?'<span class="allday-badge">Dia todo</span>':s.startTime+'–'+s.endTime)
+    + ' <span class="badge '+s.status+'">'+statusLabel(s.status)+'</span>'
+    + ' <span class="badge" style="background:'+(isServico?'#EDE7F6':(isInterna?'var(--gold-soft)':'var(--brand-soft)'))+';color:'+(isServico?'#7B4B94':(isInterna?'var(--gold)':'var(--brand)'))+';">'+esc(s.type)+'</span>'
+    + (isOrphanInternal?' <span class="nao-abatido-pill">Não abatido</span>':'')+'</div>'
+    + '<div class="sched-sub">👤 '+esc(analystsNames||'—')+(modules? ' · '+esc(modules) : '')+(s.status==='concluida' && s.cardId? ' · '+minToHM(s.deductMinutes)+' abatido':'')+'</div>'
     + (screens? '<div class="sched-sub">🖥 '+esc(screens)+'</div>' : '')
-    + (s.trainedUsers? '<div class="sched-sub">👤 '+esc(s.trainedUsers)+'</div>' : '')
+    + (s.trainedUsers? '<div class="sched-sub">🙋 '+esc(s.trainedUsers)+'</div>' : '')
     + '</div>'
     + '<div class="row-actions">'+actions+'</div></div>';
 }
 function statusLabel(st){ return st==='pendente'?'Pendente': st==='concluida'?'Concluída':'Não realizada'; }
 
+/* Título de exibição da agenda: usa o título se houver, senão compõe cliente+tipo */
+function scheduleDisplayTitle(s){
+  if(s.title && s.title.trim()) return s.title.trim();
+  const client = s.clientId ? getClient(s.clientId) : null;
+  return (client?client.name:'Interno')+' · '+s.type;
+}
+
 /* ============================= CALENDAR VIEW ============================= */
 function calcCalTimeRange(scheds){
   let minH = 7, maxH = 21;
   scheds.forEach(s=>{
+    if(s.allDay) return;
     const sh = Math.floor(timeToMin(s.startTime)/60);
     const eh = Math.ceil(timeToMin(s.endTime)/60);
     if(sh < minH) minH = Math.max(0, sh-1);
@@ -1677,7 +1791,7 @@ function calcCalTimeRange(scheds){
   return {startHour:minH, endHour:maxH};
 }
 function layoutDayEvents(scheds){
-  const items = scheds.map(s=>({ s, start:timeToMin(s.startTime), end:Math.max(timeToMin(s.endTime), timeToMin(s.startTime)+15) }))
+  const items = scheds.filter(s=>!s.allDay).map(s=>({ s, start:timeToMin(s.startTime), end:Math.max(timeToMin(s.endTime), timeToMin(s.startTime)+15) }))
     .sort((a,b)=> a.start-b.start || a.end-b.end);
   const clusters = [];
   let current = [], clusterEnd = -1;
@@ -1701,6 +1815,7 @@ function layoutDayEvents(scheds){
   return result;
 }
 function isInternalType(typeName){ const t = state.agendaTypes.find(t=>t.name===typeName); return !!(t && t.isInternal); }
+function isServicoType(typeName){ const t = state.agendaTypes.find(t=>t.name===typeName); return !!(t && t.isServico); }
 function renderCalendarView(){
   let html = '<div class="cal-toolbar">'
     + '<select id="cal-analyst-filter" data-action="cal-filter">'
@@ -1708,9 +1823,10 @@ function renderCalendarView(){
   state.analysts.forEach(a=> html += '<option value="'+a.id+'"'+(ui.calAnalyst===a.id?' selected':'')+'>'+esc(a.name)+(a.inactive?' (inativo)':'')+'</option>');
   html += '</select>'
     + '<select id="cal-category-filter" data-action="cal-category-filter">'
-      + '<option value="all"'+(ui.calCategory==='all'?' selected':'')+'>Interna + Implantação</option>'
-      + '<option value="implantacao"'+(ui.calCategory==='implantacao'?' selected':'')+'>Somente Implantação</option>'
-      + '<option value="interna"'+(ui.calCategory==='interna'?' selected':'')+'>Somente Interna</option>'
+      + '<option value="all"'+(ui.calCategory==='all'?' selected':'')+'>Todas as categorias</option>'
+      + '<option value="implantacao"'+(ui.calCategory==='implantacao'?' selected':'')+'>Implantação</option>'
+      + '<option value="interna"'+(ui.calCategory==='interna'?' selected':'')+'>Interna</option>'
+      + '<option value="servico"'+(ui.calCategory==='servico'?' selected':'')+'>Serviço</option>'
       + '</select>'
     + '<button class="btn btn-sm" data-action="cal-nav" data-dir="-1">‹ Semana anterior</button>'
     + '<button class="btn btn-sm" data-action="cal-nav" data-dir="0">Hoje</button>'
@@ -1719,24 +1835,58 @@ function renderCalendarView(){
     + '<button class="btn btn-primary" data-action="open-modal" data-modal="schedule-new">+ Novo agendamento</button>'
     + '</div>';
 
-  function inCategory(s){ return ui.calCategory==='all' || (ui.calCategory==='interna') === isInternalType(s.type); }
+  function inCategory(s){
+    if(ui.calCategory==='all') return true;
+    if(ui.calCategory==='interna') return isInternalType(s.type);
+    if(ui.calCategory==='servico') return isServicoType(s.type);
+    return !isInternalType(s.type) && !isServicoType(s.type);
+  }
+  function matchesAnalyst(s){
+    if(ui.calAnalyst==='all') return true;
+    return scheduleAnalystIds(s).includes(ui.calAnalyst);
+  }
 
   const days = [];
   for(let i=0;i<7;i++) days.push(addDaysISO(ui.calStart, i));
   let weekScheds = [];
-  days.forEach(d=>{ weekScheds = weekScheds.concat(state.schedules.filter(s=>s.date===d && (ui.calAnalyst==='all' || s.analystId===ui.calAnalyst) && inCategory(s))); });
+  days.forEach(d=>{ weekScheds = weekScheds.concat(state.schedules.filter(s=>s.date===d && matchesAnalyst(s) && inCategory(s))); });
   const {startHour, endHour} = calcCalTimeRange(weekScheds);
   const pxPerHour = 48;
   const pxPerMin = pxPerHour/60;
+  const alldayHeight = 26;
   const gridHeight = (endHour-startHour)*pxPerHour;
   const today = todayISO();
 
   html += '<div class="cal-tg-outer"><div class="cal-tg-inner">';
+  /* Header com colunas dos dias */
   html += '<div class="cal-tg-headerrow"><div></div>';
   days.forEach(d=>{
     html += '<div class="cal-tg-daycol-head'+(d===today?' today':'')+'"><div class="wd">'+weekdayShort(d)+'</div><div class="dt">'+fmtDateBR(d).slice(0,5)+'</div></div>';
   });
   html += '</div>';
+
+  /* Linha separada para eventos "dia todo" */
+  let anyAllday = days.some(d=> state.schedules.some(s=>s.date===d && s.allDay && matchesAnalyst(s) && inCategory(s)));
+  if(anyAllday){
+    html += '<div class="cal-tg-headerrow" style="background:var(--surface-2);"><div style="padding:6px 8px;font-size:10px;color:var(--ink-faint);font-weight:800;text-transform:uppercase;display:flex;align-items:center;">Dia todo</div>';
+    days.forEach(d=>{
+      const dayAllday = state.schedules.filter(s=>s.date===d && s.allDay && matchesAnalyst(s) && inCategory(s));
+      html += '<div style="min-height:'+alldayHeight+'px;border-left:1px solid var(--border);padding:3px 4px;display:flex;flex-direction:column;gap:3px;">';
+      dayAllday.forEach(s=>{
+        const internal = isInternalType(s.type);
+        const servico = isServicoType(s.type);
+        const due = scheduleIsDue(s);
+        const bg = servico? '#EDE7F6' : (internal? 'var(--gold-soft)' : 'var(--brand-soft)');
+        const color = servico? '#7B4B94' : (internal? 'var(--gold)' : 'var(--brand)');
+        const title = scheduleDisplayTitle(s);
+        html += '<div class="cal-tg-event allday'+(due?' due':'')+'" style="position:static;left:auto;width:auto;background:'+bg+';border-left-color:'+color+';" data-action="open-modal" data-modal="schedule-edit" data-id="'+s.id+'" title="'+esc(title+' · '+scheduleAnalystNames(s))+'">'
+          + '<div class="t">'+esc(title)+'</div>'
+          + '</div>';
+      });
+      html += '</div>';
+    });
+    html += '</div>';
+  }
 
   html += '<div class="cal-tg-bodyscroll"><div class="cal-tg-bodyrow" style="height:'+gridHeight+'px;">';
   html += '<div class="cal-tg-hourlabels" style="height:'+gridHeight+'px;">';
@@ -1749,7 +1899,7 @@ function renderCalendarView(){
   const nowMin = now.getHours()*60+now.getMinutes();
 
   days.forEach(d=>{
-    const scheds = state.schedules.filter(s=>s.date===d && (ui.calAnalyst==='all' || s.analystId===ui.calAnalyst) && inCategory(s));
+    const scheds = state.schedules.filter(s=>s.date===d && matchesAnalyst(s) && inCategory(s));
     const laidOut = layoutDayEvents(scheds);
     html += '<div class="cal-tg-daycol" data-action="cal-grid-click" data-date="'+d+'" data-start-hour="'+startHour+'" data-px-per-hour="'+pxPerHour+'" style="height:'+gridHeight+'px;--hour-px:'+pxPerHour+'px;">';
     laidOut.forEach(item=>{
@@ -1758,15 +1908,18 @@ function renderCalendarView(){
       const client = s.clientId? getClient(s.clientId) : null;
       const due = scheduleIsDue(s);
       const internal = isInternalType(s.type);
+      const servico = isServicoType(s.type);
       const top = (item.start - startHour*60)*pxPerMin;
       const height = Math.max((item.end-item.start)*pxPerMin, 20);
       const widthPct = 100/item.lanes;
       const leftPct = item.lane*widthPct;
       const borderColor = ui.calAnalyst==='all' && analyst ? analyst.color : 'var(--brand)';
       const draggable = s.status==='pendente';
-      html += '<div class="cal-tg-event'+(due?' due':'')+(internal?' internal':'')+'" draggable="'+(draggable?'true':'false')+'" data-draggable="'+(draggable?'1':'0')+'" style="top:'+top+'px;height:'+height+'px;left:'+leftPct+'%;width:calc('+widthPct+'% - 4px);border-left-color:'+(internal?'var(--gold)':borderColor)+';" data-action="open-modal" data-modal="schedule-edit" data-id="'+s.id+'" title="'+esc((internal?'[Interna] ':'')+s.startTime+'–'+s.endTime+' · '+(client?client.name:'Interno')+' · '+s.type)+(draggable? ' (arraste para reagendar)':'')+'">'
-        + '<div class="t">'+(internal?'🏠 ':'')+s.startTime+' '+esc(client?client.name:'Interno')+'</div>'
-        + (height>34? '<div style="opacity:.8;">'+esc(s.type)+(ui.calAnalyst==='all'&&analyst? ' · '+esc(analyst.name):'')+'</div>' : '')
+      const title = scheduleDisplayTitle(s);
+      const cls = 'cal-tg-event'+(due?' due':'')+(internal?' internal':'')+(servico?' servico':'');
+      html += '<div class="'+cls+'" draggable="'+(draggable?'true':'false')+'" data-draggable="'+(draggable?'1':'0')+'" style="top:'+top+'px;height:'+height+'px;left:'+leftPct+'%;width:calc('+widthPct+'% - 4px);border-left-color:'+(servico?'#7B4B94':(internal?'var(--gold)':borderColor))+';" data-action="open-modal" data-modal="schedule-edit" data-id="'+s.id+'" title="'+esc(title+' · '+s.startTime+'–'+s.endTime+' · '+scheduleAnalystNames(s))+'">'
+        + '<div class="t">'+(internal?'🏠 ':(servico?'🛠 ':''))+s.startTime+' '+esc(title)+'</div>'
+        + (height>34? '<div style="opacity:.8;">'+esc(scheduleAnalystNames(s))+'</div>' : '')
         + '</div>';
     });
     if(d===today && nowMin>=startHour*60 && nowMin<=endHour*60){
@@ -1782,30 +1935,22 @@ function renderCalendarView(){
 /* ============================= REPORTS VIEW ============================= */
 function renderReportsView(){
   let html = '';
-  /* ==== Saldo de horas por cliente ====
-     Inclui:
-       - Cards vinculados (fluxo tradicional, com saldo abatido)
-       - Horas internas sem card (não abatidas) — mostradas separadamente
-         para clientes que tenham agendas internas concluídas vinculadas. */
   html += '<div class="section-card"><h3>Saldo de horas por cliente</h3>'
     + '<p class="hint" style="margin-top:-4px;">Horas internas concluídas sem card vinculado aparecem como <span class="nao-abatido">horas não abatidas</span> — são horas trabalhadas para o cliente que não consomem o saldo do contrato.</p>'
     + '<table><thead><tr><th>Cliente</th><th>Analista</th><th>Contratadas</th><th>Usadas</th><th>Saldo</th><th>Horas não abatidas</th></tr></thead><tbody>';
 
-  /* Constrói as linhas: primeiro cards, depois clientes que só têm agendas internas sem card */
   const rows = [];
   state.cards.forEach(c=>{
     const client=getClient(c.clientId), board=getBoard(c.boardId), analyst=board?getAnalyst(board.analystId):null;
     const used = cardUsedMinutes(c)/60, bal = cardBalanceHours(c);
     rows.push({ client, analyst, used, bal, contracted: c.contractedHours, naoAbatido: 0 });
   });
-  /* Clientes sem nenhum card mas com agendas internas concluídas vinculadas */
   state.clients.forEach(cl=>{
     if(state.cards.some(c=>c.clientId===cl.id)) return;
     const minutes = unlinkedInternalMinutesForClient(cl.id);
     if(minutes <= 0) return;
     rows.push({ client: cl, analyst: null, used: 0, bal: 0, contracted: 0, naoAbatido: minutes, onlyInternal:true });
   });
-  /* Também somamos as horas internas não abatidas em clientes que já têm card */
   const naoAbatidoByClient = {};
   state.clients.forEach(cl=>{ naoAbatidoByClient[cl.id] = unlinkedInternalMinutesForClient(cl.id); });
   rows.forEach(r=>{
@@ -1830,23 +1975,21 @@ function renderReportsView(){
   });
   html += '</tbody></table></div>';
 
-  /* ==== Detalhe das horas não abatidas ==== */
   const allUnlinked = state.schedules
     .filter(s=> isInternalType(s.type) && s.clientId && !s.cardId && s.status==='concluida')
-    .sort((a,b)=> (b.date+b.startTime).localeCompare(a.date+a.startTime));
+    .sort((a,b)=> (b.date+(b.startTime||'')).localeCompare(a.date+(a.startTime||'')));
   if(allUnlinked.length){
     html += '<div class="section-card"><h3>Detalhe — horas internas não abatidas</h3>'
       + '<p class="hint" style="margin-top:-4px;">Cada linha é uma agenda interna concluída vinculada a um cliente, mas sem card criado. Essas horas não consomem o saldo contratado.</p>'
       + '<table><thead><tr><th>Data</th><th>Cliente</th><th>Analista</th><th>Horário</th><th>Tipo</th><th>Duração</th></tr></thead><tbody>';
     allUnlinked.forEach(s=>{
       const cl = getClient(s.clientId);
-      const an = getAnalyst(s.analystId);
-      const dur = s.deductMinutes!=null ? s.deductMinutes : (timeToMin(s.endTime)-timeToMin(s.startTime));
+      const dur = scheduleMinutes(s);
       html += '<tr>'
         + '<td>'+fmtDateBR(s.date)+'</td>'
         + '<td>'+esc(cl?cl.name:'—')+'</td>'
-        + '<td>'+esc(an?an.name:'—')+'</td>'
-        + '<td>'+s.startTime+'–'+s.endTime+'</td>'
+        + '<td>'+esc(scheduleAnalystNames(s))+'</td>'
+        + '<td>'+(s.allDay?'Dia todo':s.startTime+'–'+s.endTime)+'</td>'
         + '<td>'+esc(s.type)+'</td>'
         + '<td><span class="nao-abatido">'+minToHM(dur)+'</span></td>'
         + '</tr>';
@@ -1880,7 +2023,7 @@ function renderReportsView(){
   html += '<div class="section-card"><h3>Horas realizadas por analista</h3><table><thead><tr><th>Analista</th><th>Sessões concluídas</th><th>Total de horas</th></tr></thead><tbody>';
   if(!state.analysts.length) html += '<tr><td colspan="3" class="hint">Nenhum analista cadastrado.</td></tr>';
   state.analysts.forEach(a=>{
-    const scheds = state.schedules.filter(s=>s.analystId===a.id && s.status==='concluida');
+    const scheds = schedulesForAnalyst(a.id).filter(s=>s.status==='concluida');
     const totalMin = scheds.reduce((sum,s)=> sum + (s.deductMinutes||0), 0);
     html += '<tr'+(a.inactive?' class="row-inactive"':'')+'><td>'+esc(a.name)+(a.inactive?' <span class="badge" style="background:#B9CAD5;color:#fff;">Inativo</span>':'')+'</td><td>'+scheds.length+'</td><td>'+minToHM(totalMin)+'</td></tr>';
   });
@@ -1901,13 +2044,12 @@ function renderReportsView(){
     + '<p class="hint" style="margin-top:-4px;">Agendas de tipo interno (não são atendimento direto) que ainda assim foram vinculadas a um cliente específico.</p>'
     + '<table><thead><tr><th>Cliente</th><th>Analista</th><th>Data</th><th>Horário</th><th>Tipo</th><th>Observações</th></tr></thead><tbody>';
   if(!internalWithClient.length) html += '<tr><td colspan="6" class="hint">Nenhuma agenda interna vinculada a cliente no momento.</td></tr>';
-  internalWithClient.sort((a,b)=> (b.date+b.startTime).localeCompare(a.date+a.startTime)).forEach(s=>{
+  internalWithClient.sort((a,b)=> (b.date+(b.startTime||'')).localeCompare(a.date+(a.startTime||''))).forEach(s=>{
     const client = getClient(s.clientId);
-    const analyst = getAnalyst(s.analystId);
     const naoAbatido = !s.cardId;
     html += '<tr>'
       + '<td>'+esc(client?client.name:'—')+(naoAbatido?' <span class="nao-abatido-pill">Não abatido</span>':'')+'</td>'
-      + '<td>'+esc(analyst?analyst.name:'—')+'</td><td>'+fmtDateBR(s.date)+'</td><td>'+s.startTime+'–'+s.endTime+'</td><td>'+esc(s.type)+'</td><td>'+esc(s.notes||'—')+'</td></tr>';
+      + '<td>'+esc(scheduleAnalystNames(s))+'</td><td>'+fmtDateBR(s.date)+'</td><td>'+(s.allDay?'Dia todo':s.startTime+'–'+s.endTime)+'</td><td>'+esc(s.type)+'</td><td>'+esc(s.notes||'—')+'</td></tr>';
   });
   html += '</tbody></table></div>';
   return html;
@@ -1960,7 +2102,6 @@ function renderSettingsView(){
     {k:'nuvem',     l:'Nuvem',     adminOnly:true}
   ];
   const visibleTabs = allTabs.filter(t=> admin || !t.adminOnly);
-
   if(!visibleTabs.some(t=> t.k===ui.settingsTab)){
     ui.settingsTab = visibleTabs[0] ? visibleTabs[0].k : 'produtos';
   }
@@ -1980,7 +2121,7 @@ function renderSettingsView(){
 
   if(ui.settingsTab==='analistas'){
     html += '<div class="section-card"><h3>Analistas</h3>'
-      + '<p class="hint" style="margin-top:-4px;">Cada analista precisa de um login e senha próprios. Analistas inativos não conseguem logar nem aparecem nas listas de seleção, mas seus quadros e cards são preservados. Analistas com agendamentos vinculados não podem ser excluídos — inative-os.</p>'
+      + '<p class="hint" style="margin-top:-4px;">Cada analista precisa de um login e senha próprios. Analistas inativos não conseguem logar nem aparecem nas listas de seleção, mas seus quadros e cards são preservados.</p>'
       + '<table><thead><tr><th></th><th>Nome</th><th>Usuário</th><th>Quadro</th><th>Perfil</th><th>Situação</th><th></th></tr></thead><tbody>';
     state.analysts.forEach(a=>{
       const board = boardOfAnalyst(a.id);
@@ -2025,7 +2166,7 @@ function renderSettingsView(){
     html += '<div style="margin-top:12px;"><button class="btn btn-primary btn-sm" data-action="open-modal" data-modal="product-new">+ Novo produto</button></div></div>';
   } else if(ui.settingsTab==='modulos'){
     html += '<div class="section-card"><h3>Módulos do sistema — cadastro</h3>'
-      + '<p class="hint" style="margin-top:-4px;">Módulos inativos ficam ocultos em novos agendamentos, mas permanecem vinculados aos já existentes. Módulos com agendamentos ou telas vinculadas não podem ser excluídos — inative-os.</p>';
+      + '<p class="hint" style="margin-top:-4px;">Módulos inativos ficam ocultos em novos agendamentos, mas permanecem vinculados aos já existentes.</p>';
     if(!state.modules.length){
       html += '<p class="hint" style="margin-top:-2px;">Nenhum módulo cadastrado ainda.</p>';
     } else {
@@ -2049,7 +2190,7 @@ function renderSettingsView(){
     html += '<div style="margin-top:12px;"><button class="btn btn-primary btn-sm" data-action="open-modal" data-modal="module-new">+ Novo módulo</button></div></div>';
   } else if(ui.settingsTab==='telas'){
     html += '<div class="section-card"><h3>Telas — cadastro</h3>'
-      + '<p class="hint" style="margin-top:-4px;">Telas inativas ficam ocultas em novos agendamentos de treinamento, mas permanecem vinculadas aos já existentes. Use o botão de ativar/inativar para desativar sem perder os vínculos.</p>';
+      + '<p class="hint" style="margin-top:-4px;">Telas inativas ficam ocultas em novos agendamentos de treinamento, mas permanecem vinculadas aos já existentes.</p>';
     if(!state.modules.length){
       html += '<p class="hint" style="margin-top:-2px;">Cadastre um módulo primeiro — toda tela precisa estar vinculada a um módulo.</p>';
     } else if(!state.screens.length){
@@ -2086,8 +2227,11 @@ function renderSettingsView(){
         const linked = schedulesUsingType(t.name);
         const clientNames = clientNamesForSchedules(linked);
         const canDelete = linked.length===0;
+        const catLabel = t.isServico ? 'Serviço' : (t.isInternal ? 'Interna' : 'Implantação');
+        const catBg = t.isServico ? '#EDE7F6' : (t.isInternal?'var(--gold-soft)':'var(--brand-soft)');
+        const catColor = t.isServico ? '#7B4B94' : (t.isInternal?'var(--gold)':'var(--brand)');
         html += '<tr'+(t.inactive?' class="row-inactive"':'')+'><td style="font-weight:700;">'+esc(t.name)+'</td>'
-          + '<td><span class="badge" style="background:'+(t.isInternal?'var(--gold-soft)':'var(--brand-soft)')+';color:'+(t.isInternal?'var(--gold)':'var(--brand)')+';">'+(t.isInternal?'Interna':'Implantação')+'</span></td>'
+          + '<td><span class="badge" style="background:'+catBg+';color:'+catColor+';">'+catLabel+'</span></td>'
           + '<td>'+(linked.length ? (linked.length+' agendamento(s)'+(clientNames.length? ' — '+clientNames.map(esc).join(', '):'')) : '<span class="hint">Nenhum</span>')+'</td>'
           + '<td>'+switchCell('type', t.id, t.inactive, 'Ativo', 'Inativo')+'</td>'
           + '<td><div class="row-actions">'
@@ -2144,22 +2288,21 @@ function renderSettingsView(){
     html += '<div class="section-card"><h3>Sincronização na nuvem</h3>';
     const hasDefault = !!(DEFAULT_CLOUD_CONFIG.url && DEFAULT_CLOUD_CONFIG.anonKey);
     if(cloudStatus==='connected'){
-      html += '<p class="hint" style="margin-top:-2px;">☁ Conectado'+(usingDefaultCloud?' à nuvem padrão deste site':' a uma nuvem configurada manualmente neste navegador')+'. Os dados deste app são salvos em um banco de dados na nuvem (Supabase) e ficam disponíveis em qualquer navegador ou dispositivo que abra esta mesma página.</p>'
+      html += '<p class="hint" style="margin-top:-2px;">☁ Conectado'+(usingDefaultCloud?' à nuvem padrão deste site':' a uma nuvem configurada manualmente neste navegador')+'.</p>'
         + '<button class="btn btn-danger btn-sm" data-action="cloud-disconnect" style="margin-top:10px;">Desconectar (voltar a salvar só neste navegador)</button>';
     } else {
       if(cloudStatus==='error') html += '<div class="error-msg">'+esc(cloudErrorMsg)+'</div>';
       if(hasDefault){
-        html += '<p class="hint" style="margin-top:-2px;">Este navegador está configurado para salvar só localmente (você desconectou da nuvem padrão deste site, ou a conexão falhou).</p>'
+        html += '<p class="hint" style="margin-top:-2px;">Este navegador está configurado para salvar só localmente.</p>'
           + '<button class="btn btn-primary btn-sm" data-action="cloud-reconnect-default" style="margin-bottom:16px;">Reconectar à nuvem deste site</button>';
       } else {
-        html += '<p class="hint" style="margin-top:-2px;">Por padrão, os dados ficam salvos só neste navegador. Para acessar de outros computadores/dispositivos com os mesmos dados, conecte a um banco de dados gratuito no Supabase.</p>';
+        html += '<p class="hint" style="margin-top:-2px;">Por padrão, os dados ficam salvos só neste navegador.</p>';
       }
       html += '<form data-form="cloud-config">'
         + '<div class="field"><label>Project URL</label><input type="text" name="url" placeholder="https://xxxxx.supabase.co" value="'+esc(cloudConfig?cloudConfig.url:'')+'" required></div>'
         + '<div class="field"><label>Anon public key</label><input type="text" name="anonKey" placeholder="eyJhbGci..." value="'+esc(cloudConfig?cloudConfig.anonKey:'')+'" required></div>'
         + '<div class="form-actions"><span style="flex:1;"></span><button type="submit" class="btn btn-primary">Conectar</button></div>'
-        + '</form>'
-        + '<p class="hint">Veja o passo a passo de como criar o banco gratuito e obter esses dados na conversa com o Claude que gerou este app.</p>';
+        + '</form>';
     }
     html += '</div>';
   }
@@ -2179,7 +2322,7 @@ function renderModal(){
     const editingAdmin = a && a.isAdmin;
     const canToggleAdmin = isAdminUser() && !editingAdmin;
     inner = '<div class="modal-header"><h3>'+(a?'Editar analista':'Novo analista')+'</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
-      + (editingAdmin ? '<div class="hint" style="background:var(--gold-soft);color:var(--gold);border-radius:8px;padding:8px 11px;font-weight:600;margin-bottom:12px;">Este é o analista administrador do sistema. O login e a senha são usados para acessar como administrador.</div>' : '')
+      + (editingAdmin ? '<div class="hint" style="background:var(--gold-soft);color:var(--gold);border-radius:8px;padding:8px 11px;font-weight:600;margin-bottom:12px;">Este é o analista administrador do sistema.</div>' : '')
       + '<form data-form="analyst" data-id="'+(a?a.id:'')+'">'
       + '<div class="field"><label>Nome</label><input type="text" name="name" value="'+esc(a?a.name:'')+'" required></div>'
       + '<div class="field-row">'
@@ -2233,10 +2376,16 @@ function renderModal(){
       + '<div class="form-actions"><button type="submit" class="btn btn-primary">Salvar</button></div></form>';
   } else if(m.type==='type-new' || m.type==='type-edit'){
     const tp = m.type==='type-edit' ? byId(state.agendaTypes, m.id) : null;
+    const isInt = tp ? !!tp.isInternal : false;
+    const isSrv = tp ? !!tp.isServico : false;
     inner = '<div class="modal-header"><h3>'+(tp?'Editar tipo':'Novo tipo')+'</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
       + '<form data-form="agenda-type" data-id="'+(tp?tp.id:'')+'">'
       + '<div class="field"><label>Nome do tipo</label><input type="text" name="name" value="'+esc(tp?tp.name:'')+'" required></div>'
-      + '<div class="field"><label class="check-pill" style="width:fit-content;"><input type="checkbox" name="isInternal" '+(tp&&tp.isInternal?'checked':'')+'> É uma agenda interna (não é atendimento direto ao cliente)</label></div>'
+      + '<div class="field"><label>Categoria</label><select name="catKind" id="type-cat-kind">'
+        + '<option value="implantacao" '+(!isInt && !isSrv?'selected':'')+'>Implantação</option>'
+        + '<option value="interna" '+(isInt?'selected':'')+'>Interna (não faturável)</option>'
+        + '<option value="servico" '+(isSrv?'selected':'')+'>Serviço</option>'
+        + '</select><span class="hint" style="margin-top:2px;">Cada tipo pertence a uma das três categorias da agenda.</span></div>'
       + '<div class="form-actions"><button type="submit" class="btn btn-primary">Salvar</button></div></form>';
   } else if(m.type==='list-new'){
     inner = '<div class="modal-header"><h3>Nova lista</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
@@ -2261,34 +2410,49 @@ function renderModal(){
     inner = renderScheduleForm(m);
   } else if(m.type==='confirm-complete'){
     const s = byId(state.schedules, m.id);
-    const dur = timeToMin(s.endTime)-timeToMin(s.startTime);
+    const dur = scheduleMinutes(s);
     inner = '<div class="modal-header"><h3>Confirmar conclusão</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
-      + '<p class="hint" style="margin-top:-6px;">'+fmtDateBR(s.date)+' · '+s.startTime+'–'+s.endTime+' · '+esc(s.type)+'</p>'
+      + '<p class="hint" style="margin-top:-6px;">'+(s.title? '<strong>'+esc(s.title)+'</strong> · ':'')+fmtDateBR(s.date)+' · '+(s.allDay?'Dia todo':s.startTime+'–'+s.endTime)+' · '+esc(s.type)+'</p>'
       + '<form data-form="confirm-complete" data-id="'+s.id+'">'
       + '<div class="field"><label>Minutos a abater do saldo</label><input type="number" min="0" name="deductMinutes" value="'+dur+'"></div>'
-      + '<div class="field"><label>Observação (opcional)</label><textarea name="notes"></textarea></div>'
+      + '<div class="field"><label>Observação (opcional)</label><textarea name="notes">'+esc(s.notes||'')+'</textarea></div>'
       + '<div class="form-actions"><button type="submit" class="btn btn-primary">Confirmar conclusão</button></div></form>';
   } else if(m.type==='schedule-report'){
     inner = renderScheduleReportContent(m.id);
   } else if(m.type==='internal-ask-board'){
-    /* Pergunta ao usuário se quer criar o card/quadro para uma agenda interna */
     const s = m.payload && m.payload.scheduleId ? byId(state.schedules, m.payload.scheduleId) : null;
     const client = s && s.clientId ? getClient(s.clientId) : null;
-    const analyst = s ? getAnalyst(s.analystId) : null;
-    const dur = s ? (s.deductMinutes!=null ? s.deductMinutes : (timeToMin(s.endTime)-timeToMin(s.startTime))) : 0;
+    const dur = s ? scheduleMinutes(s) : 0;
     inner = '<div class="modal-header"><h3>Vincular a um quadro?</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
       + '<div class="choice-box">'
         + '<div class="choice-title">'+esc(client?client.name:'(cliente)')+' — '+esc(s?s.type:'')+'</div>'
-        + '<div class="choice-desc">'+fmtDateBR(s?s.date:'')+' · '+s.startTime+'–'+s.endTime+' · '+minToHM(dur)+' · '+esc(analyst?analyst.name:'')+'</div>'
+        + '<div class="choice-desc">'+fmtDateBR(s?s.date:'')+' · '+(s&&s.allDay?'Dia todo':(s?s.startTime+'–'+s.endTime:''))+' · '+minToHM(dur)+' · '+esc(s?scheduleAnalystNames(s):'')+'</div>'
         + '<div class="choice-desc" style="margin-top:8px;">Esta é uma <strong>agenda interna</strong> vinculada a um cliente. Deseja <strong>criar um card/quadro</strong> para registrar as horas e abater do saldo contratado?</div>'
         + '<div class="choice-desc" style="margin-top:6px;background:#fff;border:1px dashed var(--border);border-radius:8px;padding:8px 10px;">'
-          + '<strong>Sim</strong> → cria card no quadro do analista, segue o fluxo normal e as horas <strong>consomem o saldo</strong> do cliente.<br>'
-          + '<strong>Não</strong> → não cria card. As horas ficam registradas no relatório como <span class="nao-abatido">horas não abatidas</span> (não consomem o saldo do contrato).'
+          + '<strong>Sim</strong> → cria card no quadro do analista e as horas <strong>consomem o saldo</strong>.<br>'
+          + '<strong>Não</strong> → as horas ficam como <span class="nao-abatido">não abatidas</span> (não consomem o saldo).'
         + '</div>'
       + '</div>'
       + '<div class="choice-actions">'
         + '<button class="btn btn-ghost" data-action="internal-answer-no">Não, apenas registrar</button>'
         + '<button class="btn btn-primary" data-action="internal-answer-yes">Sim, criar quadro</button>'
+      + '</div>';
+  } else if(m.type==='after-complete-print'){
+    /* Pergunta após concluir se deseja imprimir o relatório */
+    const s = m.payload && m.payload.scheduleId ? byId(state.schedules, m.payload.scheduleId) : null;
+    if(!s){ return '<div class="overlay"><div class="modal"><p>Agendamento não encontrado.</p><div class="form-actions"><button class="btn btn-primary" data-action="close-modal">Fechar</button></div></div></div>'; }
+    const client = s.clientId ? getClient(s.clientId) : null;
+    const dur = scheduleMinutes(s);
+    inner = '<div class="modal-header"><h3>✓ Agenda concluída</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
+      + '<div class="choice-box">'
+        + '<div class="choice-title">'+esc(scheduleDisplayTitle(s))+'</div>'
+        + '<div class="choice-desc">'+fmtDateBR(s.date)+' · '+(s.allDay?'Dia todo':s.startTime+'–'+s.endTime)+' · '+minToHM(dur)+' abatido(s) · '+esc(scheduleAnalystNames(s))+'</div>'
+        + (client?'<div class="choice-desc" style="margin-top:8px;">Cliente: <strong>'+esc(client.name)+'</strong></div>':'')
+        + '<div class="choice-desc" style="margin-top:8px;">Deseja <strong>imprimir o relatório</strong> deste atendimento agora?</div>'
+      + '</div>'
+      + '<div class="choice-actions">'
+        + '<button class="btn btn-ghost" data-action="after-complete-no-print">Não, obrigado</button>'
+        + '<button class="btn btn-primary" data-action="after-complete-print">🖨 Sim, imprimir relatório</button>'
       + '</div>';
   }
   return '<div class="overlay"><div class="modal'+(m.type&&m.type.startsWith('schedule')?' wide':'')+'">'+inner+'</div></div>';
@@ -2298,21 +2462,23 @@ function renderScheduleReportContent(scheduleId){
   const s = byId(state.schedules, scheduleId);
   if(!s) return '<div class="modal-header"><h3>Agendamento não encontrado</h3><button class="modal-close" data-action="close-modal">✕</button></div>';
   const client = s.clientId ? getClient(s.clientId) : null;
-  const analyst = getAnalyst(s.analystId);
+  const analysts = scheduleAnalysts(s);
   const modules = (s.modules||[]).join(', ') || '—';
   const screens = (s.trainedScreens||[]).join(', ') || '—';
   const users = s.trainedUsers || '—';
-  const duration = s.deductMinutes!=null ? s.deductMinutes : (timeToMin(s.endTime)-timeToMin(s.startTime));
+  const duration = scheduleMinutes(s);
   const isOrphanInternal = isInternalType(s.type) && s.clientId && !s.cardId;
+  const analystsList = analysts.length ? analysts.map(a=>esc(a.name)).join(', ') : '—';
   let html = '<div class="modal-header no-print"><h3>Relatório de atendimento</h3><button class="modal-close" data-action="close-modal">✕</button></div>';
   html += '<div id="print-report">'
+    + (s.title ? '<h3 style="margin-bottom:2px;">'+esc(s.title)+'</h3>' : '')
     + '<h2 style="margin-bottom:2px;">Relatório de Atendimento</h2>'
     + '<p class="hint" style="margin:0 0 16px;">Documento gerado em '+fmtDT(Date.now())+'</p>'
     + '<table><tbody>'
     + '<tr><td style="font-weight:700;white-space:nowrap;">Cliente</td><td>'+esc(client?client.name:'Interno / sem cliente')+'</td></tr>'
-    + '<tr><td style="font-weight:700;">Analista responsável</td><td>'+esc(analyst?analyst.name:'—')+'</td></tr>'
+    + '<tr><td style="font-weight:700;">Analista(s)</td><td>'+analystsList+'</td></tr>'
     + '<tr><td style="font-weight:700;">Data</td><td>'+fmtDateBR(s.date)+'</td></tr>'
-    + '<tr><td style="font-weight:700;">Horário</td><td>'+s.startTime+' – '+s.endTime+' ('+minToHM(duration)+')</td></tr>'
+    + '<tr><td style="font-weight:700;">Horário</td><td>'+(s.allDay? 'Dia todo ('+minToHM(duration)+')' : s.startTime+' – '+s.endTime+' ('+minToHM(duration)+')')+'</td></tr>'
     + '<tr><td style="font-weight:700;">Tipo de agenda</td><td>'+esc(s.type)+(isOrphanInternal?' — <em>não abatido</em>':'')+'</td></tr>'
     + '<tr><td style="font-weight:700;">Módulo(s) abordado(s)</td><td>'+esc(modules)+'</td></tr>'
     + '<tr><td style="font-weight:700;">Tela(s) treinada(s)</td><td>'+esc(screens)+'</td></tr>'
@@ -2346,6 +2512,7 @@ function renderClientPicker(fieldName, selectedClientId, query){
   html += '</div>';
   return html;
 }
+
 function renderScheduleForm(m){
   const editing = m.type==='schedule-edit' ? byId(state.schedules, m.id) : null;
   const readOnly = false;
@@ -2355,13 +2522,16 @@ function renderScheduleForm(m){
   const effClientId = draft ? (draft.clientId||'') : (editing ? editing.clientId||'' : '');
   const clientExistingCards = effClientId ? state.cards.filter(c=>c.clientId===effClientId) : [];
   const defaultLinkCardId = editing ? (editing.cardId || '__new__') : (clientExistingCards.length ? clientExistingCards[0].id : '__new__');
+  const editingAnalystIds = editing ? scheduleAnalystIds(editing) : [];
   const eff = {
+    title: draft ? (draft.title||'') : (editing ? (editing.title||'') : ''),
     clientId: effClientId,
-    analystId: draft ? (draft.analystId || fixedAnalystId) : (fixedAnalystId || m.prefillAnalyst || ''),
+    analystIds: draft ? (draft.analystIds || (draft.analystId ? [draft.analystId] : [])) : (editingAnalystIds.length ? editingAnalystIds : (fixedAnalystId? [fixedAnalystId] : (m.prefillAnalyst? [m.prefillAnalyst] : []))),
     date: draft ? draft.date : (editing ? editing.date : (m.prefillDate || todayISO())),
+    allDay: draft ? (draft.allDay==='on' || draft.allDay===true) : (editing ? !!editing.allDay : false),
     startTime: draft ? draft.startTime : (editing ? editing.startTime : (m.prefillStart || '09:00')),
     endTime: draft ? draft.endTime : (editing ? editing.endTime : (m.prefillEnd || '10:00')),
-    type: draft ? draft.type : (editing ? editing.type : (activeAgendaTypes().find(t=>!t.isInternal) ? activeAgendaTypes().find(t=>!t.isInternal).name : (activeAgendaTypes()[0]?activeAgendaTypes()[0].name:''))),
+    type: draft ? draft.type : (editing ? editing.type : (activeAgendaTypes().find(t=>!t.isInternal && !t.isServico) ? activeAgendaTypes().find(t=>!t.isInternal && !t.isServico).name : (activeAgendaTypes()[0]?activeAgendaTypes()[0].name:''))),
     category: draft ? (draft.category||'implantacao') : (editing ? (editing.category||'implantacao') : 'implantacao'),
     modules: draft ? (draft.modules||[]) : (editing ? (editing.modules||[]) : []),
     trainedScreens: draft ? (draft.trainedScreens||[]) : (editing ? (editing.trainedScreens||[]) : []),
@@ -2374,47 +2544,84 @@ function renderScheduleForm(m){
   if(ui.formErr){ html += '<div class="error-msg">'+esc(ui.formErr)+'</div>'; }
   html += '<form data-form="schedule" data-id="'+(editing?editing.id:'')+'" data-card="'+(cardCtx?cardCtx.id:'')+'">';
 
+  /* Título livre */
+  html += '<div class="field"><label>Título da agenda (opcional)</label><input type="text" name="title" value="'+esc(eff.title)+'" placeholder="Ex: Treinamento PDV — equipe manhã"></div>';
+
+  /* Categoria */
   html += '<div class="field"><label>Categoria da agenda</label><select name="category">'
     + '<option value="implantacao" '+(eff.category==='implantacao'?'selected':'')+'>Implantação</option>'
     + '<option value="interna" '+(eff.category==='interna'?'selected':'')+'>Interna</option>'
-    + '</select><span class="hint" style="margin-top:2px;">Interna = trabalho não faturável ao cliente (ex: reunião de equipe). Se vincular a um cliente e não quiser criar quadro, as horas vão para <strong>horas não abatidas</strong>.</span></div>';
+    + '<option value="servico" '+(eff.category==='servico'?'selected':'')+'>Serviço</option>'
+    + '</select><span class="hint" style="margin-top:2px;">Interna = trabalho não faturável. Serviço = atividades de serviço vinculadas a cliente.</span></div>';
+
+  /* Cliente */
   if(cardCtx){
     const client = getClient(cardCtx.clientId);
     html += '<div class="field"><label>Cliente</label><input type="text" value="'+esc(client?client.name:'')+'" disabled></div>';
   } else {
-    html += '<div class="field"><label>Cliente (opcional — deixe em branco para agenda interna sem cliente)</label>'+renderClientPicker('clientId', eff.clientId, m.clientQuery)+'</div>';
+    html += '<div class="field"><label>Cliente (opcional — deixe em branco para agenda sem cliente)</label>'+renderClientPicker('clientId', eff.clientId, m.clientQuery)+'</div>';
     if(eff.clientId){
       const existingCards = state.cards.filter(c=>c.clientId===eff.clientId);
       if(existingCards.length){
         html += '<div class="field"><label>Vincular ao card</label><select name="linkCardId">'
-          + '<option value="__new__" '+(eff.linkCardId==='__new__'?'selected':'')+'>+ Criar novo card no quadro deste analista</option>';
+          + '<option value="__new__" '+(eff.linkCardId==='__new__'?'selected':'')+'>+ Criar novo card no quadro</option>';
         existingCards.forEach(c=>{
           const b = getBoard(c.boardId); const an = b ? getAnalyst(b.analystId) : null; const list = b ? byId(b.lists, c.listId) : null;
           html += '<option value="'+c.id+'" '+(eff.linkCardId===c.id?'selected':'')+'>Card no quadro de '+esc(an?an.name:'—')+(list?' — '+esc(list.name):'')+'</option>';
         });
-        html += '</select><span class="hint" style="margin-top:2px;">Este cliente já tem card em outro quadro — escolha vincular a ele em vez de criar um novo, se for o mesmo atendimento.</span></div>';
+        html += '</select></div>';
       }
     }
   }
-  html += '<div class="field"><label>Analista</label><select name="analystId" '+(cardCtx?'disabled':'')+'>';
+
+  /* Analistas (multi-select) */
+  html += '<div class="field"><label>Analista(s) responsável(is)</label><div class="multi-analyst-grid">';
   state.analysts.forEach(a=>{
-    const showInactive = a.inactive && (editing && editing.analystId===a.id);
+    const checked = eff.analystIds.includes(a.id);
+    const showInactive = a.inactive && checked;
     if(a.inactive && !showInactive) return;
-    html += '<option value="'+a.id+'" '+((eff.analystId===a.id)?'selected':'')+'>'+esc(a.name)+(a.inactive?' (inativo)':'')+'</option>';
+    html += '<label class="multi-analyst-item'+(checked?' checked':'')+'">'
+      + '<input type="checkbox" name="analystIds" value="'+a.id+'" '+(checked?'checked':'')+'>'
+      + '<span class="m-dot" style="background:'+(a.inactive?'#B9CAD5':a.color)+'"></span>'
+      + '<span>'+esc(a.name)+(a.inactive?' (inativo)':'')+(a.isAdmin?' · ADMIN':'')+'</span>'
+      + '</label>';
   });
-  html += '</select></div>';
+  html += '</div><div class="multi-hint">Marque um ou mais analistas. A agenda aparecerá para todos.</div></div>';
+
+  /* Data + dia todo */
   html += '<div class="field-row">'
     + '<div class="field"><label>Data</label><input type="date" name="date" value="'+esc(eff.date)+'"></div>'
+    + '<div class="field" style="justify-content:flex-end;">'
+    +   '<label class="allday-toggle"><input type="checkbox" name="allDay" '+(eff.allDay?'checked':'')+'> Dia todo</label>'
+    + '</div>'
+    + '</div>';
+
+  /* Horários (ocultos se dia todo) */
+  html += '<div class="field-row" id="schedule-time-row" style="'+(eff.allDay?'display:none;':'')+'">'
     + '<div class="field"><label>Início</label><input type="time" name="startTime" value="'+esc(eff.startTime)+'"></div>'
     + '<div class="field"><label>Fim</label><input type="time" name="endTime" value="'+esc(eff.endTime)+'"></div>'
     + '</div>';
+  if(eff.allDay){
+    html += '<div class="allday-banner">📅 <span class="allday-time">Agenda de dia todo</span> — considera-se 8h corridas para abatimento, sem horário específico.</div>';
+  }
+
+  /* Tipo */
   html += '<div class="field"><label>Tipo</label><select name="type">';
-  state.agendaTypes.filter(t=> !!t.isInternal === (eff.category==='interna')).forEach(t=>{
-    const showInactive = t.inactive && (editing && editing.type===t.name);
-    if(t.inactive && !showInactive) return;
-    html += '<option value="'+esc(t.name)+'" '+(eff.type===t.name?'selected':'')+'>'+esc(t.name)+(t.inactive?' (inativo)':'')+'</option>';
+  const catFilter = eff.category;
+  state.agendaTypes.forEach(t=>{
+    let matchCat = false;
+    if(catFilter==='interna') matchCat = !!t.isInternal;
+    else if(catFilter==='servico') matchCat = !!t.isServico;
+    else matchCat = !t.isInternal && !t.isServico;
+    if(!matchCat && !(editing && editing.type===t.name)) return;
+    const isInactive = t.inactive;
+    const isCurrent = (eff.type===t.name);
+    if(isInactive && !isCurrent) return;
+    html += '<option value="'+esc(t.name)+'" '+(isCurrent?'selected':'')+'>'+esc(t.name)+(isInactive?' (inativo)':'')+'</option>';
   });
   html += '</select></div>';
+
+  /* Módulos */
   html += '<div class="field"><label>Módulo(s) do sistema</label><div class="check-grid">';
   state.modules.forEach(mod=>{
     const isInactive = mod.inactive;
@@ -2431,6 +2638,7 @@ function renderScheduleForm(m){
       + '</div>';
   }
   html += '</div>';
+
   const checkedModules = state.modules.filter(m=> eff.modules.includes(m.name));
   checkedModules.forEach(mod=>{
     const screensForMod = screensForModule(mod.id);
@@ -2444,7 +2652,8 @@ function renderScheduleForm(m){
     });
     html += '</div></div>';
   });
-  html += '<div class="field"><label>Usuários treinados</label><textarea name="trainedUsers" placeholder="Nomes das pessoas que receberam o treinamento, separados por vírgula">'+esc(eff.trainedUsers)+'</textarea><span class="hint" style="margin-top:2px;">Para identificar quem do cliente participou do treinamento.</span></div>';
+
+  html += '<div class="field"><label>Usuários treinados</label><textarea name="trainedUsers" placeholder="Nomes separados por vírgula">'+esc(eff.trainedUsers)+'</textarea></div>';
   html += '<div class="field"><label>Observações</label><textarea name="notes">'+esc(eff.notes)+'</textarea></div>';
   if(!readOnly){
     let quick = '';
@@ -2495,25 +2704,12 @@ document.addEventListener('click', function(e){
     ui.view = el.dataset.view; ui.showNotif=false; ui.sidebarOpen=false;
     refreshFromCloudIfChanged('view-change').finally(()=>render());
   }
-  else if(a==='open-board'){
-    ui.view='board';
-    const b = getBoard(el.dataset.id);
-    ui.boardAnalystFilter = b ? b.analystId : 'all';
-    ui.currentBoardId = b ? b.id : (state.boards[0] ? state.boards[0].id : null);
-    ui.search='';
-    ui.sidebarOpen=false;
-    refreshFromCloudIfChanged('board-change').finally(()=>render());
-  }
   else if(a==='board-analyst-filter'){
     const id = el.dataset.id || el.value || 'all';
     ui.view='board';
     ui.boardAnalystFilter = id;
-    if(id!=='all'){
-      const b = boardOfAnalyst(id);
-      ui.currentBoardId = b ? b.id : null;
-    } else {
-      ui.currentBoardId = state.boards[0] ? state.boards[0].id : null;
-    }
+    if(id!=='all'){ const b = boardOfAnalyst(id); ui.currentBoardId = b ? b.id : null; }
+    else { ui.currentBoardId = state.boards[0] ? state.boards[0].id : null; }
     ui.search='';
     refreshFromCloudIfChanged('analyst-filter').finally(()=>render());
   }
@@ -2586,18 +2782,9 @@ document.addEventListener('click', function(e){
     const linkedScheds = schedulesForAnalyst(id).length;
     const board = boardOfAnalyst(id);
     const boardCards = board ? cardsInBoard(board.id).length : 0;
-    if(linkedScheds > 0){
-      showAlert('Não é possível excluir "'+an.name+'": há '+linkedScheds+' agendamento(s) vinculado(s). Inative o analista em vez de excluir, ou remova os agendamentos primeiro.');
-      return;
-    }
-    if(boardCards > 0){
-      showAlert('Não é possível excluir "'+an.name+'": há '+boardCards+' card(s) no quadro deste analista. Inative o analista em vez de excluir, ou remova os cards primeiro.');
-      return;
-    }
-    showConfirm('Excluir este analista, seu quadro e todos os cards/agendamentos vinculados?', function(){
-      deleteAnalyst(id);
-      if(ui.currentBoardId && !getBoard(ui.currentBoardId)) ui.currentBoardId = state.boards[0]?state.boards[0].id:null;
-    });
+    if(linkedScheds > 0){ showAlert('Não é possível excluir "'+an.name+'": há '+linkedScheds+' agendamento(s) vinculado(s). Inative o analista em vez de excluir.'); return; }
+    if(boardCards > 0){ showAlert('Não é possível excluir "'+an.name+'": há '+boardCards+' card(s) no quadro deste analista.'); return; }
+    showConfirm('Excluir este analista?', function(){ deleteAnalyst(id); if(ui.currentBoardId && !getBoard(ui.currentBoardId)) ui.currentBoardId = state.boards[0]?state.boards[0].id:null; });
   }
   else if(a==='toggle-entity-active'){
     const kind = el.dataset.kind;
@@ -2606,10 +2793,7 @@ document.addEventListener('click', function(e){
     if(kind==='analyst'){
       if(!isAdminUser()){ showAlert('Apenas administradores podem alterar o status de analistas.'); el.checked = !el.checked; return; }
       const a2 = getAnalyst(id);
-      if(a2 && a2.isAdmin && !willBeActive){
-        showAlert('O analista administrador do sistema não pode ser inativado.');
-        el.checked = true; return;
-      }
+      if(a2 && a2.isAdmin && !willBeActive){ showAlert('O analista administrador do sistema não pode ser inativado.'); el.checked = true; return; }
       setAnalystActive(id, willBeActive);
     } else {
       setEntityActive(kind, id, willBeActive);
@@ -2622,10 +2806,7 @@ document.addEventListener('click', function(e){
     if(!cl) return;
     const linkedCards = cardsForClient(id).length;
     const linkedScheds = schedulesForClient(id).length;
-    if(linkedCards > 0 || linkedScheds > 0){
-      showAlert('Não é possível excluir "'+cl.name+'": há '+linkedCards+' card(s) e '+linkedScheds+' agendamento(s) vinculado(s). Remova esses vínculos primeiro.');
-      return;
-    }
+    if(linkedCards > 0 || linkedScheds > 0){ showAlert('Não é possível excluir "'+cl.name+'": há vínculos.'); return; }
     showConfirm('Excluir este cliente?', function(){ deleteClient(id); });
   }
   else if(a==='delete-schedule'){
@@ -2637,19 +2818,15 @@ document.addEventListener('click', function(e){
     const id = el.dataset.id;
     const s = byId(state.schedules, id);
     const msg = s && s.status==='concluida'
-      ? 'Reverter a conclusão desta agenda? O saldo de horas será estornado e ela voltará para pendente.'
+      ? 'Reverter a conclusão desta agenda? O saldo será estornado.'
       : 'Reverter esta agenda para pendente?';
     showConfirm(msg, function(){ revertToPending(id); ui.modal=null; });
   }
   else if(a==='delete-product'){
     const tagId = el.dataset.id;
     const linked = cardsUsingProduct(tagId);
-    if(linked.length){
-      const names = linked.map(c=>{ const cl=getClient(c.clientId); return cl?cl.name:'—'; });
-      showAlert('Não é possível excluir: este produto está vinculado a '+linked.length+' cliente(s) — '+names.join(', ')+'. Inative o produto em vez de excluir, ou remova dos clientes primeiro.');
-    } else {
-      showConfirm('Excluir este produto do cadastro?', function(){ state.productTags = state.productTags.filter(t=>t.id!==tagId); });
-    }
+    if(linked.length){ showAlert('Não é possível excluir: há '+linked.length+' cliente(s) vinculado(s). Inative o produto.'); }
+    else { showConfirm('Excluir este produto?', function(){ state.productTags = state.productTags.filter(t=>t.id!==tagId); }); }
   }
   else if(a==='delete-module'){
     const id = el.dataset.id;
@@ -2657,26 +2834,19 @@ document.addEventListener('click', function(e){
     if(!mod) return;
     const linked = schedulesUsingModule(mod.name);
     const linkedScreens = screensForModule(id);
-    if(linked.length){
-      showAlert('Não é possível excluir: este módulo está sendo usado em '+linked.length+' agendamento(s). Inative o módulo em vez de excluir, ou remova dos agendamentos primeiro.');
-    } else if(linkedScreens.length){
-      showAlert('Não é possível excluir: este módulo tem '+linkedScreens.length+' tela(s) cadastrada(s) — '+linkedScreens.map(s=>s.name).join(', ')+'. Exclua ou reatribua essas telas primeiro.');
-    } else {
-      showConfirm('Excluir este módulo do cadastro?', function(){ state.modules = state.modules.filter(m=>m.id!==id); });
-    }
+    if(linked.length){ showAlert('Não é possível excluir: há '+linked.length+' agendamento(s). Inative o módulo.'); }
+    else if(linkedScreens.length){ showAlert('Não é possível excluir: há '+linkedScreens.length+' tela(s) cadastrada(s).'); }
+    else { showConfirm('Excluir este módulo?', function(){ state.modules = state.modules.filter(m=>m.id!==id); }); }
   }
   else if(a==='delete-screen'){
     const id = el.dataset.id;
     const scr = byId(state.screens, id);
     if(!scr) return;
     const linked = schedulesUsingScreen(scr.name);
-    if(linked.length){
-      showAlert('Não é possível excluir: esta tela está marcada como treinada em '+linked.length+' agendamento(s). Inative a tela em vez de excluir, ou remova-a dos agendamentos primeiro.');
-    } else {
-      showConfirm('Excluir esta tela do cadastro?', function(){ state.screens = state.screens.filter(s=>s.id!==id); });
-    }
+    if(linked.length){ showAlert('Não é possível excluir: há '+linked.length+' agendamento(s) usando esta tela. Inative a tela.'); }
+    else { showConfirm('Excluir esta tela?', function(){ state.screens = state.screens.filter(s=>s.id!==id); }); }
   }
-  else if(a==='cloud-disconnect'){ showConfirm('Desconectar da nuvem? O app volta a salvar só neste navegador (os dados na nuvem continuam existindo).', function(){ disconnectCloud(); }); }
+  else if(a==='cloud-disconnect'){ showConfirm('Desconectar da nuvem?', function(){ disconnectCloud(); }); }
   else if(a==='force-save'){ forceSaveNow(); }
   else if(a==='import-clients-trigger'){ const el=document.getElementById('import-clients-file'); if(el) el.click(); }
   else if(a==='download-client-template'){ downloadClientTemplate(); }
@@ -2687,11 +2857,8 @@ document.addEventListener('click', function(e){
     const tp = byId(state.agendaTypes, id);
     if(!tp) return;
     const linked = schedulesUsingType(tp.name);
-    if(linked.length){
-      showAlert('Não é possível excluir: este tipo está sendo usado em '+linked.length+' agendamento(s). Inative o tipo em vez de excluir, ou remova-o dos agendamentos primeiro.');
-    } else {
-      showConfirm('Excluir este tipo do cadastro?', function(){ state.agendaTypes = state.agendaTypes.filter(t=>t.id!==id); });
-    }
+    if(linked.length){ showAlert('Não é possível excluir: há '+linked.length+' agendamento(s). Inative o tipo.'); }
+    else { showConfirm('Excluir este tipo?', function(){ state.agendaTypes = state.agendaTypes.filter(t=>t.id!==id); }); }
   }
   else if(a==='settings-tab'){
     const tab = el.dataset.tab;
@@ -2728,17 +2895,15 @@ document.addEventListener('click', function(e){
     if(a2) alert('Senha de "'+a2.name+'":\n\n'+(a2.password||'(vazia)'));
   }
   else if(a==='internal-answer-yes'){
-    /* Usuário escolheu SIM: criar card e seguir o fluxo padrão */
     const payload = ui.modal && ui.modal.payload ? ui.modal.payload : {};
     const s = byId(state.schedules, payload.scheduleId);
     ui.modal = null;
     if(s){
-      const board = boardOfAnalyst(s.analystId);
+      const board = boardOfAnalyst(scheduleAnalystIds(s)[0]);
       if(board){
         const card = createCard(board.id, board.lists[0].id, s.clientId, {});
         s.cardId = card.id;
-        addHistory(card, 'Card criado a partir de agenda interna vinculada ('+fmtDateBR(s.date)+' '+s.startTime+'–'+s.endTime+')');
-        addHistory(card, 'Agenda interna vinculada: '+esc(s.type)+' em '+fmtDateBR(s.date)+' '+s.startTime+'–'+s.endTime);
+        addHistory(card, 'Card criado a partir de agenda interna vinculada ('+fmtDateBR(s.date)+')');
       } else {
         showAlert('O analista desta agenda não possui quadro. Não foi possível criar o card.');
       }
@@ -2746,11 +2911,20 @@ document.addEventListener('click', function(e){
     render();
   }
   else if(a==='internal-answer-no'){
-    /* Usuário escolheu NÃO: não cria card. As horas ficam como "não abatidas" */
     const payload = ui.modal && ui.modal.payload ? ui.modal.payload : {};
     const s = byId(state.schedules, payload.scheduleId);
     ui.modal = null;
     if(s){ s.keepUnlinkedInternal = true; }
+    render();
+  }
+  else if(a==='after-complete-print'){
+    /* Abre o relatório de impressão do schedule */
+    const payload = ui.modal && ui.modal.payload ? ui.modal.payload : {};
+    ui.modal = { type:'schedule-report', id: payload.scheduleId };
+    render();
+  }
+  else if(a==='after-complete-no-print'){
+    ui.modal = null;
     render();
   }
   else if(a==='logout'){ logout(); }
@@ -2771,24 +2945,33 @@ document.addEventListener('change', function(e){
     moveCard(cardId, boardId, listId);
     render();
   }
-  else if(e.target.matches('form[data-form="schedule"] input[name="modules"]')){
+  else if(e.target.matches('form[data-form="schedule"] input[name="allDay"]')){
+    // Alterna entre dia todo e horário específico — re-renderiza com o formulário atualizado
     const form = e.target.closest('form');
-    if(ui.modal){ ui.modal.values = captureFormValues(form); render(); }
+    const values = captureFormValues(form);
+    // Se ligou dia todo, esconde horário; se desligou, mostra
+    if(ui.modal){ ui.modal.values = values; render(); }
   }
   else if(e.target.matches('form[data-form="schedule"] select[name="category"]')){
     const form = e.target.closest('form');
     const values = captureFormValues(form);
     const newCategory = e.target.value;
-    const validTypes = activeAgendaTypes().filter(t=> !!t.isInternal === (newCategory==='interna'));
+    const validTypes = activeAgendaTypes().filter(t=>{
+      if(newCategory==='interna') return !!t.isInternal;
+      if(newCategory==='servico') return !!t.isServico;
+      return !t.isInternal && !t.isServico;
+    });
     if(!validTypes.some(t=>t.name===values.type)){ values.type = validTypes.length ? validTypes[0].name : ''; }
     values.category = newCategory;
     if(ui.modal){ ui.modal.values = values; render(); }
   }
-  else if(e.target.matches('form[data-form="schedule"] select[name="clientId"]')){
-    const form = e.target.closest('form');
-    const values = captureFormValues(form);
-    delete values.linkCardId;
-    if(ui.modal){ ui.modal.values = values; render(); }
+  else if(e.target.matches('form[data-form="schedule"] input[name="analystIds"]')){
+    // Marca/desmarca analista: atualiza estilo do chip
+    const label = e.target.closest('.multi-analyst-item');
+    if(label){
+      if(e.target.checked) label.classList.add('checked');
+      else label.classList.remove('checked');
+    }
   }
 });
 
@@ -2842,9 +3025,9 @@ document.addEventListener('submit', async function(e){
     const wantsAdmin = fd.get('isAdmin')==='on';
 
     if(!username){ showAlert('Informe o usuário (login).'); return; }
-    if(!/^[a-z0-9._-]+$/.test(username)){ showAlert('O usuário pode conter apenas letras, números, ponto, underscore e hífen.'); return; }
+    if(!/^[a-z0-9._-]+$/.test(username)){ showAlert('Usuário pode conter apenas letras, números, ponto, underscore e hífen.'); return; }
     if(state.analysts.some(a=> a.username && a.username.toLowerCase()===username && a.id!==id)){
-      showAlert('Já existe um analista com o usuário "'+username+'". Escolha outro.'); return;
+      showAlert('Já existe um analista com o usuário "'+username+'".'); return;
     }
     if(!id && !password){ showAlert('Defina uma senha para o novo analista.'); return; }
     if(password || passwordConfirm){
@@ -2874,7 +3057,6 @@ document.addEventListener('submit', async function(e){
     if(nw.length < 4){ showAlert('A nova senha deve ter pelo menos 4 caracteres.'); return; }
     if(nw !== cf){ showAlert('As senhas não coincidem.'); return; }
     a.password = nw;
-    if(currentUser && currentUser.analystId===a.id) currentUser.password = nw;
     render();
     showAlert('Senha alterada com sucesso.');
   }
@@ -2887,7 +3069,7 @@ document.addEventListener('submit', async function(e){
     };
     const id = form.dataset.id;
     if(data.code && state.clients.some(c=>c.code===data.code && c.id!==id)){
-      showAlert('Já existe um cliente cadastrado com o código "'+data.code+'". Verifique o código informado.');
+      showAlert('Já existe um cliente com o código "'+data.code+'".');
       return;
     }
     if(id) updateClient(id, data); else createClient(data);
@@ -2901,10 +3083,10 @@ document.addEventListener('submit', async function(e){
     let clientId = fd.get('clientId');
     if(!clientId){
       const newName = (fd.get('newClientName')||'').trim();
-      if(!newName){ showAlert('Selecione um cliente existente ou informe o nome do novo cliente.'); return; }
+      if(!newName){ showAlert('Selecione um cliente ou informe o nome do novo cliente.'); return; }
       clientId = createClient({name:newName}).id;
     }
-    const card = createCard(form.dataset.board, form.dataset.list, clientId, {
+    createCard(form.dataset.board, form.dataset.list, clientId, {
       contractedHours: parseFloat(fd.get('contractedHours'))||0,
       startDate: fd.get('startDate')||todayISO()
     });
@@ -2929,54 +3111,73 @@ document.addEventListener('submit', async function(e){
   else if(type==='schedule'){
     const cardIdFromCtx = form.dataset.card || null;
     const card = cardIdFromCtx ? getCard(cardIdFromCtx) : null;
-    const analystId = card ? getBoard(card.boardId).analystId : fd.get('analystId');
     const clientId = card ? card.clientId : (fd.get('clientId') || null);
-    const date = fd.get('date'), startTime = fd.get('startTime'), endTime = fd.get('endTime');
+    const date = fd.get('date');
+    const allDay = fd.get('allDay')==='on';
+    const startTime = allDay ? '00:00' : (fd.get('startTime')||'09:00');
+    const endTime = allDay ? '23:59' : (fd.get('endTime')||'10:00');
     const typeName = fd.get('type');
-    if(timeToMin(endTime) <= timeToMin(startTime)){ ui.formErr = 'O horário de término deve ser depois do início.'; render(); return; }
+    const title = (fd.get('title')||'').trim();
+    let analystIds = fd.getAll('analystIds');
+    if(card){
+      // Se veio de card, usa o analista do quadro
+      const boardAnalyst = getBoard(card.boardId).analystId;
+      analystIds = [boardAnalyst];
+    }
+    if(!analystIds.length){ ui.formErr = 'Selecione pelo menos um analista.'; render(); return; }
+    if(!allDay && timeToMin(endTime) <= timeToMin(startTime)){ ui.formErr = 'O horário de término deve ser depois do início.'; render(); return; }
     const id = form.dataset.id;
-    if(scheduleConflict(analystId, date, startTime, endTime, id||null)){
-      ui.formErr = 'O analista já possui um agendamento nesse horário. Escolha outro horário.';
+    if(!allDay && scheduleConflict(analystIds, date, startTime, endTime, id||null, false)){
+      ui.formErr = 'Um dos analistas selecionados já possui agendamento nesse horário.';
       render(); return;
     }
     ui.formErr = '';
 
     const isInternal = isInternalType(typeName);
-
-    /* Se for agenda INTERNA com cliente e SEM card no contexto:
-       não cria card automaticamente — pergunta depois de salvar. */
     let resolvedCardId = cardIdFromCtx;
     let askAfterSave = false;
 
     if(!resolvedCardId && clientId && isInternal){
-      /* Por padrão, deixa sem card. Perguntamos ao usuário se quer criar. */
       askAfterSave = true;
       resolvedCardId = null;
     } else if(!resolvedCardId && clientId){
-      /* Agenda de implantação normal: segue o fluxo atual (criar card ou vincular ao existente) */
       const linkChoice = fd.get('linkCardId');
       if(linkChoice === '__new__'){
-        const board = boardOfAnalyst(analystId);
+        const board = boardOfAnalyst(analystIds[0]);
         if(board){ const newCard = createCard(board.id, board.lists[0].id, clientId, {}); resolvedCardId = newCard.id; }
       } else if(linkChoice){
         resolvedCardId = linkChoice;
       } else {
         const existing = state.cards.find(c=>c.clientId===clientId);
-        if(existing){
-          resolvedCardId = existing.id;
-        } else {
-          const board = boardOfAnalyst(analystId);
+        if(existing){ resolvedCardId = existing.id; }
+        else {
+          const board = boardOfAnalyst(analystIds[0]);
           if(board){ const newCard = createCard(board.id, board.lists[0].id, clientId, {}); resolvedCardId = newCard.id; }
         }
       }
     }
 
-    const data = { analystId, clientId, cardId: resolvedCardId, date, startTime, endTime, type: typeName, category: fd.get('category')||'implantacao', modules: fd.getAll('modules'), trainedScreens: fd.getAll('trainedScreens'), trainedUsers: fd.get('trainedUsers')||'', notes: fd.get('notes')||'' };
+    const data = {
+      title: title,
+      analystId: analystIds[0],
+      analystIds: analystIds,
+      clientId: clientId,
+      cardId: resolvedCardId,
+      date: date,
+      allDay: allDay,
+      startTime: startTime,
+      endTime: endTime,
+      type: typeName,
+      category: fd.get('category')||'implantacao',
+      modules: fd.getAll('modules'),
+      trainedScreens: fd.getAll('trainedScreens'),
+      trainedUsers: fd.get('trainedUsers')||'',
+      notes: fd.get('notes')||''
+    };
     let savedSchedule = null;
     if(id){ updateSchedule(id, data); savedSchedule = byId(state.schedules, id); }
     else{ savedSchedule = createSchedule(data); }
     ui.modal = null;
-    /* Se for agenda interna com cliente e sem card, perguntamos ao usuário se quer criar o quadro */
     if(askAfterSave && savedSchedule && savedSchedule.clientId && !savedSchedule.cardId){
       ui.modal = { type:'internal-ask-board', payload:{ scheduleId: savedSchedule.id } };
     }
@@ -2984,8 +3185,12 @@ document.addEventListener('submit', async function(e){
   }
   else if(type==='confirm-complete'){
     const minutes = parseInt(fd.get('deductMinutes'),10)||0;
-    completeSchedule(form.dataset.id, minutes, fd.get('notes'));
-    ui.modal=null; render();
+    const id = form.dataset.id;
+    completeSchedule(id, minutes, fd.get('notes'));
+    ui.modal = null;
+    /* Após concluir, perguntar se deseja imprimir o relatório */
+    ui.modal = { type:'after-complete-print', payload:{ scheduleId: id } };
+    render();
   }
   else if(type==='product'){
     const name = fd.get('name').trim();
@@ -2999,7 +3204,7 @@ document.addEventListener('submit', async function(e){
     const name = fd.get('name').trim();
     const id = form.dataset.id;
     if(state.modules.some(m=>m.name===name && m.id!==id)){
-      showAlert('Já existe um módulo chamado "'+name+'". Escolha outro nome.');
+      showAlert('Já existe um módulo chamado "'+name+'".');
       return;
     }
     if(id){
@@ -3015,7 +3220,7 @@ document.addEventListener('submit', async function(e){
     const moduleId = fd.get('moduleId');
     const id = form.dataset.id;
     if(state.screens.some(s=>s.name===name && s.moduleId===moduleId && s.id!==id)){
-      showAlert('Já existe uma tela chamada "'+name+'" cadastrada nesse módulo. Escolha outro nome.');
+      showAlert('Já existe uma tela com esse nome nesse módulo.');
       return;
     }
     if(id){
@@ -3028,17 +3233,19 @@ document.addEventListener('submit', async function(e){
   }
   else if(type==='agenda-type'){
     const name = fd.get('name').trim();
-    const isInternal = fd.get('isInternal')==='on';
+    const catKind = fd.get('catKind') || 'implantacao';
+    const isInternal = catKind==='interna';
+    const isServico = catKind==='servico';
     const id = form.dataset.id;
     if(state.agendaTypes.some(t=>t.name===name && t.id!==id)){
-      showAlert('Já existe um tipo de agenda chamado "'+name+'". Escolha outro nome.');
+      showAlert('Já existe um tipo de agenda chamado "'+name+'".');
       return;
     }
     if(id){
       const tp = byId(state.agendaTypes, id);
-      if(tp){ renameTypeEverywhere(tp.name, name); tp.name = name; tp.isInternal = isInternal; }
+      if(tp){ renameTypeEverywhere(tp.name, name); tp.name = name; tp.isInternal = isInternal; tp.isServico = isServico; }
     } else if(name){
-      state.agendaTypes.push({id:uid('at'), name, isInternal, inactive:false});
+      state.agendaTypes.push({id:uid('at'), name, isInternal, isServico, inactive:false});
     }
     ui.modal=null; render();
   }
@@ -3086,12 +3293,8 @@ document.addEventListener('drop', function(e){
         const listName = list.dataset.unifiedListName;
         const targetBoard = getBoard(card.boardId);
         const targetList = targetBoard && targetBoard.lists.find(l=>l.name===listName);
-        if(targetList){
-          moveCard(payload, targetBoard.id, targetList.id);
-          render();
-        } else {
-          showAlert('Este estágio não existe no quadro do analista responsável pelo cliente.');
-        }
+        if(targetList){ moveCard(payload, targetBoard.id, targetList.id); render(); }
+        else { showAlert('Este estágio não existe no quadro do analista responsável.'); }
       }
     }
     return;
@@ -3108,7 +3311,7 @@ document.addEventListener('drop', function(e){
 });
 function moveScheduleToGridPosition(schedId, daycolEl, clientY, grabOffset){
   const s = byId(state.schedules, schedId);
-  if(!s || s.status!=='pendente') return;
+  if(!s || s.status!=='pendente' || s.allDay) return;
   const rect = daycolEl.getBoundingClientRect();
   const startHour = parseFloat(daycolEl.dataset.startHour);
   const pxPerHour = parseFloat(daycolEl.dataset.pxPerHour);
@@ -3122,8 +3325,8 @@ function moveScheduleToGridPosition(schedId, daycolEl, clientY, grabOffset){
   const newEnd = pad(Math.floor(newEndTotal/60))+':'+pad(newEndTotal%60);
   const newDate = daycolEl.dataset.date;
   if(newDate===s.date && newStart===s.startTime) return;
-  if(scheduleConflict(s.analystId, newDate, newStart, newEnd, s.id)){
-    showAlert('O analista já possui um agendamento nesse horário. Escolha outro horário ou dia.');
+  if(scheduleConflict(scheduleAnalystIds(s), newDate, newStart, newEnd, s.id, false)){
+    showAlert('Um dos analistas desta agenda já possui agendamento nesse horário.');
     return;
   }
   const oldDate = s.date, oldStart = s.startTime, oldEnd = s.endTime;
