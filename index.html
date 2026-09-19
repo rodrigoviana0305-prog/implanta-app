@@ -293,7 +293,6 @@ tr.row-inactive{ opacity:.55; }
 .cal-tg-event.allday.continuation{ border-left:1px dashed rgba(0,0,0,.15); border-top-left-radius:0; border-bottom-left-radius:0; }
 .cal-tg-event.allday.continuation .t{ opacity:.85; }
 
-/* Previsão de módulos/telas */
 .compare-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:10px; }
 .compare-col{ border:1px solid var(--border); border-radius:10px; padding:12px 14px; background:var(--surface-2); }
 .compare-col h4{ font-size:12.5px; text-transform:uppercase; letter-spacing:.5px; color:var(--ink-soft); margin-bottom:8px; }
@@ -308,7 +307,6 @@ tr.row-inactive{ opacity:.55; }
 .compare-sections{ margin-top:14px; display:flex; flex-direction:column; gap:14px; }
 .compare-section-title{ font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:var(--ink-soft); margin-bottom:6px; }
 
-/* ============ ANEXOS ============ */
 .attach-dropzone{
   border:2px dashed var(--border); border-radius:10px; padding:14px; text-align:center;
   background:var(--surface-2); cursor:pointer; transition:.15s ease;
@@ -454,7 +452,6 @@ th{background:#F1F6F9;color:#607587;}
 .login-error{ background:var(--danger-soft); color:var(--danger); border-radius:10px;padding:10px 12px; font-size:12.5px; font-weight:600; margin-bottom:14px; text-align:left; }
 .login-footer{ margin-top:22px; font-size:11px; color:var(--ink-faint); }
 
-/* ============ RELATÓRIOS CORPORATIVOS ============ */
 .report-header{
   display:flex; align-items:flex-end; justify-content:space-between; gap:20px; flex-wrap:wrap;
   padding:22px 26px; margin-bottom:22px; border-radius:14px;
@@ -594,7 +591,6 @@ th{background:#F1F6F9;color:#607587;}
   .kpi-value{ font-size:19px; }
 }
 
-/* ============ RELATÓRIO DE IMPRESSÃO DE AGENDA ============ */
 .agenda-print{
   background:#fff; border-radius:14px; overflow:hidden;
   border:1px solid var(--border); box-shadow:0 2px 8px rgba(23,50,77,.05);
@@ -670,7 +666,8 @@ th{background:#F1F6F9;color:#607587;}
 .agenda-print-notes{
   background:#F7FAFC; border:1px solid var(--border); border-radius:10px;
   padding:14px 16px; font-size:13px; color:var(--ink); line-height:1.6;
-  white-space:pre-wrap; min-height:60px; word-break:break-word;
+  white-space:pre-wrap; word-wrap:break-word; overflow-wrap:break-word; word-break:break-word;
+  min-height:60px;
 }
 
 .agenda-print-signatures{
@@ -696,36 +693,77 @@ th{background:#F1F6F9;color:#607587;}
   .agenda-print-title{ font-size:18px; }
 }
 
-/* Regras de impressão para o relatório de agenda (permite múltiplas páginas) */
+/* ============================================================
+   REGRAS DE IMPRESSÃO DO RELATÓRIO DE AGENDA
+   Corrigido: agora permite múltiplas páginas, observações longas 
+   fluem corretamente e as assinaturas sempre aparecem inteiras
+   ============================================================ */
 @media print{
-  .agenda-print, .agenda-print *{ visibility:visible; }
-  .agenda-print{
-    box-shadow:none; border:none; border-radius:0; max-width:none;
-    position:static; width:100%; margin:0; padding:0;
-  }
-  .agenda-print-header{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-  .agenda-print-summary-item,
-  .agenda-print-status,
-  .agenda-print-tag,
-  .agenda-print-notes{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  /* 1. Esconde tudo do app e mostra só o relatório */
+  body *{ visibility:hidden !important; }
+  .agenda-print, .agenda-print *{ visibility:visible !important; }
 
+  /* 2. Container principal do relatório: estático (permite várias páginas) */
+  .agenda-print{
+    display:block !important;
+    position:static !important;
+    box-shadow:none !important; border:none !important; border-radius:0 !important;
+    max-width:none !important; width:100% !important;
+    margin:0 !important; padding:0 !important;
+    page-break-inside:auto !important;
+    break-inside:auto !important;
+  }
+
+  /* 3. Corpo do relatório: flui naturalmente entre páginas */
+  .agenda-print-body{
+    display:block !important;
+    page-break-inside:auto !important;
+    break-inside:auto !important;
+    padding:0 !important;
+  }
+
+  /* 4. Observações: pode quebrar entre páginas e quebra palavras longas */
   .agenda-print-notes{
-    white-space:pre-wrap;
-    word-break:break-word;
-    page-break-inside:auto;
-    break-inside:auto;
+    page-break-inside:auto !important;
+    break-inside:auto !important;
+    white-space:pre-wrap !important;
+    word-wrap:break-word !important;
+    overflow-wrap:break-word !important;
+    word-break:break-word !important;
+    max-height:none !important;
+    height:auto !important;
   }
-  .agenda-print-signatures{
-    page-break-inside:avoid;
-    break-inside:avoid;
-  }
+
+  /* 5. Blocos que NÃO devem ser divididos entre páginas */
   .agenda-print-summary-item,
   .agenda-print-field,
   .agenda-print-section-title,
   .agenda-print-title,
-  .agenda-print-subtitle{
-    page-break-inside:avoid;
-    break-inside:avoid;
+  .agenda-print-subtitle,
+  .agenda-print-signatures,
+  .agenda-print-sign,
+  .agenda-print-header,
+  .agenda-print-footer{
+    page-break-inside:avoid !important;
+    break-inside:avoid !important;
+  }
+
+  /* 6. Cabeçalho e assinaturas: cores preservadas na impressão */
+  .agenda-print-header,
+  .agenda-print-summary-item,
+  .agenda-print-status,
+  .agenda-print-tag,
+  .agenda-print-notes{
+    -webkit-print-color-adjust:exact !important;
+    print-color-adjust:exact !important;
+  }
+
+  /* 7. Zera margens do body para aproveitar toda a folha */
+  @page{ margin:12mm 10mm; }
+  html, body{
+    margin:0 !important;
+    padding:0 !important;
+    height:auto !important;
   }
 }
 </style>
@@ -799,16 +837,11 @@ const ADMIN_ANALYST_NAME = 'Rodrigo Soares';
 const FERIAS_TYPE_NAME = 'Férias';
 const FERIAS_MIN_PER_WEEKDAY = 8*60 + 48;
 const DONE_LIST_NAMES = ['concluido','concluídos','concluida','concluída','finalizado','fechado'];
-/* Limite máximo de tamanho por arquivo anexado (bytes) */
-const ATTACH_MAX_BYTES = 3 * 1024 * 1024; // 3 MB
+const ATTACH_MAX_BYTES = 3 * 1024 * 1024;
 
 function defaultState(){
   const st = {
-    analysts: [],
-    boards: [],
-    clients: [],
-    cards: [],
-    schedules: [],
+    analysts: [], boards: [], clients: [], cards: [], schedules: [],
     productTags: [
       {id:uid('pt'), name:'PDV', color:'#0E6655', inactive:false},
       {id:uid('pt'), name:'Frota', color:'#B9770E', inactive:false},
@@ -1199,7 +1232,6 @@ var ui = {
   formErr: ''
 };
 
-/* ============================= HELPERS ============================= */
 function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function todayISO(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function addDaysISO(iso,n){ const [y,m,d]=iso.split('-').map(Number); const dt=new Date(y,m-1,d); dt.setDate(dt.getDate()+n); return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0'); }
@@ -1464,7 +1496,6 @@ function clientConsolidatedBalanceHours(clientId){
 }
 function clientHasPastCards(clientId){ return state.cards.some(c=>c.clientId===clientId); }
 
-/* ============ ANEXOS ============ */
 function fileIconClass(mime, name){
   const ext = (name || '').split('.').pop().toLowerCase();
   if((mime||'').includes('pdf') || ext === 'pdf') return 'pdf';
@@ -1555,7 +1586,6 @@ function downloadAttachment(att){
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
 
-/* ============================= MUTATIONS ============================= */
 function createAnalyst(name, color, username, password, isAdmin){
   const analyst = { id:uid('an'), name, color: color || colorForIndex(state.analysts.length), username: username||'', password: password||'', isAdmin: !!isAdmin, inactive: false };
   state.analysts.push(analyst);
@@ -1726,7 +1756,6 @@ function deleteListFromBoard(boardId, listId){
   b.lists = b.lists.filter(l=>l.id!==listId);
 }
 
-/* ============================= RENDER ROOT ============================= */
 function render(){
   persist();
   if(!currentUser){ document.getElementById('app').innerHTML = renderLoginScreen(); return; }
@@ -1747,7 +1776,6 @@ function renderShell(){
     + (ui.confirmDialog ? renderConfirmDialog() : '');
 }
 
-/* ============================= SIDEBAR ============================= */
 function renderSidebar(){
   let html = '<div class="brand"><div class="brand-mark">RT</div><div class="brand-name">NEO</div></div>';
   html += '<div class="side-section"><div class="side-label"><span>Implantações</span></div>';
@@ -1794,7 +1822,6 @@ function navItem(view, icon, label, badge){
     + '</button>';
 }
 
-/* ============================= TOPBAR ============================= */
 function renderTopbar(){
   const totalPend = pendingConfirmations(null).length;
   const hamburger = '<button class="topbar-hamburger" data-action="toggle-sidebar" title="Menu">☰</button>';
@@ -1857,7 +1884,6 @@ function renderNotifPanel(){
   return html;
 }
 
-/* ============================= VIEW ROUTER ============================= */
 function renderView(){
   if(!state.analysts.length && ui.view!=='settings' && ui.view!=='clients'){
     return '<div class="empty-state"><h3>Comece cadastrando um analista</h3>'
@@ -1874,7 +1900,6 @@ function renderView(){
   }
 }
 
-/* ============================= BOARD VIEW ============================= */
 function renderBoardView(){
   if(!state.analysts.length) return '<div class="empty-state"><h3>Nenhum quadro selecionado</h3></div>';
   const filterId = ui.boardAnalystFilter || 'all';
@@ -1958,7 +1983,6 @@ function renderCardMini(card, listName, filterId){
     + '</div>';
 }
 
-/* ============================= CARD MODAL ============================= */
 function renderCardModalContent(card){
   const client = getClient(card.clientId);
   const board = getBoard(card.boardId);
@@ -2061,7 +2085,6 @@ function renderCardModalContent(card){
   return html;
 }
 
-/* Aba de Anexos — input + lista */
 function renderCardAttachmentsTab(card){
   const list = card.attachments || [];
   let html = '<p class="hint" style="margin-top:-4px;">Anexe aqui o PDF do contrato, imagens, planilhas ou outros documentos relacionados a este cliente.</p>';
@@ -2098,7 +2121,6 @@ function renderCardAttachmentsTab(card){
   return html;
 }
 
-/* Comparação de módulos/telas previstos x efetivamente treinados */
 function collectTrainedFromCard(card){
   const trains = state.schedules.filter(s=> s.cardId===card.id && s.status==='concluida');
   const mods = new Set();
@@ -2150,9 +2172,7 @@ function renderForecastCompare(card){
   }
 
   let html = '<p class="hint" style="margin-top:-4px;">Compara os itens previstos no card com os efetivamente treinados nas agendas concluídas.</p>';
-
   html += '<div class="compare-sections"><div class="compare-section-title">Módulos</div>'+renderCompareLists(expectedM, trained.modules, cmpM)+'</div>';
-
   html += '<div class="compare-sections"><div class="compare-section-title">Telas (por módulo)</div>';
   const screenNameToModuleId = new Map();
   state.screens.forEach(scr=> screenNameToModuleId.set(scr.name, scr.moduleId));
@@ -2250,7 +2270,6 @@ function scheduleDisplayTitle(s){
   return (client?client.name:'Interno')+' · '+s.type;
 }
 
-/* ============================= CALENDAR VIEW ============================= */
 function calcCalTimeRange(scheds){
   let minH = 7, maxH = 21;
   scheds.forEach(s=>{
@@ -2426,11 +2445,9 @@ function renderCalendarView(){
   return html;
 }
 
-/* ============================= REPORTS VIEW ============================= */
 function renderReportsView(){
   const today = new Date();
   const dataGeracao = today.toLocaleDateString('pt-BR', {day:'2-digit', month:'long', year:'numeric'});
-
   const allCards = state.cards;
   const totalContratadas = allCards.reduce((s,c)=> s + (c.contractedHours||0), 0);
   const totalUsadas = allCards.reduce((s,c)=> s + cardUsedMinutes(c)/60, 0);
@@ -2667,7 +2684,6 @@ function kpiCard(icon, label, value, sub, accent){
     + '</div>';
 }
 
-/* ============================= CLIENTS VIEW ============================= */
 function renderClientsView(){
   let html = '<div class="cal-toolbar" style="margin-bottom:14px;">'
     + '<div class="search-box" style="min-width:260px;"><span>🔎</span><input id="client-search-input" placeholder="Buscar por nome, código ou CNPJ..." value="'+esc(ui.clientSearch)+'"></div>'
@@ -2699,7 +2715,6 @@ function renderClientsView(){
   return html;
 }
 
-/* ============================= SETTINGS VIEW ============================= */
 function switchCell(kind, id, inactive, labelOn, labelOff){
   return '<label class="switch" title="'+(inactive? 'Inativo — clique para ativar':'Ativo — clique para inativar')+'">'
     + '<input type="checkbox" data-action="toggle-entity-active" data-kind="'+kind+'" data-id="'+id+'" '+(inactive?'':'checked')+'>'
@@ -2890,7 +2905,6 @@ function renderSettingsView(){
   return html;
 }
 
-/* ============================= MODALS ============================= */
 function renderModal(){
   const m = ui.modal;
   let inner = '';
@@ -3241,7 +3255,6 @@ function renderScheduleReportContent(scheduleId){
   return html;
 }
 
-/* Relatório de impressão de agenda — formato corporativo A4 (qualquer status) */
 function renderAgendaPrintReport(scheduleId){
   const s = byId(state.schedules, scheduleId);
   if(!s) return '<div class="modal-header"><h3>Agendamento não encontrado</h3><button class="modal-close" data-action="close-modal">✕</button></div>';
@@ -3327,8 +3340,8 @@ function renderAgendaPrintReport(scheduleId){
     +   '<span>ID: '+esc(s.id)+'</span>'
     + '</div>';
 
-  html += '</div>'; /* /agenda-print-body */
-  html += '</div>'; /* /agenda-print */
+  html += '</div>';
+  html += '</div>';
 
   return html;
 }
@@ -3481,7 +3494,6 @@ function renderScheduleForm(m){
   return html;
 }
 
-/* ============================= EVENT HANDLING ============================= */
 function closeModal(){ ui.modal=null; ui.formErr=''; render(); }
 function showConfirm(message, onConfirm){ ui.confirmDialog = {message, onConfirm, alertOnly:false}; render(); }
 function showAlert(message){ ui.confirmDialog = {message, onConfirm:null, alertOnly:true}; render(); }
@@ -3971,7 +3983,6 @@ document.addEventListener('submit', async function(e){
   }
 });
 
-/* Drag and drop */
 document.addEventListener('dragstart', function(e){
   const card = e.target.closest('.card-mini');
   if(card){ e.dataTransfer.setData('text/plain', card.dataset.cardId); e.dataTransfer.effectAllowed='move'; setTimeout(()=>card.classList.add('dragging'),0); return; }
@@ -4053,7 +4064,6 @@ function moveScheduleToGridPosition(schedId, daycolEl, clientY, grabOffset){
   render();
 }
 
-/* Card detail overlay */
 function renderCardDetailOverlay(){
   const existing = document.getElementById('card-detail-overlay');
   if(existing) existing.remove();
@@ -4072,7 +4082,6 @@ render = function(){
   if(ui.openCardId){ renderCardDetailOverlay(); } else { const ex=document.getElementById('card-detail-overlay'); if(ex) ex.remove(); }
 };
 
-/* Initial paint */
 currentUser = getStoredUser();
 if(currentUser){ boot(); } else { document.getElementById('app').innerHTML = renderLoginScreen(); }
 </script>
