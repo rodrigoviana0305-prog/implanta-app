@@ -503,6 +503,7 @@ th{background:#F1F6F9;color:#607587;}
 }
 .login-footer{ margin-top:22px; font-size:11px; color:var(--ink-faint); }
 
+/* Toggle switch usado para Ativo/Inativo nas telas de cadastro */
 .switch{
   position:relative; display:inline-block; width:44px; height:24px; vertical-align:middle;
 }
@@ -896,10 +897,10 @@ async function cloudSave(){
 function mergeStates(remote, local){
   const merged = Object.assign({}, local);
   ['analysts','boards','clients','cards','schedules','productTags','modules','agendaTypes','screens'].forEach(key=>{
-    const byIdMap = new Map();
-    (remote[key]||[]).forEach(item=> byIdMap.set(item.id, item));
-    (local[key]||[]).forEach(item=> byIdMap.set(item.id, item));
-    merged[key] = [...byIdMap.values()];
+    const byId = new Map();
+    (remote[key]||[]).forEach(item=> byId.set(item.id, item));
+    (local[key]||[]).forEach(item=> byId.set(item.id, item));
+    merged[key] = [...byId.values()];
   });
   return dedupeRegistries(merged);
 }
@@ -1197,1497 +1198,1833 @@ function parseImportRow(row){
     const field = CLIENT_IMPORT_HEADER_MAP[normalizeHeader(h)];
     if(field && out[field]===undefined) out[field] = row[h]!=null ? String(row[h]).trim() : '';
   });
-  if(!out.name) return null;
-  if(out.clientType) out.clientType = out.clientType.toLowerCase().includes('base') ? 'base' : 'novo';
-  else out.clientType = 'novo';
+  if(out.clientType){
+    out.clientType = normalizeHeader(out.clientType).includes('base') ? 'base' : 'novo';
+  }
   return out;
 }
-
-function createCard(data){
-  const board = getBoard(data.boardId);
-  if(!board) return null;
-  const listId = data.listId || (board.lists[0] ? board.lists[0].id : null);
-  const card = {
-    id:uid('cd'), boardId:data.boardId, listId, clientId:data.clientId,
-    contractedHours: Number(data.contractedHours)||0,
-    productTags: Array.isArray(data.productTags)?data.productTags:[],
-    notes: data.notes||'', history:[]
-  };
-  addHistory(card, 'Card criado na lista '+(board.lists.find(l=>l.id===listId)?.name||''));
+function downloadClientTemplate(){
+  const headers = ['Código','Nome Fantasia','Razão Social','CNPJ','IE','Segmento','Cidade','Telefone','Email','Contato','Tipo de Cliente'];
+  const example = ['001','Bar da Ana','Bar da Ana Ltda','12.345.678/0001-90','1234567-89','Alimentício','Curitiba','(41) 99999-9999','contato@bardaana.com.br','Ana Silva','Novo'];
+  const csv = '\uFEFF'+headers.join(';')+'\n'+example.join(';');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'modelo_clientes.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+async function importClientsFromFile(file){
+  if(!window.XLSX){ showAlert('Não foi possível carregar a biblioteca de importação. Verifique sua conexão com a internet e tente de novo.'); return; }
+  const buf = await file.arrayBuffer();
+  const wb = window.XLSX.read(buf, {type:'array'});
+  const sheet = wb.Sheets[wb.SheetNames[0]];
+  const rows = window.XLSX.utils.sheet_to_json(sheet, {defval:''});
+  let created=0, updated=0, skipped=0;
+  rows.forEach(row=>{
+    const parsed = parseImportRow(row);
+    if(!parsed.name || (!parsed.code && !parsed.name)){ skipped++; return; }
+    const existing = parsed.code ? state.clients.find(c=>c.code && c.code===parsed.code) : null;
+    if(existing){ Object.assign(existing, parsed); updated++; }
+    else { createClient(parsed); created++; }
+  });
+  render();
+  showAlert('Importação concluída: '+created+' cliente(s) criado(s), '+updated+' atualizado(s)'+(skipped?', '+skipped+' linha(s) ignorada(s) por falta de nome':'')+'.');
+}
+function createCard(boardId, listId, clientId, extra){
+  const card = Object.assign({id:uid('cd'), boardId, listId, clientId, contractedHours:0, startDate:todayISO(), productTags:[], history:[{ts:Date.now(), text:'Card criado'}]}, extra||{});
   state.cards.push(card);
   return card;
 }
-function moveCard(cardId, targetListId){
-  const card = getCard(cardId); if(!card) return;
-  const board = getBoard(card.boardId); if(!board) return;
-  const oldList = board.lists.find(l=>l.id===card.listId);
-  const newList = board.lists.find(l=>l.id===targetListId);
-  if(oldList && newList && oldList.id!==newList.id){
-    card.listId = targetListId;
-    addHistory(card, `Movido de "${oldList.name}" para "${newList.name}"`);
-  }
+function updateCard(id, patch, historyText){ const c=getCard(id); if(!c) return; Object.assign(c, patch); if(historyText) addHistory(c, historyText); }
+function moveCard(cardId, boardId, listId){
+  const c=getCard(cardId); if(!c) return;
+  const fromBoard = getBoard(c.boardId), fromList = fromBoard ? byId(fromBoard.lists, c.listId) : null;
+  const toBoard = getBoard(boardId), toList = toBoard ? byId(toBoard.lists, listId) : null;
+  if(c.boardId===boardId && c.listId===listId) return;
+  c.boardId = boardId; c.listId = listId;
+  let text = '';
+  if(fromBoard && toBoard && fromBoard.id!==toBoard.id){ text = 'Movido de "'+esc(fromBoard.name)+'" para "'+esc(toBoard.name)+'"'; if(toList) text += ' — lista "'+esc(toList.name)+'"'; }
+  else if(toList){ text = 'Estágio alterado para "'+esc(toList.name)+'"'; }
+  addHistory(c, text);
 }
-function updateCard(id, patch){ const c=getCard(id); if(!c) return; Object.assign(c, patch); }
-function deleteCard(id){
-  state.schedules = state.schedules.filter(s=>s.cardId!==id);
-  state.cards = state.cards.filter(c=>c.id!==id);
-}
-
+function deleteCard(id){ state.schedules = state.schedules.filter(s=>s.cardId!==id); state.cards = state.cards.filter(c=>c.id!==id); }
 function createSchedule(data){
-  const sched = {
-    id:uid('sc'), cardId:data.cardId||null, clientId:data.clientId||null, analystId:data.analystId,
-    date:data.date, startTime:data.startTime, endTime:data.endTime,
-    type:data.type, modules:Array.isArray(data.modules)?data.modules:[],
-    trainedScreens:Array.isArray(data.trainedScreens)?data.trainedScreens:[],
-    notes:data.notes||'', status:'pendente',
-    completionNotes:'', deductMinutes:null, actualDuration:null, createdAt:Date.now()
-  };
-  state.schedules.push(sched);
-  if(sched.cardId){
-    const card = getCard(sched.cardId);
-    if(card) addHistory(card, `Agendamento criado para ${fmtDateBR(sched.date)} das ${sched.startTime} às ${sched.endTime} (${sched.type})`);
-  }
-  return sched;
+  const s = Object.assign({id:uid('sc'), status:'pendente', deductMinutes:null, modules:[], notes:'', category:'implantacao'}, data);
+  state.schedules.push(s);
+  return s;
 }
-function updateSchedule(id, patch){
-  const s = state.schedules.find(x=>x.id===id); if(!s) return;
-  Object.assign(s, patch);
+function updateSchedule(id, patch){ const s=byId(state.schedules,id); if(s) Object.assign(s, patch); }
+function completeSchedule(id, deductMinutes, note){
+  const s=byId(state.schedules,id); if(!s) return;
+  s.status='concluida'; s.deductMinutes=deductMinutes; if(note) s.notes = note;
+  if(s.cardId){ const c=getCard(s.cardId); if(c) addHistory(c, 'Agenda concluída ('+fmtDateBR(s.date)+' '+s.startTime+'–'+s.endTime+') — '+minToHM(deductMinutes)+' abatido(s)'); }
 }
-function deleteSchedule(id){
-  const s = state.schedules.find(x=>x.id===id);
-  if(s && s.cardId){
-    const c = getCard(s.cardId);
-    if(c) addHistory(c, `Agendamento de ${fmtDateBR(s.date)} ${s.startTime}-${s.endTime} excluído`);
-  }
-  state.schedules = state.schedules.filter(x=>x.id!==id);
+function markNotDone(id){
+  const s=byId(state.schedules,id); if(!s) return;
+  s.status='nao_realizada';
+  if(s.cardId){ const c=getCard(s.cardId); if(c) addHistory(c, 'Agenda marcada como não realizada ('+fmtDateBR(s.date)+' '+s.startTime+'–'+s.endTime+')'); }
 }
-function completeSchedule(id, status, notes, deductMinutes){
-  const s = state.schedules.find(x=>x.id===id); if(!s) return;
-  s.status = status; s.completionNotes = notes||'';
-  s.deductMinutes = (deductMinutes!=null && deductMinutes!=='') ? Number(deductMinutes) : null;
+function revertToPending(id){
+  const s=byId(state.schedules,id); if(!s || s.status==='pendente') return;
+  const wasConcluida = s.status==='concluida';
+  const deducted = s.deductMinutes;
+  s.status='pendente'; s.deductMinutes=null;
   if(s.cardId){
-    const card = getCard(s.cardId);
-    if(card){
-      const stLabel = status==='concluida'?'Concluído': status==='nao_realizada'?'Não realizada':'Pendente';
-      addHistory(card, `Agendamento de ${fmtDateBR(s.date)} marcado como "${stLabel}". Obs: ${notes||'nenhuma'}`);
+    const c=getCard(s.cardId);
+    if(c){
+      if(wasConcluida) addHistory(c, 'Conclusão revertida ('+fmtDateBR(s.date)+' '+s.startTime+'–'+s.endTime+') — '+minToHM(deducted||0)+' estornado(s)');
+      else addHistory(c, 'Agenda revertida para pendente ('+fmtDateBR(s.date)+' '+s.startTime+'–'+s.endTime+')');
     }
   }
 }
-
-/* ============================= UI STATE MANAGEMENT ============================= */
-function navigate(view, opt={}){
-  ui.view = view;
-  if(opt.boardId) ui.currentBoardId = opt.boardId;
-  if(opt.cardId) ui.openCardId = opt.cardId;
-  ui.showNotif = false;
-  ui.sidebarOpen = false;
-  render();
+function deleteSchedule(id){ state.schedules = state.schedules.filter(s=>s.id!==id); }
+function addList(boardId, name){ const b=getBoard(boardId); if(b) b.lists.push({id:uid('ls'), name}); }
+function deleteListFromBoard(boardId, listId){
+  const b=getBoard(boardId); if(!b) return;
+  const hasCards = state.cards.some(c=>c.boardId===boardId && c.listId===listId);
+  if(hasCards){ showAlert('Mova ou remova os cards desta lista antes de excluí-la.'); return; }
+  b.lists = b.lists.filter(l=>l.id!==listId);
 }
-function showAlert(msg){ ui.confirmDialog = {type:'alert', message:msg}; render(); }
-function showConfirm(msg, onYes){ ui.confirmDialog = {type:'confirm', message:msg, onYes}; render(); }
-function closeConfirm(){ ui.confirmDialog = null; render(); }
 
-/* ============================= RENDERERS ============================= */
+/* ============================= RENDER ROOT ============================= */
+function render(){
+  persist();
+  if(!currentUser){
+    document.getElementById('app').innerHTML = renderLoginScreen();
+    return;
+  }
+  const app = document.getElementById('app');
+  app.innerHTML = renderShell();
+  if(ui._focus){
+    const el = document.getElementById(ui._focus.id);
+    if(el){ el.focus(); try{ el.setSelectionRange(ui._focus.pos, ui._focus.pos); }catch(e){} }
+  }
+}
+
 function renderShell(){
-  const pendingCount = pendingConfirmations(currentUser && !currentUser.isAdmin ? currentUser.analystId : null).length;
-  return `<div class="shell">
-    ${renderSidebar(pendingCount)}
-    ${ui.sidebarOpen ? `<div class="sidebar-backdrop" onclick="ui.sidebarOpen=false;render()"></div>` : ''}
-    <div class="main">
-      ${renderTopbar(pendingCount)}
-      <div class="view" id="view-container">
-        ${renderCurrentView()}
-      </div>
-    </div>
-  </div>
-  ${ui.openCardId ? renderCardModal() : ''}
-  ${ui.modal ? renderModal() : ''}
-  ${ui.confirmDialog ? renderConfirmModal() : ''}`;
+  return '<div class="shell">'
+    + '<aside class="sidebar'+(ui.sidebarOpen?' open':'')+'">'+renderSidebar()+'</aside>'
+    + (ui.sidebarOpen ? '<div class="sidebar-backdrop" data-action="close-sidebar"></div>' : '')
+    + '<main class="main">'
+      + '<header class="topbar">'+renderTopbar()+'</header>'
+      + '<div class="view">'+renderView()+'</div>'
+    + '</main>'
+    + '</div>'
+    + (ui.modal ? renderModal() : '')
+    + (ui.confirmDialog ? renderConfirmDialog() : '');
 }
 
-function renderSidebar(pendingCount){
-  const activeBds = state.boards.filter(b=> { const a=getAnalyst(b.analystId); return a && !a.inactive; });
-  const inactiveBds = state.boards.filter(b=> { const a=getAnalyst(b.analystId); return a && a.inactive; });
+/* ============================= SIDEBAR ============================= */
+function renderSidebar(){
+  let html = '<div class="brand"><div class="brand-mark">RT</div><div class="brand-name">Implanta</div></div>';
+  html += '<div class="side-section"><div class="side-label"><span>Implantações</span></div>';
+  html += '<button class="side-item'+(ui.view==='board' && ui.boardAnalystFilter==='all'?' active':'')+'" data-action="board-analyst-filter" data-id="all">'
+    + '<span>▦</span><span style="flex:1;">Todos os analistas</span>'
+    + (totalPendingBoardBadge()? '<span class="side-badge">'+totalPendingBoardBadge()+'</span>' : '')
+    + '</button>';
+  state.analysts.forEach(a=>{
+    const pend = pendingConfirmations(a.id).length;
+    const active = ui.view==='board' && ui.boardAnalystFilter===a.id;
+    const inativo = !!a.inactive;
+    html += '<button class="side-item'+(active?' active':'')+(inativo?' inactive-analyst':'')+'" data-action="board-analyst-filter" data-id="'+a.id+'">'
+      + '<span class="side-dot" style="background:'+(inativo?'#B9CAD5':a.color)+'"></span>'
+      + '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+esc(a.name)+(a.isAdmin?' <span style="font-size:9px;font-weight:800;color:#F0A72F;letter-spacing:.5px;">ADMIN</span>':'')+(inativo?' <span style="font-size:9px;font-weight:700;color:#8A9AAA;letter-spacing:.4px;">INATIVO</span>':'')+'</span>'
+      + (pend? '<span class="side-badge">'+pend+'</span>' : '')
+      + '</button>';
+  });
+  html += '<button class="side-add" data-action="open-modal" data-modal="analyst-new">+ Novo analista</button>';
+  html += '</div>';
 
-  return `<div class="sidebar ${ui.sidebarOpen?'open':''}">
-    <div class="brand">
-      <div class="brand-mark">RT</div>
-      <div class="brand-name">Implanta</div>
-    </div>
-    
-    <div class="side-section">
-      <div class="side-label">Geral</div>
-      <button class="side-item ${ui.view==='calendar'?'active':''}" onclick="navigate('calendar')">
-        🗓 Agenda
-      </button>
-      <button class="side-item ${ui.view==='clients'?'active':''}" onclick="navigate('clients')">
-        🏢 Clientes
-      </button>
-      <button class="side-item ${ui.view==='reports'?'active':''}" onclick="navigate('reports')">
-        📊 Relatórios
-      </button>
-      <button class="side-item ${ui.view==='settings'?'active':''}" onclick="navigate('settings')">
-        ⚙ Configurações
-      </button>
-    </div>
+  const totalPend = pendingConfirmations(null).length;
+  html += '<div class="side-section"><div class="side-label"><span>Gestão</span></div>';
+  html += navItem('calendar','◷','Agenda', totalPend);
+  html += navItem('reports','▥','Relatórios');
+  html += navItem('clients','◉','Clientes');
+  html += navItem('settings','⚙','Configurações');
+  html += '</div>';
+  html += '<div class="side-spacer"></div>';
+  html += '<div class="side-foot" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">'
+    + '<span id="save-status-line" style="flex:1;">'+(cloudStatus==='connected' ? '☁ Sincronizado com a nuvem' : 'Dados salvos neste navegador.')+'</span>'
+    + '<button class="btn btn-sm btn-ghost" data-action="logout" title="Sair" style="color:#9FB6AC;">Sair</button>'
+    + '</div>';
+  return html;
+}
+function totalPendingBoardBadge(){ return pendingConfirmations(null).length; }
 
-    <div class="side-section">
-      <div class="side-label">
-        <span>Quadros</span>
-        ${isAdminUser() ? `<button class="btn btn-ghost btn-sm" onclick="openModal('new-analyst')" style="color:#CFE0D8;padding:0 4px;">+</button>` : ''}
-      </div>
-      <button class="side-item ${ui.view==='board' && ui.currentBoardId==='all'?'active':''}" onclick="navigate('board',{boardId:'all'})">
-        <span class="side-dot" style="background:#5FA48D;"></span>
-        Visão Unificada
-      </button>
-      ${activeBds.map(b=>{
-        const a = getAnalyst(b.analystId);
-        const isActive = ui.view==='board' && ui.currentBoardId===b.id;
-        return `<button class="side-item ${isActive?'active':''}" onclick="navigate('board',{boardId:'${b.id}'})">
-          <span class="side-dot" style="background:${a?a.color:'var(--brand)'};"></span>
-          ${esc(a?a.name:b.name)}
-        </button>`;
-      }).join('')}
-
-      ${inactiveBds.length>0 ? `
-        <div class="side-label" style="margin-top:8px;">Inativos</div>
-        ${inactiveBds.map(b=>{
-          const a = getAnalyst(b.analystId);
-          const isActive = ui.view==='board' && ui.currentBoardId===b.id;
-          return `<button class="side-item inactive-analyst ${isActive?'active':''}" onclick="navigate('board',{boardId:'${b.id}'})">
-            <span class="side-dot" style="background:${a?a.color:'#6B7A73'};"></span>
-            ${esc(a?a.name:b.name)}
-          </button>`;
-        }).join('')}
-      `:''}
-    </div>
-
-    <div class="side-spacer"></div>
-
-    <div class="side-foot">
-      <div style="font-weight:700;color:#fff;">${esc(currentUser ? currentUser.displayName : 'Usuário')}</div>
-      <div style="font-size:10px;opacity:.8;">${currentUser && currentUser.role==='admin' ? 'Administrador' : 'Analista'}</div>
-      <button onclick="logout()" class="btn btn-ghost btn-sm" style="color:#DB8770;padding:4px 0;margin-top:6px;">Sair do sistema</button>
-    </div>
-  </div>`;
+function navItem(view, icon, label, badge){
+  const active = ui.view===view;
+  return '<button class="side-item'+(active?' active':'')+'" data-action="goto-view" data-view="'+view+'">'
+    + '<span>'+icon+'</span><span style="flex:1;">'+label+'</span>'
+    + (badge? '<span class="side-badge">'+badge+'</span>' : '')
+    + '</button>';
 }
 
-function renderTopbar(pendingCount){
-  let title = 'Visão Unificada';
-  let sub = 'Todos os quadros e analistas';
-
+/* ============================= TOPBAR ============================= */
+function renderTopbar(){
+  const totalPend = pendingConfirmations(null).length;
+  const hamburger = '<button class="topbar-hamburger" data-action="toggle-sidebar" title="Menu">☰</button>';
+  let left = '';
   if(ui.view==='board'){
-    if(ui.currentBoardId!=='all'){
-      const b = getBoard(ui.currentBoardId);
-      if(b){
-        const a = getAnalyst(b.analystId);
-        title = a ? 'Quadro — '+a.name : b.name;
-        sub = 'Gestão do fluxo de implantação';
-      }
-    }
-  } else if(ui.view==='calendar'){ title = 'Agenda Geral'; sub = 'Agendamentos e compromissos'; }
-  else if(ui.view==='clients'){ title = 'Clientes'; sub = 'Cadastro e saldo de horas'; }
-  else if(ui.view==='reports'){ title = 'Relatórios'; sub = 'Saldo de horas e indicadores'; }
-  else if(ui.view==='settings'){ title = 'Configurações'; sub = 'Parâmetros e cadastros do sistema'; }
+    const selectedAnalyst = ui.boardAnalystFilter!=='all' ? getAnalyst(ui.boardAnalystFilter) : null;
+    const selectedBoard = selectedAnalyst ? boardOfAnalyst(selectedAnalyst.id) : null;
+    ui.currentBoardId = selectedBoard ? selectedBoard.id : (state.boards[0] ? state.boards[0].id : null);
 
-  return `<div class="topbar">
-    <button class="topbar-hamburger" onclick="ui.sidebarOpen=!ui.sidebarOpen;render()">☰</button>
-    <div class="topbar-title">
-      <h2>${esc(title)}</h2>
-      <div class="sub">${esc(sub)}</div>
-    </div>
-
-    <div class="topbar-right">
-      ${ui.view==='board' && ui.currentBoardId!=='all' ? `
-        <button class="btn btn-primary btn-sm" onclick="openModal('new-card',{boardId:'${ui.currentBoardId}'})">+ Novo Card</button>
-      `:''}
-      ${ui.view==='calendar' ? `
-        <button class="btn btn-primary btn-sm" onclick="openModal('new-schedule')">+ Novo Agendamento</button>
-      `:''}
-      ${ui.view==='clients' ? `
-        <button class="btn btn-primary btn-sm" onclick="openModal('new-client')">+ Novo Cliente</button>
-        <button class="btn btn-ghost btn-sm" onclick="openModal('import-clients')">📥 Importar Excel/CSV</button>
-      `:''}
-
-      <button class="icon-btn" onclick="ui.showNotif=!ui.showNotif;render()" title="Pendências">
-        🔔
-        ${pendingCount>0 ? `<span class="notif-dot">${pendingCount}</span>` : ''}
-      </button>
-
-      ${ui.showNotif ? renderNotifPanel() : ''}
-    </div>
-  </div>`;
+    left = '<div class="topbar-title"><h2>Implantações</h2>'
+      + '<div class="sub">'+(selectedAnalyst
+        ? 'Quadro consolidado • Analista: '+esc(selectedAnalyst.name)+(selectedAnalyst.inactive?' (inativo)':'')
+        : 'Quadro consolidado • Todos os analistas')+'</div></div>'
+      + '<select class="board-analyst-filter" data-action="board-analyst-filter" title="Filtrar analista">'
+      + '<option value="all"'+(ui.boardAnalystFilter==='all'?' selected':'')+'>Todos os analistas</option>';
+    state.analysts.forEach(a=>{
+      left += '<option value="'+a.id+'"'+(ui.boardAnalystFilter===a.id?' selected':'')+'>'+esc(a.name)+(a.inactive?' (inativo)':'')+'</option>';
+    });
+    left += '</select>'
+      + '<div class="search-box" style="margin-left:8px;"><span>🔎</span><input id="search-input" placeholder="Buscar cliente..." value="'+esc(ui.search)+'"></div>'
+      + (selectedBoard
+        ? '<button class="btn btn-primary" data-action="open-modal" data-modal="card-new" data-board="'+selectedBoard.id+'">+ Novo cliente</button>'
+        : '');
+  } else if(ui.view==='calendar'){
+    left = '<div class="topbar-title"><h2>Agenda</h2><div class="sub">Visualize por analista ou em conjunto</div></div>';
+  } else if(ui.view==='reports'){
+    left = '<div class="topbar-title"><h2>Relatórios</h2></div>';
+  } else if(ui.view==='clients'){
+    left = '<div class="topbar-title"><h2>Clientes</h2><div class="sub">Base de cadastro</div></div>'
+      + '<button class="btn btn-primary" data-action="open-modal" data-modal="client-new">+ Novo cliente</button>';
+  } else if(ui.view==='settings'){
+    left = '<div class="topbar-title"><h2>Configurações</h2></div>';
+  }
+  let right = '';
+  if(currentUser){
+    right += '<span style="font-size:12.5px;color:var(--ink-soft);font-weight:600;margin-right:4px;">👤 '+esc(currentUser.displayName||currentUser.username||'')+(isAdminUser()?' <span class="badge" style="background:var(--gold-soft);color:var(--gold);">ADMIN</span>':'')+'</span>';
+  }
+  right += '<div class="icon-btn" data-action="toggle-notif" title="Notificações">🔔'+(totalPend? '<span class="notif-dot">'+totalPend+'</span>':'')+'</div>';
+  if(ui.showNotif) right += renderNotifPanel();
+  return hamburger + left + '<div class="topbar-right">'+right+'</div>';
 }
-
 function renderNotifPanel(){
-  const pend = pendingConfirmations(currentUser && !currentUser.isAdmin ? currentUser.analystId : null);
-  return `<div class="notif-panel">
-    <div style="font-weight:800;font-size:13px;padding:6px 8px;border-bottom:1px solid var(--border);">
-      Agendamentos pendentes de confirmação (${pend.length})
-    </div>
-    ${pend.length===0 ? `<div class="notif-empty">Nenhuma pendência encontrada.</div>` : ''}
-    ${pend.map(s=>{
-      const c = s.cardId ? getCard(s.cardId) : null;
-      const cl = c ? getClient(c.clientId) : (s.clientId ? getClient(s.clientId) : null);
-      const a = getAnalyst(s.analystId);
-      return `<div class="notif-item">
-        <div style="font-weight:700;font-size:12.5px;">${esc(cl?cl.name:'Sem cliente')}</div>
-        <div style="font-size:11.5px;color:var(--ink-soft);">${fmtDateBR(s.date)} às ${s.startTime} — ${esc(a?a.name:'')}</div>
-        <div style="margin-top:6px;display:flex;gap:6px;">
-          <button class="btn btn-primary btn-sm" style="padding:2px 8px;font-size:11px;" onclick="openModal('confirm-schedule',{schedId:'${s.id}'})">Resolver</button>
-        </div>
-      </div>`;
-    }).join('')}
-  </div>`;
+  const items = pendingConfirmations(null);
+  let html = '<div class="notif-panel">';
+  if(!items.length){ html += '<div class="notif-empty">Nenhuma confirmação pendente.</div>'; }
+  else{
+    items.sort((a,b)=> (a.date+a.startTime).localeCompare(b.date+b.startTime));
+    items.forEach(s=>{
+      const analyst = getAnalyst(s.analystId);
+      const client = s.clientId ? getClient(s.clientId) : null;
+      html += '<div class="notif-item">'
+        + '<div style="font-weight:700;font-size:13px;">'+esc(client? client.name : 'Interno')+' · '+esc(s.type)+'</div>'
+        + '<div style="font-size:11.5px;color:var(--ink-soft);margin:2px 0 6px;">'+fmtDateBR(s.date)+' '+s.startTime+'–'+s.endTime+' · '+esc(analyst? analyst.name:'')+'</div>'
+        + '<div class="row-actions">'
+          + '<button class="btn btn-sm btn-primary" data-action="open-modal" data-modal="confirm-complete" data-id="'+s.id+'">Confirmar</button>'
+          + '<button class="btn btn-sm btn-ghost" data-action="mark-not-done" data-id="'+s.id+'">Não realizada</button>'
+        + '</div></div>';
+    });
+  }
+  html += '</div>';
+  return html;
 }
 
-function renderCurrentView(){
-  if(ui.view==='board') return renderBoardView();
-  if(ui.view==='calendar') return renderCalendarView();
-  if(ui.view==='clients') return renderClientsView();
-  if(ui.view==='reports') return renderReportsView();
-  if(ui.view==='settings') return renderSettingsView();
-  return '<div>Página não encontrada.</div>';
+/* ============================= VIEW ROUTER ============================= */
+function renderView(){
+  if(!state.analysts.length && ui.view!=='settings' && ui.view!=='clients'){
+    return '<div class="empty-state"><h3>Comece cadastrando um analista</h3>'
+      + '<p>Cada analista tem seu próprio quadro, no estilo Trello, com os clientes em implantação sob sua responsabilidade.</p>'
+      + '<button class="btn btn-primary" data-action="open-modal" data-modal="analyst-new">+ Cadastrar analista</button></div>';
+  }
+  switch(ui.view){
+    case 'board': return renderBoardView();
+    case 'calendar': return renderCalendarView();
+    case 'reports': return renderReportsView();
+    case 'clients': return renderClientsView();
+    case 'settings': return renderSettingsView();
+    default: return '';
+  }
 }
 
 /* ============================= BOARD VIEW ============================= */
 function renderBoardView(){
-  if(ui.currentBoardId==='all'){
-    return renderUnifiedBoardView();
+  if(!state.analysts.length) return '<div class="empty-state"><h3>Nenhum quadro selecionado</h3></div>';
+
+  const filterId = ui.boardAnalystFilter || 'all';
+  const selectedAnalyst = filterId!=='all' ? getAnalyst(filterId) : null;
+  const selectedBoard = selectedAnalyst ? boardOfAnalyst(filterId) : null;
+  const q = ui.search.trim().toLowerCase();
+
+  const boards = filterId==='all'
+    ? state.boards.slice()
+    : (selectedBoard ? [selectedBoard] : []);
+
+  if(!boards.length) return '<div class="empty-state"><h3>Nenhum quadro disponível</h3></div>';
+
+  const listDefs = [];
+  const seenNames = new Set();
+  boards.forEach(b=>{
+    (b.lists||[]).forEach(l=>{
+      if(!seenNames.has(l.name)){
+        seenNames.add(l.name);
+        listDefs.push(l.name);
+      }
+    });
+  });
+
+  let html = '<div class="board-summary">'
+    + '<div class="board-summary-main"><strong>'+listDefs.length+' etapas</strong>'
+    + '<span>• '+state.cards.filter(c=>boards.some(b=>b.id===c.boardId)).filter(c=>{ const cl=getClient(c.clientId); return !q || (cl && cl.name.toLowerCase().includes(q)); }).length+' clientes em implantação</span></div>'
+    + '<span class="board-summary-filter">'+(selectedAnalyst ? 'Analista: '+esc(selectedAnalyst.name)+(selectedAnalyst.inactive?' (inativo)':'') : 'Todos os analistas')+'</span>'
+    + '</div>';
+
+  html += '<div class="board-lists unified-board">';
+  listDefs.forEach(listName=>{
+    let cards = [];
+    boards.forEach(b=>{
+      const list = (b.lists||[]).find(l=>l.name===listName);
+      if(!list) return;
+      cards = cards.concat(cardsInBoard(b.id).filter(c=>c.listId===list.id));
+    });
+    if(q){
+      cards = cards.filter(c=>{
+        const cl=getClient(c.clientId);
+        return cl && cl.name.toLowerCase().includes(q);
+      });
+    }
+
+    html += '<div class="list-col">'
+      + '<div class="list-head"><span class="name">'+esc(listName)+'</span><span class="count">'+cards.length+'</span>'
+      + (selectedBoard
+        ? (function(){
+            const realList = (selectedBoard.lists||[]).find(l=>l.name===listName);
+            return realList
+              ? '<button class="icon-btn btn-sm" style="width:26px;height:26px;" data-action="delete-list" data-board="'+selectedBoard.id+'" data-list="'+realList.id+'" title="Excluir lista">✕</button>'
+              : '';
+          })()
+        : '')
+      + '</div>'
+      + '<div class="list-cards" data-unified-list-name="'+esc(listName)+'">';
+
+    cards.forEach(c=> html += renderCardMini(c, listName, filterId));
+    html += '</div>';
+
+    if(selectedBoard){
+      const realList = (selectedBoard.lists||[]).find(l=>l.name===listName);
+      if(realList){
+        html += '<button class="add-card-btn" data-action="open-modal" data-modal="card-new" data-board="'+selectedBoard.id+'" data-list="'+realList.id+'">+ Adicionar cliente</button>';
+      }
+    }
+    html += '</div>';
+  });
+
+  if(selectedBoard){
+    html += '<div class="list-col list-add-col"><button data-action="open-modal" data-modal="list-new" data-board="'+selectedBoard.id+'">+ Nova lista</button></div>';
   }
-  const board = getBoard(ui.currentBoardId);
-  if(!board) return '<div class="empty-state"><h3>Quadro não encontrado.</h3></div>';
 
-  const analyst = getAnalyst(board.analystId);
-  const cards = cardsInBoard(board.id);
-
-  return `<div class="board-lists">
-    ${board.lists.map(list=>{
-      const listCards = cards.filter(c=>c.listId===list.id);
-      return `<div class="list-col" ondragover="event.preventDefault();this.classList.add('drag-over');" ondragleave="this.classList.remove('drag-over');" ondrop="handleDropCard(event, '${board.id}', '${list.id}')">
-        <div class="list-head">
-          <span class="name">${esc(list.name)}</span>
-          <span class="count">${listCards.length}</span>
-        </div>
-        <div class="list-cards">
-          ${listCards.map(c=> renderCardMini(c)).join('')}
-        </div>
-        <button class="add-card-btn" onclick="openModal('new-card',{boardId:'${board.id}', listId:'${list.id}'})">+ Adicionar card</button>
-      </div>`;
-    }).join('')}
-  </div>`;
+  html += '</div>';
+  return html;
 }
-
-function renderUnifiedBoardView(){
-  let targetAnalysts = activeAnalysts();
-  if(ui.boardAnalystFilter !== 'all'){
-    targetAnalysts = targetAnalysts.filter(a=> a.id === ui.boardAnalystFilter);
-  }
-
-  const standardListNames = ['Fila / Cadastro', 'Em implantação', 'Treinamento', 'Concluído'];
-  const totalCards = state.cards.filter(c=>{
-    const b = getBoard(c.boardId);
-    if(!b) return false;
-    const a = getAnalyst(b.analystId);
-    if(!a || a.inactive) return false;
-    if(ui.boardAnalystFilter !== 'all' && a.id !== ui.boardAnalystFilter) return false;
-    return true;
-  }).length;
-
-  return `<div class="unified-board">
-    <div class="board-summary">
-      <div class="board-summary-main">
-        <strong>Visão Unificada de Quadros</strong>
-        <span>(${totalCards} cards em ${targetAnalysts.length} analista(s) ativo(s))</span>
-      </div>
-      <select class="board-analyst-filter" onchange="ui.boardAnalystFilter=this.value;render();">
-        <option value="all" ${ui.boardAnalystFilter==='all'?'selected':''}>Todos os analistas</option>
-        ${state.analysts.map(a=> `<option value="${a.id}" ${ui.boardAnalystFilter===a.id?'selected':''}>${esc(a.name)}${a.inactive?' (Inativo)':''}</option>`).join('')}
-      </select>
-    </div>
-
-    <div class="board-lists">
-      ${standardListNames.map(stdName=>{
-        const matchingCards = [];
-        targetAnalysts.forEach(a=>{
-          const b = boardOfAnalyst(a.id);
-          if(!b) return;
-          const matchedList = b.lists.find(l=> l.name.trim().toLowerCase() === stdName.toLowerCase());
-          if(matchedList){
-            const cardsInThisList = state.cards.filter(c=> c.boardId === b.id && c.listId === matchedList.id);
-            cardsInThisList.forEach(c=> matchingCards.push({card: c, analyst: a, list: matchedList}));
-          }
-        });
-
-        return `<div class="list-col">
-          <div class="list-head">
-            <span class="name">${esc(stdName)}</span>
-            <span class="count">${matchingCards.length}</span>
-          </div>
-          <div class="list-cards">
-            ${matchingCards.length===0 ? `<div style="font-size:12px;color:var(--ink-faint);padding:12px 6px;text-align:center;">Nenhum card nesta etapa</div>` : ''}
-            ${matchingCards.map(item => renderCardMini(item.card, item.analyst)).join('')}
-          </div>
-        </div>`;
-      }).join('')}
-    </div>
-  </div>`;
-}
-
-function renderCardMini(card, analystOverride){
+function renderCardMini(card, listName, filterId){
   const client = getClient(card.clientId);
-  const scheds = schedulesForCard(card.id);
-  const pending = scheds.some(s=> scheduleIsDue(s));
-  const bal = cardBalanceHours(card);
-  const tags = (card.productTags||[]).map(tid=> byId(state.productTags, tid)).filter(Boolean);
+  const balance = cardBalanceHours(card);
+  const due = pendingConfirmations(null).some(s=>s.cardId===card.id);
   const board = getBoard(card.boardId);
-  const analyst = analystOverride || (board ? getAnalyst(board.analystId) : null);
-
-  return `<div class="card-mini" draggable="true" ondragstart="handleDragCardStart(event, '${card.id}')" onclick="ui.openCardId='${card.id}';render()">
-    ${analyst ? `
-      <div class="analyst-meta" style="color:${analyst.color||'var(--brand)'};display:flex;align-items:center;gap:5px;">
-        <span class="analyst-dot" style="background:${analyst.color||'var(--brand)'};"></span>
-        ${esc(analyst.name)}
-      </div>
-    `:''}
-
-    <div class="card-title">${esc(client?client.name:'Cliente não encontrado')}</div>
-    
-    ${tags.length>0 ? `
-      <div class="chip-row">
-        ${tags.map(t=> `<span class="chip" style="background:${t.color};">${esc(t.name)}</span>`).join('')}
-      </div>
-    `:''}
-
-    <div class="card-meta">
-      <span class="balance-pill ${bal<0?'neg':''}">${bal.toFixed(1)}h rest.</span>
-      ${pending ? `<span class="pending-flag">⚠️ Pendente</span>` : ''}
-    </div>
-  </div>`;
+  const analyst = board ? getAnalyst(board.analystId) : null;
+  let chips = '';
+  (card.productTags||[]).forEach(tid=>{ const t=byId(state.productTags,tid); if(t) chips += '<span class="chip" style="background:'+t.color+'">'+esc(t.name)+'</span>'; });
+  return '<div class="card-mini" draggable="true" data-card-id="'+card.id+'" data-action="open-card">'
+    + (chips? '<div class="chip-row">'+chips+'</div>' : '')
+    + '<div class="card-title">'+esc(client? client.name : '(cliente removido)')+'</div>'
+    + ((filterId==='all' && analyst)
+      ? '<div class="card-meta analyst-meta"><span class="analyst-dot" style="background:'+analyst.color+'"></span><span>'+esc(analyst.name)+'</span></div>'
+      : '')
+    + '<div class="card-meta"><span class="balance-pill'+(balance<0?' neg':'')+'">'+minToHM(balance*60)+' saldo</span>'
+    + (due? '<span class="pending-flag">● confirmar</span>' : '')
+    + '</div></div>';
 }
 
-function handleDragCardStart(e, cardId){
-  e.dataTransfer.setData('text/plain', cardId);
-}
-function handleDropCard(e, boardId, listId){
-  e.preventDefault();
-  const cardId = e.dataTransfer.getData('text/plain');
-  if(!cardId) return;
-  const card = getCard(cardId);
-  if(card && card.boardId===boardId){
-    moveCard(cardId, listId);
-    persist(); render();
+/* ============================= CARD MODAL CONTENT ============================= */
+function renderCardModalContent(card){
+  const client = getClient(card.clientId);
+  const board = getBoard(card.boardId);
+  const analyst = board ? getAnalyst(board.analystId) : null;
+  const used = cardUsedMinutes(card)/60;
+  const balance = cardBalanceHours(card);
+  let html = '<div class="modal-header"><div style="flex:1;">'
+    + '<h3>'+esc(client? client.name : '(cliente removido)')+'</h3>'
+    + '<div class="card-modal-meta"><span>Analista: '+esc(analyst?analyst.name:'—')+'</span><span>Início: '+fmtDateBR(card.startDate)+'</span></div>'
+    + '</div><button class="modal-close" data-action="close-card">✕</button></div>';
+
+  html += '<div class="tabs">'
+    + tabBtn('info','Informações') + tabBtn('agenda','Agenda ('+schedulesForCard(card.id).length+')') + tabBtn('history','Histórico')
+    + '</div>';
+
+  if(ui.cardTab==='info'){
+    const draft = (ui.cardDraft && ui.cardDraft.cardId===card.id) ? ui.cardDraft.values : null;
+    const effHours = draft ? draft.contractedHours : card.contractedHours;
+    const effStart = draft ? draft.startDate : card.startDate;
+    const effTags = draft ? (draft.productTags||[]) : (card.productTags||[]);
+    const effMove = draft ? draft.moveTo : (card.boardId+'::'+card.listId);
+    html += '<div class="balance-box">'
+      + balanceItem(card.contractedHours+'h','Contratadas')
+      + balanceItem(minToHM(used*60),'Usadas')
+      + balanceItem(minToHM(balance*60), 'Saldo');
+    html += '</div>';
+    html += '<form data-form="card-info" data-card="'+card.id+'">';
+    html += '<div class="field-row">'
+      + '<div class="field"><label>Total de horas contratadas</label><input type="number" min="0" step="0.5" name="contractedHours" value="'+esc(effHours)+'"></div>'
+      + '<div class="field"><label>Início da implantação</label><input type="date" name="startDate" value="'+esc(effStart)+'"></div>'
+      + '</div>';
+    html += '<div class="field"><label>Produtos contratados</label><div class="check-grid">';
+    activeProductTags().forEach(t=>{
+      const checked = effTags.includes(t.id) ? 'checked' : '';
+      html += '<label class="check-pill" style="border-color:'+t.color+'55;"><input type="checkbox" name="productTags" value="'+t.id+'" '+checked+'><span style="color:'+t.color+';font-weight:700;">'+esc(t.name)+'</span></label>';
+    });
+    /* Se o card tem algum produto que ficou inativo, mostramos com aviso para o usuário poder removê-lo */
+    (card.productTags||[]).forEach(tid=>{
+      const t = byId(state.productTags, tid);
+      if(t && t.inactive && !activeProductTags().some(at=>at.id===tid)){
+        html += '<label class="check-pill" style="border-color:var(--border);opacity:.6;"><input type="checkbox" name="productTags" value="'+t.id+'" checked><span style="font-weight:700;">'+esc(t.name)+' <small style="color:var(--ink-faint);">(inativo)</small></span></label>';
+      }
+    });
+    html += '</div>';
+    html += '<div style="display:flex;gap:6px;margin-top:9px;">'
+      + '<input type="text" class="quick-add-input" data-for="product" placeholder="Novo produto...">'
+      + '<input type="color" class="quick-add-color" data-for="product" value="'+colorForIndex(state.productTags.length)+'">'
+      + '<button type="button" class="btn btn-sm btn-primary" data-action="quick-add-product">+ Adicionar</button>'
+      + '</div>';
+    html += '</div>';
+    html += '<div class="field"><label>Mover para</label><select name="moveTo">';
+    state.boards.forEach(b=>{
+      const a=getAnalyst(b.analystId);
+      b.lists.forEach(l=>{
+        const val = b.id+'::'+l.id;
+        const sel = (val===effMove) ? 'selected' : '';
+        html += '<option value="'+val+'" '+sel+'>'+esc(a?a.name:b.name)+' — '+esc(l.name)+'</option>';
+      });
+    });
+    html += '</select></div>';
+    html += '<div class="form-actions"><button type="button" class="btn btn-danger" data-action="delete-card" data-id="'+card.id+'">Excluir card</button><span style="flex:1;"></span><button type="submit" class="btn btn-primary">Salvar</button></div>';
+    html += '</form>';
+  } else if(ui.cardTab==='agenda'){
+    html += '<button class="btn btn-primary btn-sm" style="margin-bottom:12px;" data-action="open-modal" data-modal="schedule-new" data-card="'+card.id+'">+ Nova agenda</button>';
+    const scheds = schedulesForCard(card.id);
+    if(!scheds.length) html += '<p class="hint">Nenhum agendamento para este cliente ainda.</p>';
+    scheds.forEach(s=> html += renderSchedRow(s));
+  } else {
+    const hist = card.history||[];
+    if(!hist.length) html += '<p class="hint">Sem histórico.</p>';
+    hist.forEach(h=> html += '<div class="hist-row">'+esc(h.text)+'<div class="ts">'+fmtDT(h.ts)+'</div></div>');
   }
+  return html;
 }
+function tabBtn(key,label){ return '<button class="tab-btn'+(ui.cardTab===key?' active':'')+'" data-action="card-tab" data-tab="'+key+'">'+label+'</button>'; }
+function balanceItem(num,lbl){ return '<div class="balance-item"><div class="num">'+num+'</div><div class="lbl">'+lbl+'</div></div>'; }
+function renderSchedRow(s){
+  const due = scheduleIsDue(s);
+  const modules = (s.modules||[]).join(', ');
+  const screens = (s.trainedScreens||[]).join(', ');
+  const isInterna = isInternalType(s.type);
+  let actions = '';
+  if(s.status==='pendente'){
+    actions = '<button class="btn btn-sm btn-primary" data-action="open-modal" data-modal="confirm-complete" data-id="'+s.id+'">Concluir</button>'
+      + '<button class="btn btn-sm btn-ghost" data-action="mark-not-done" data-id="'+s.id+'">Não realizada</button>'
+      + '<button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="schedule-edit" data-id="'+s.id+'">Editar</button>';
+  } else {
+    actions = '<button class="btn btn-sm btn-ghost" data-action="revert-to-pending" data-id="'+s.id+'">'+(s.status==='concluida'?'Reverter conclusão':'Reverter p/ pendente')+'</button>'
+      + '<button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="schedule-edit" data-id="'+s.id+'">Editar</button>';
+  }
+  if(s.status==='concluida') actions += '<button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="schedule-report" data-id="'+s.id+'">🖨 Relatório</button>';
+  actions += '<button class="btn btn-sm btn-ghost" data-action="delete-schedule" data-id="'+s.id+'">🗑</button>';
+  return '<div class="sched-row'+(due?' due':'')+'">'
+    + '<div class="sched-main"><div class="sched-time">'+fmtDateBR(s.date)+' · '+s.startTime+'–'+s.endTime+' <span class="badge '+s.status+'">'+statusLabel(s.status)+'</span> <span class="badge" style="background:'+(isInterna?'var(--gold-soft)':'var(--brand-soft)')+';color:'+(isInterna?'var(--gold)':'var(--brand)')+';">'+(isInterna?'Interna':'Implantação')+'</span></div>'
+    + '<div class="sched-sub">'+esc(s.type)+(modules? ' · '+esc(modules) : '')+(s.status==='concluida'? ' · '+minToHM(s.deductMinutes)+' abatido':'')+'</div>'
+    + (screens? '<div class="sched-sub">🖥 '+esc(screens)+'</div>' : '')
+    + (s.trainedUsers? '<div class="sched-sub">👤 '+esc(s.trainedUsers)+'</div>' : '')
+    + '</div>'
+    + '<div class="row-actions">'+actions+'</div></div>';
+}
+function statusLabel(st){ return st==='pendente'?'Pendente': st==='concluida'?'Concluída':'Não realizada'; }
 
 /* ============================= CALENDAR VIEW ============================= */
-function renderCalendarView(){
-  const start = ui.calStart;
-  const days = [0,1,2,3,4,5,6].map(i=> addDaysISO(start, i));
-
-  let scheds = state.schedules;
-  if(ui.calAnalyst!=='all') scheds = scheds.filter(s=> s.analystId===ui.calAnalyst);
-  if(ui.calCategory!=='all'){
-    if(ui.calCategory==='internal') scheds = scheds.filter(s=> { const t=state.agendaTypes.find(x=>x.name===s.type); return t && t.isInternal; });
-    else if(ui.calCategory==='client') scheds = scheds.filter(s=> { const t=state.agendaTypes.find(x=>x.name===s.type); return !t || !t.isInternal; });
-  }
-
-  const hours = [];
-  for(let h=7; h<=19; h++) hours.push(String(h).padStart(2,'0')+':00');
-
-  return `<div class="calendar-view">
-    <div class="cal-toolbar">
-      <button class="btn btn-ghost btn-sm" onclick="ui.calStart=addDaysISO(ui.calStart,-7);render();">◀ Semana anterior</button>
-      <button class="btn btn-ghost btn-sm" onclick="ui.calStart=startOfWeekISO(todayISO());render();">Hoje</button>
-      <button class="btn btn-ghost btn-sm" onclick="ui.calStart=addDaysISO(ui.calStart,7);render();">Próxima semana ▶</button>
-
-      <div class="grow"></div>
-
-      <select class="btn btn-sm" onchange="ui.calAnalyst=this.value;render();">
-        <option value="all" ${ui.calAnalyst==='all'?'selected':''}>Todos os analistas</option>
-        ${state.analysts.map(a=> `<option value="${a.id}" ${ui.calAnalyst===a.id?'selected':''}>${esc(a.name)}${a.inactive?' (Inativo)':''}</option>`).join('')}
-      </select>
-
-      <select class="btn btn-sm" onchange="ui.calCategory=this.value;render();">
-        <option value="all" ${ui.calCategory==='all'?'selected':''}>Todas as categorias</option>
-        <option value="client" ${ui.calCategory==='client'?'selected':''}>Apenas Clientes</option>
-        <option value="internal" ${ui.calCategory==='internal'?'selected':''}>Apenas Internas</option>
-      </select>
-    </div>
-
-    <div class="cal-tg-outer">
-      <div class="cal-tg-inner">
-        <div class="cal-tg-headerrow">
-          <div style="padding:8px;font-size:11px;color:var(--ink-faint);text-align:center;">Hora</div>
-          ${days.map(d=> {
-            const isToday = d===todayISO();
-            return `<div class="cal-tg-daycol-head ${isToday?'today':''}">
-              <div class="wd">${weekdayShort(d)}</div>
-              <div class="dt">${fmtDateBR(d).slice(0,5)}</div>
-            </div>`;
-          }).join('')}
-        </div>
-
-        <div class="cal-tg-bodyscroll">
-          <div class="cal-tg-bodyrow" style="--hour-px:50px; height:${13*50}px;">
-            <div class="cal-tg-hourlabels">
-              ${hours.map((h, idx)=> `<div class="cal-tg-hourlabel" style="top:${idx*50}px;">${h}</div>`).join('')}
-            </div>
-
-            ${days.map(d=> {
-              const dayScheds = scheds.filter(s=> s.date===d);
-              return `<div class="cal-tg-daycol" onclick="openModal('new-schedule',{date:'${d}'})">
-                ${dayScheds.map(s=> {
-                  const sMin = timeToMin(s.startTime) - 7*60;
-                  const eMin = timeToMin(s.endTime) - 7*60;
-                  const top = (sMin / 60) * 50;
-                  const height = Math.max(22, ((eMin - sMin) / 60) * 50);
-                  const client = s.cardId ? getClient(getCard(s.cardId)?.clientId) : (s.clientId ? getClient(s.clientId) : null);
-                  const analyst = getAnalyst(s.analystId);
-                  const typeObj = state.agendaTypes.find(t=>t.name===s.type);
-                  const isInt = typeObj && typeObj.isInternal;
-                  const isDue = scheduleIsDue(s);
-
-                  return `<div class="cal-tg-event ${isInt?'internal':''} ${isDue?'due':''}"
-                    style="top:${top}px; height:${height}px; border-left-color:${analyst?analyst.color:'var(--brand)'};"
-                    onclick="event.stopPropagation();openModal('edit-schedule',{schedId:'${s.id}'})"
-                    title="${esc(client?client.name:'Sem cliente')} (${s.startTime}-${s.endTime})">
-                    <div class="t">${s.startTime} ${esc(client?client.name:'Sem cliente')}</div>
-                    <div style="font-size:10px;opacity:.85;">${esc(s.type)} — ${esc(analyst?analyst.name:'')}</div>
-                  </div>`;
-                }).join('')}
-              </div>`;
-            }).join('')}
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>`;
-}
-
-/* ============================= CLIENTS VIEW ============================= */
-function renderClientsView(){
-  let clients = state.clients;
-  if(ui.clientSearch){
-    const q = ui.clientSearch.toLowerCase();
-    clients = clients.filter(c=> c.name.toLowerCase().includes(q) || (c.companyName&&c.companyName.toLowerCase().includes(q)) || (c.code&&c.code.toLowerCase().includes(q)) || (c.cnpj&&c.cnpj.includes(q)));
-  }
-
-  return `<div class="clients-view">
-    <div style="margin-bottom:14px;display:flex;gap:10px;">
-      <div class="search-box" style="max-width:320px;">
-        🔍 <input type="text" placeholder="Buscar cliente por nome, código ou CNPJ..." value="${esc(ui.clientSearch)}" oninput="ui.clientSearch=this.value;render();">
-      </div>
-    </div>
-
-    <table>
-      <thead>
-        <tr>
-          <th>Código</th>
-          <th>Nome Fantasia / Razão Social</th>
-          <th>CNPJ / Cidade</th>
-          <th>Tipo</th>
-          <th>Cards Ativos</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${clients.length===0 ? `<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--ink-faint);">Nenhum cliente encontrado.</td></tr>` : ''}
-        ${clients.map(c=> {
-          const cards = cardsForClient(c.id);
-          return `<tr>
-            <td style="font-weight:700;">${esc(c.code||'—')}</td>
-            <td>
-              <div style="font-weight:700;color:var(--brand-dark);">${esc(c.name)}</div>${c.companyName ? `<div style="font-size:11.5px;color:var(--ink-soft);">${esc(c.companyName)}</div>` : ''}
-            </td>
-            <td>
-              <div>${esc(c.cnpj||'—')}</div>
-              <div style="font-size:11.5px;color:var(--ink-soft);">${esc(c.city||'—')}</div>
-            </td>
-            <td><span class="badge ${c.clientType==='novo'?'pendente':'concluida'}">${c.clientType==='novo'?'Novo':'Base'}</span></td>
-            <td>${cards.length} card(s)</td>
-            <td>
-              <div class="row-actions">
-                <button class="btn btn-ghost btn-sm" onclick="openModal('edit-client',{clientId:'${c.id}'})">✏️ Editar</button>
-                <button class="btn btn-danger btn-sm" onclick="confirmDeleteClient('${c.id}')">🗑 Excluir</button>
-              </div>
-            </td>
-          </tr>`;
-        }).join('')}
-      </tbody>
-    </table>
-  </div>`;
-}
-
-function confirmDeleteClient(id){
-  const cl = getClient(id); if(!cl) return;
-  showConfirm(`Tem certeza que deseja excluir o cliente "${cl.name}"? Todos os cards e agendamentos vinculados serão apagados.`, ()=>{
-    deleteClient(id); persist(); render();
+function calcCalTimeRange(scheds){
+  let minH = 7, maxH = 21;
+  scheds.forEach(s=>{
+    const sh = Math.floor(timeToMin(s.startTime)/60);
+    const eh = Math.ceil(timeToMin(s.endTime)/60);
+    if(sh < minH) minH = Math.max(0, sh-1);
+    if(eh > maxH) maxH = Math.min(24, eh+1);
   });
+  return {startHour:minH, endHour:maxH};
+}
+function layoutDayEvents(scheds){
+  const items = scheds.map(s=>({ s, start:timeToMin(s.startTime), end:Math.max(timeToMin(s.endTime), timeToMin(s.startTime)+15) }))
+    .sort((a,b)=> a.start-b.start || a.end-b.end);
+  const clusters = [];
+  let current = [], clusterEnd = -1;
+  items.forEach(it=>{
+    if(current.length && it.start >= clusterEnd){ clusters.push(current); current = []; }
+    current.push(it);
+    clusterEnd = Math.max(clusterEnd, it.end);
+  });
+  if(current.length) clusters.push(current);
+  const result = [];
+  clusters.forEach(cluster=>{
+    const lanes = [];
+    cluster.forEach(it=>{
+      let laneIdx = lanes.findIndex(endT=> it.start >= endT);
+      if(laneIdx===-1){ laneIdx = lanes.length; lanes.push(it.end); } else { lanes[laneIdx] = it.end; }
+      it.lane = laneIdx;
+    });
+    const totalLanes = lanes.length;
+    cluster.forEach(it=> result.push({sched:it.s, start:it.start, end:it.end, lane:it.lane, lanes:totalLanes}));
+  });
+  return result;
+}
+function isInternalType(typeName){ const t = state.agendaTypes.find(t=>t.name===typeName); return !!(t && t.isInternal); }
+function renderCalendarView(){
+  let html = '<div class="cal-toolbar">'
+    + '<select id="cal-analyst-filter" data-action="cal-filter">'
+      + '<option value="all"'+(ui.calAnalyst==='all'?' selected':'')+'>Todos os analistas</option>';
+  state.analysts.forEach(a=> html += '<option value="'+a.id+'"'+(ui.calAnalyst===a.id?' selected':'')+'>'+esc(a.name)+(a.inactive?' (inativo)':'')+'</option>');
+  html += '</select>'
+    + '<select id="cal-category-filter" data-action="cal-category-filter">'
+      + '<option value="all"'+(ui.calCategory==='all'?' selected':'')+'>Interna + Implantação</option>'
+      + '<option value="implantacao"'+(ui.calCategory==='implantacao'?' selected':'')+'>Somente Implantação</option>'
+      + '<option value="interna"'+(ui.calCategory==='interna'?' selected':'')+'>Somente Interna</option>'
+      + '</select>'
+    + '<button class="btn btn-sm" data-action="cal-nav" data-dir="-1">‹ Semana anterior</button>'
+    + '<button class="btn btn-sm" data-action="cal-nav" data-dir="0">Hoje</button>'
+    + '<button class="btn btn-sm" data-action="cal-nav" data-dir="1">Próxima semana ›</button>'
+    + '<span class="grow"></span>'
+    + '<button class="btn btn-primary" data-action="open-modal" data-modal="schedule-new">+ Novo agendamento</button>'
+    + '</div>';
+
+  function inCategory(s){ return ui.calCategory==='all' || (ui.calCategory==='interna') === isInternalType(s.type); }
+
+  const days = [];
+  for(let i=0;i<7;i++) days.push(addDaysISO(ui.calStart, i));
+  let weekScheds = [];
+  days.forEach(d=>{ weekScheds = weekScheds.concat(state.schedules.filter(s=>s.date===d && (ui.calAnalyst==='all' || s.analystId===ui.calAnalyst) && inCategory(s))); });
+  const {startHour, endHour} = calcCalTimeRange(weekScheds);
+  const pxPerHour = 48;
+  const pxPerMin = pxPerHour/60;
+  const gridHeight = (endHour-startHour)*pxPerHour;
+  const today = todayISO();
+
+  html += '<div class="cal-tg-outer"><div class="cal-tg-inner">';
+  html += '<div class="cal-tg-headerrow"><div></div>';
+  days.forEach(d=>{
+    html += '<div class="cal-tg-daycol-head'+(d===today?' today':'')+'"><div class="wd">'+weekdayShort(d)+'</div><div class="dt">'+fmtDateBR(d).slice(0,5)+'</div></div>';
+  });
+  html += '</div>';
+
+  html += '<div class="cal-tg-bodyscroll"><div class="cal-tg-bodyrow" style="height:'+gridHeight+'px;">';
+  html += '<div class="cal-tg-hourlabels" style="height:'+gridHeight+'px;">';
+  for(let h=startHour; h<=endHour; h++){
+    html += '<div class="cal-tg-hourlabel" style="top:'+((h-startHour)*pxPerHour)+'px;">'+String(h).padStart(2,'0')+':00</div>';
+  }
+  html += '</div>';
+
+  const now = new Date();
+  const nowMin = now.getHours()*60+now.getMinutes();
+
+  days.forEach(d=>{
+    const scheds = state.schedules.filter(s=>s.date===d && (ui.calAnalyst==='all' || s.analystId===ui.calAnalyst) && inCategory(s));
+    const laidOut = layoutDayEvents(scheds);
+    html += '<div class="cal-tg-daycol" data-action="cal-grid-click" data-date="'+d+'" data-start-hour="'+startHour+'" data-px-per-hour="'+pxPerHour+'" style="height:'+gridHeight+'px;--hour-px:'+pxPerHour+'px;">';
+    laidOut.forEach(item=>{
+      const s = item.sched;
+      const analyst = getAnalyst(s.analystId);
+      const client = s.clientId? getClient(s.clientId) : null;
+      const due = scheduleIsDue(s);
+      const internal = isInternalType(s.type);
+      const top = (item.start - startHour*60)*pxPerMin;
+      const height = Math.max((item.end-item.start)*pxPerMin, 20);
+      const widthPct = 100/item.lanes;
+      const leftPct = item.lane*widthPct;
+      const borderColor = ui.calAnalyst==='all' && analyst ? analyst.color : 'var(--brand)';
+      const draggable = s.status==='pendente';
+      html += '<div class="cal-tg-event'+(due?' due':'')+(internal?' internal':'')+'" draggable="'+(draggable?'true':'false')+'" data-draggable="'+(draggable?'1':'0')+'" style="top:'+top+'px;height:'+height+'px;left:'+leftPct+'%;width:calc('+widthPct+'% - 4px);border-left-color:'+(internal?'var(--gold)':borderColor)+';" data-action="open-modal" data-modal="schedule-edit" data-id="'+s.id+'" title="'+esc((internal?'[Interna] ':'')+s.startTime+'–'+s.endTime+' · '+(client?client.name:'Interno')+' · '+s.type)+(draggable? ' (arraste para reagendar)':'')+'">'
+        + '<div class="t">'+(internal?'🏠 ':'')+s.startTime+' '+esc(client?client.name:'Interno')+'</div>'
+        + (height>34? '<div style="opacity:.8;">'+esc(s.type)+(ui.calAnalyst==='all'&&analyst? ' · '+esc(analyst.name):'')+'</div>' : '')
+        + '</div>';
+    });
+    if(d===today && nowMin>=startHour*60 && nowMin<=endHour*60){
+      html += '<div class="cal-tg-now" style="top:'+((nowMin-startHour*60)*pxPerMin)+'px;"></div>';
+    }
+    html += '</div>';
+  });
+  html += '</div></div>';
+  html += '</div></div>';
+  return html;
 }
 
 /* ============================= REPORTS VIEW ============================= */
 function renderReportsView(){
-  return `<div class="reports-view">
-    <div class="section-card">
-      <h3>📊 Relatório de Saldo de Horas por Cliente</h3>
-      <p style="font-size:12.5px;color:var(--ink-soft);margin-bottom:14px;">Resumo das horas contratadas, horas utilizadas em agendamentos concluídos e saldo restante.</p>
+  let html = '';
+  html += '<div class="section-card"><h3>Saldo de horas por cliente</h3><table><thead><tr><th>Cliente</th><th>Analista</th><th>Contratadas</th><th>Usadas</th><th>Saldo</th></tr></thead><tbody>';
+  if(!state.cards.length) html += '<tr><td colspan="5" class="hint">Nenhum cliente em implantação ainda.</td></tr>';
+  state.cards.forEach(c=>{
+    const client=getClient(c.clientId), board=getBoard(c.boardId), analyst=board?getAnalyst(board.analystId):null;
+    const used = cardUsedMinutes(c)/60, bal = cardBalanceHours(c);
+    html += '<tr><td>'+esc(client?client.name:'—')+'</td><td>'+esc(analyst?analyst.name:'—')+'</td><td>'+c.contractedHours+'h</td><td>'+minToHM(used*60)+'</td><td style="color:'+(bal<0?'var(--danger)':'var(--ok)')+';font-weight:700;">'+minToHM(bal*60)+'</td></tr>';
+  });
+  html += '</tbody></table></div>';
 
-      <table>
-        <thead>
-          <tr>
-            <th>Cliente</th>
-            <th>Analista / Quadro</th>
-            <th>Horas Contratadas</th>
-            <th>Horas Utilizadas</th>
-            <th>Saldo Restante</th>
-            <th>Horas Não Abatidas</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${state.clients.length===0 ? `<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--ink-faint);">Nenhum cliente cadastrado.</td></tr>` : ''}
-          ${state.clients.map(cl=> {
-            const cards = cardsForClient(cl.id);
-            const totalContracted = cards.reduce((sum,c)=> sum+(c.contractedHours||0), 0);
-            const totalUsed = cards.reduce((sum,c)=> sum+(cardUsedMinutes(c)/60), 0);
-            const balance = totalContracted - totalUsed;
+  html += '<div class="section-card"><h3>Módulos treinados por cliente</h3><table><thead><tr><th>Cliente</th><th>Módulos treinados</th><th>Telas treinadas</th><th>Usuários treinados</th></tr></thead><tbody>';
+  const anyTrained = state.cards.some(c=> state.schedules.some(s=>s.cardId===c.id && s.status==='concluida' && s.type==='Treinamento'));
+  if(!anyTrained) html += '<tr><td colspan="4" class="hint">Nenhum treinamento concluído registrado ainda.</td></tr>';
+  state.cards.forEach(c=>{
+    const trainSchedules = state.schedules.filter(s=>s.cardId===c.id && s.status==='concluida' && s.type==='Treinamento');
+    const mods = new Set();
+    const screens = new Set();
+    const users = new Set();
+    trainSchedules.forEach(s=>{
+      (s.modules||[]).forEach(m=>mods.add(m));
+      (s.trainedScreens||[]).forEach(sc=>screens.add(sc));
+      (s.trainedUsers||'').split(',').map(u=>u.trim()).filter(Boolean).forEach(u=>users.add(u));
+    });
+    if(mods.size || screens.size || users.size){
+      const client=getClient(c.clientId);
+      html += '<tr><td>'+esc(client?client.name:'—')+'</td>'
+        + '<td>'+([...mods].map(m=>'<span class="chip" style="background:var(--brand);margin-right:4px;">'+esc(m)+'</span>').join('')||'<span class="hint">—</span>')+'</td>'
+        + '<td>'+([...screens].map(esc).join(', ')||'<span class="hint">—</span>')+'</td>'
+        + '<td>'+([...users].map(esc).join(', ')||'<span class="hint">—</span>')+'</td></tr>';
+    }
+  });
+  html += '</tbody></table></div>';
 
-            /* Calcula horas não abatidas (agendamentos sem card mas concluídos) */
-            const nonDeductedScheds = state.schedules.filter(s=> s.clientId===cl.id && !s.cardId && s.status==='concluida');
-            const totalNonDeductedMin = nonDeductedScheds.reduce((sum,s)=> sum + (s.deductMinutes!=null ? s.deductMinutes : (timeToMin(s.endTime)-timeToMin(s.startTime))), 0);
+  html += '<div class="section-card"><h3>Horas realizadas por analista</h3><table><thead><tr><th>Analista</th><th>Sessões concluídas</th><th>Total de horas</th></tr></thead><tbody>';
+  if(!state.analysts.length) html += '<tr><td colspan="3" class="hint">Nenhum analista cadastrado.</td></tr>';
+  state.analysts.forEach(a=>{
+    const scheds = state.schedules.filter(s=>s.analystId===a.id && s.status==='concluida');
+    const totalMin = scheds.reduce((sum,s)=> sum + (s.deductMinutes||0), 0);
+    html += '<tr'+(a.inactive?' class="row-inactive"':'')+'><td>'+esc(a.name)+(a.inactive?' <span class="badge" style="background:#B9CAD5;color:#fff;">Inativo</span>':'')+'</td><td>'+scheds.length+'</td><td>'+minToHM(totalMin)+'</td></tr>';
+  });
+  html += '</tbody></table></div>';
 
-            return `<tr>
-              <td style="font-weight:700;color:var(--brand-dark);">${esc(cl.name)}</td>
-              <td>${cards.map(c=> { const b=getBoard(c.boardId); const a=b?getAnalyst(b.analystId):null; return esc(a?a.name:'—'); }).join(', ')|||'—'}</td>
-              <td>${totalContracted.toFixed(1)}h</td>
-              <td>${totalUsed.toFixed(1)}h</td>
-              <td><span class="balance-pill ${balance<0?'neg':''}">${balance.toFixed(1)}h</span></td>
-              <td><span style="font-weight:700;color:var(--gold);">${(totalNonDeductedMin/60).toFixed(1)}h</span></td>
-            </tr>`;
-          }).join('')}
-        </tbody>
-      </table>
-    </div>
-  </div>`;
+  html += '<div class="section-card"><h3>Analista × Clientes</h3><table><thead><tr><th>Analista</th><th>Clientes em implantação</th></tr></thead><tbody>';
+  if(!state.analysts.length) html += '<tr><td colspan="2" class="hint">Nenhum analista cadastrado.</td></tr>';
+  state.analysts.forEach(a=>{
+    const board = boardOfAnalyst(a.id);
+    const cards = board ? cardsInBoard(board.id) : [];
+    const names = cards.map(c=>{ const cl=getClient(c.clientId); const list = board.lists.find(l=>l.id===c.listId); return (cl?cl.name:'—')+' <span style="color:var(--ink-faint);">('+esc(list?list.name:'')+')</span>'; });
+    html += '<tr'+(a.inactive?' class="row-inactive"':'')+'><td>'+esc(a.name)+(a.inactive?' <span class="badge" style="background:#B9CAD5;color:#fff;">Inativo</span>':'')+'</td><td>'+(names.length? names.join(', ') : '<span class="hint">Nenhum</span>')+'</td></tr>';
+  });
+  html += '</tbody></table></div>';
+
+  const internalWithClient = state.schedules.filter(s=> isInternalType(s.type) && s.clientId);
+  html += '<div class="section-card"><h3>Agendas internas vinculadas a cliente</h3>'
+    + '<p class="hint" style="margin-top:-4px;">Agendas de tipo interno (não são atendimento direto) que ainda assim foram vinculadas a um cliente específico.</p>'
+    + '<table><thead><tr><th>Cliente</th><th>Analista</th><th>Data</th><th>Horário</th><th>Tipo</th><th>Observações</th></tr></thead><tbody>';
+  if(!internalWithClient.length) html += '<tr><td colspan="6" class="hint">Nenhuma agenda interna vinculada a cliente no momento.</td></tr>';
+  internalWithClient.sort((a,b)=> (b.date+b.startTime).localeCompare(a.date+a.startTime)).forEach(s=>{
+    const client = getClient(s.clientId);
+    const analyst = getAnalyst(s.analystId);
+    html += '<tr><td>'+esc(client?client.name:'—')+'</td><td>'+esc(analyst?analyst.name:'—')+'</td><td>'+fmtDateBR(s.date)+'</td><td>'+s.startTime+'–'+s.endTime+'</td><td>'+esc(s.type)+'</td><td>'+esc(s.notes||'—')+'</td></tr>';
+  });
+  html += '</tbody></table></div>';
+  return html;
+}
+
+/* ============================= CLIENTS VIEW ============================= */
+function renderClientsView(){
+  let html = '<div class="cal-toolbar" style="margin-bottom:14px;">'
+    + '<div class="search-box" style="min-width:260px;"><span>🔎</span><input id="client-search-input" placeholder="Buscar por nome, código ou CNPJ..." value="'+esc(ui.clientSearch)+'"></div>'
+    + '<span class="grow"></span>'
+    + '<input type="file" id="import-clients-file" accept=".xlsx,.xls,.csv" style="display:none;">'
+    + '<button class="btn btn-sm btn-ghost" data-action="download-client-template">Baixar modelo</button>'
+    + '<button class="btn btn-sm" data-action="import-clients-trigger">📥 Importar Excel</button>'
+    + '</div>';
+  const q = ui.clientSearch.trim().toLowerCase();
+  let clients = state.clients;
+  if(q){ clients = clients.filter(cl=> cl.name.toLowerCase().includes(q) || (cl.code||'').toLowerCase().includes(q) || (cl.cnpj||'').toLowerCase().includes(q) || (cl.companyName||'').toLowerCase().includes(q)); }
+  html += '<div class="section-card" style="overflow-x:auto;"><table><thead><tr><th>Código</th><th>Nome fantasia</th><th>Razão social</th><th>CNPJ</th><th>Tipo</th><th>Segmento</th><th>Cidade</th><th>Contato</th><th>E-mail</th><th>Telefone</th><th>Cards</th><th></th></tr></thead><tbody>';
+  if(!clients.length) html += '<tr><td colspan="12" class="hint">Nenhum cliente encontrado.</td></tr>';
+  clients.forEach(cl=>{
+    const cardCount = state.cards.filter(c=>c.clientId===cl.id).length;
+    const isNovo = (cl.clientType||'novo')==='novo';
+    const typeBadge = '<span class="badge" style="background:'+(isNovo?'var(--gold-soft)':'var(--brand-soft)')+';color:'+(isNovo?'var(--gold)':'var(--brand)')+';">'+(isNovo?'Novo':'Base')+'</span>';
+    const hasLinks = cardCount > 0 || schedulesForClient(cl.id).length > 0;
+    html += '<tr><td>'+esc(cl.code||'—')+'</td><td style="font-weight:700;">'+esc(cl.name)+'</td><td>'+esc(cl.companyName||'—')+'</td><td>'+esc(cl.cnpj||'—')+'</td><td>'+typeBadge+'</td><td>'+esc(cl.segment||'—')+'</td><td>'+esc(cl.city||'—')+'</td><td>'+esc(cl.contact||'—')+'</td><td>'+esc(cl.email||'—')+'</td><td>'+esc(cl.phone||'—')+'</td><td>'+cardCount+'</td>'
+      + '<td><div class="row-actions"><button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="client-edit" data-id="'+cl.id+'">Editar</button>'
+      + '<button class="btn btn-sm btn-danger" data-action="delete-client" data-id="'+cl.id+'" '+(hasLinks?'disabled title="Não é possível excluir: este cliente possui card(s)/agendamento(s) vinculado(s). Remova-os primeiro."':'')+'>Excluir</button></div></td></tr>';
+  });
+  html += '</tbody></table></div>';
+  return html;
 }
 
 /* ============================= SETTINGS VIEW ============================= */
+function switchCell(kind, id, inactive, labelOn, labelOff){
+  return '<label class="switch" title="'+(inactive? 'Inativo — clique para ativar':'Ativo — clique para inativar')+'">'
+    + '<input type="checkbox" data-action="toggle-entity-active" data-kind="'+kind+'" data-id="'+id+'" '+(inactive?'':'checked')+'>'
+    + '<span class="slider"></span></label>'
+    + '<span class="status-label '+(inactive?'inactive':'active')+'">'+(inactive? (labelOff||'Inativo') : (labelOn||'Ativo'))+'</span>';
+}
+
 function renderSettingsView(){
-  const tab = ui.settingsTab;
-  return `<div class="settings-view">
-    <div class="settings-tabs">
-      <button class="btn btn-sm ${tab==='produtos'?'btn-primary':''}" onclick="ui.settingsTab='produtos';render();">🏷 Produtos</button>
-      <button class="btn btn-sm ${tab==='modulos'?'btn-primary':''}" onclick="ui.settingsTab='modulos';render();">📦 Módulos e Telas</button>
-      <button class="btn btn-sm ${tab==='agendas'?'btn-primary':''}" onclick="ui.settingsTab='agendas';render();">📅 Tipos de Agenda</button>
-      <button class="btn btn-sm ${tab==='analistas'?'btn-primary':''}" onclick="ui.settingsTab='analistas';render();">👥 Analistas / Usuários</button>
-      <button class="btn btn-sm ${tab==='nuvem'?'btn-primary':''}" onclick="ui.settingsTab='nuvem';render();">☁ Nuvem & Sincronização</button>
-    </div>
-
-    ${tab==='produtos' ? renderSettingsProducts() : ''}
-    ${tab==='modulos' ? renderSettingsModules() : ''}
-    ${tab==='agendas' ? renderSettingsTypes() : ''}
-    ${tab==='analistas' ? renderSettingsAnalysts() : ''}
-    ${tab==='nuvem' ? renderSettingsCloud() : ''}
-  </div>`;
-}
-
-function renderSettingsProducts(){
-  return `<div class="section-card">
-    <h3>Tags de Produtos</h3>
-    <form onsubmit="event.preventDefault();handleAddProductTag(this);" class="inline-add">
-      <input type="text" name="name" placeholder="Nome do produto (ex: PDV, Frota)" required>
-      <input type="color" name="color" value="#3E8E7E">
-      <button type="submit" class="btn btn-primary btn-sm">Adicionar Tag</button>
-    </form>
-
-    <div class="tag-list" style="margin-top:14px;">
-      ${state.productTags.map(t=> `
-        <div class="chip-x" style="background:${t.color};color:#fff;padding:4px 10px;border-radius:20px;font-weight:700;font-size:12px;">
-          <span>${esc(t.name)}</span>
-          <button onclick="confirmDeleteProductTag('${t.id}')">✕</button>
-        </div>
-      `).join('')}
-    </div>
-  </div>`;
-}
-
-function handleAddProductTag(form){
-  const v = captureFormValues(form);
-  if(!v.name) return;
-  state.productTags.push({id:uid('pt'), name:v.name.trim(), color:v.color||'#3E8E7E', inactive:false});
-  persist(); render();
-}
-function confirmDeleteProductTag(id){
-  const t = byId(state.productTags, id); if(!t) return;
-  showConfirm(`Excluir a tag "${t.name}"?`, ()=>{
-    state.productTags = state.productTags.filter(x=>x.id!==id);
-    persist(); render();
-  });
-}
-
-function renderSettingsModules(){
-  return `<div class="section-card">
-    <h3>Módulos e Telas de Treinamento</h3>
-    <form onsubmit="event.preventDefault();handleAddModule(this);" class="inline-add">
-      <input type="text" name="name" placeholder="Novo módulo (ex: Financeiro)" required>
-      <button type="submit" class="btn btn-primary btn-sm">Criar Módulo</button>
-    </form>
-
-    <div style="margin-top:16px;display:flex;flex-direction:column;gap:14px;">
-      ${state.modules.map(m=> {
-        const screens = screensForModule(m.id);
-        return `<div style="background:var(--surface-2);border:1px solid var(--border);padding:12px 14px;border-radius:10px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-            <strong style="font-size:14px;color:var(--brand-dark);">${esc(m.name)}</strong>
-            <button class="btn btn-danger btn-sm" onclick="confirmDeleteModule('${m.id}')">Excluir Módulo</button>
-          </div>
-
-          <form onsubmit="event.preventDefault();handleAddScreen('${m.id}', this);" class="inline-add" style="margin-bottom:8px;">
-            <input type="text" name="screenName" placeholder="Nova tela deste módulo" required style="font-size:12.5px;padding:6px 8px;">
-            <button type="submit" class="btn btn-sm">+ Tela</button>
-          </form>
-
-          <div class="list-plain">
-            ${screens.map(scr=> `<div class="item-x">
-              <span>${esc(scr.name)}</span>
-              <button onclick="confirmDeleteScreen('${scr.id}')">✕</button>
-            </div>`).join('')}
-          </div>
-        </div>`;
-      }).join('')}
-    </div>
-  </div>`;
-}
-
-function handleAddModule(form){
-  const v = captureFormValues(form); if(!v.name) return;
-  state.modules.push({id:uid('md'), name:v.name.trim(), inactive:false});
-  persist(); render();
-}
-function confirmDeleteModule(id){
-  const m = byId(state.modules, id); if(!m) return;
-  showConfirm(`Excluir o módulo "${m.name}" e todas as suas telas?`, ()=>{
-    state.screens = state.screens.filter(s=>s.moduleId!==id);
-    state.modules = state.modules.filter(x=>x.id!==id);
-    persist(); render();
-  });
-}
-function handleAddScreen(moduleId, form){
-  const v = captureFormValues(form); if(!v.screenName) return;
-  state.screens.push({id:uid('sc'), moduleId, name:v.screenName.trim(), inactive:false});
-  persist(); render();
-}
-function confirmDeleteScreen(id){
-  const s = byId(state.screens, id); if(!s) return;
-  showConfirm(`Excluir a tela "${s.name}"?`, ()=>{
-    state.screens = state.screens.filter(x=>x.id!==id);
-    persist(); render();
-  });
-}
-
-function renderSettingsTypes(){
-  return `<div class="section-card">
-    <h3>Tipos de Agenda</h3>
-    <form onsubmit="event.preventDefault();handleAddAgendaType(this);" class="inline-add">
-      <input type="text" name="name" placeholder="Nome do tipo (ex: Treinamento, Visita)" required>
-      <label class="check-pill"><input type="checkbox" name="isInternal"> É compromisso interno?</label>
-      <button type="submit" class="btn btn-primary btn-sm">Adicionar Tipo</button>
-    </form>
-
-    <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px;">
-      ${state.agendaTypes.map(t=> `
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border);">
-          <div>
-            <strong>${esc(t.name)}</strong>${t.isInternal ? `<span class="badge pendente" style="margin-left:8px;">Interno</span>` : ''}
-          </div>
-          <button class="btn btn-danger btn-sm" onclick="confirmDeleteAgendaType('${t.id}')">Excluir</button>
-        </div>
-      `).join('')}
-    </div>
-  </div>`;
-}
-
-function handleAddAgendaType(form){
-  const v = captureFormValues(form); if(!v.name) return;
-  state.agendaTypes.push({id:uid('at'), name:v.name.trim(), isInternal:!!v.isInternal, inactive:false});
-  persist(); render();
-}
-function confirmDeleteAgendaType(id){
-  const t = byId(state.agendaTypes, id); if(!t) return;
-  showConfirm(`Excluir o tipo de agenda "${t.name}"?`, ()=>{
-    state.agendaTypes = state.agendaTypes.filter(x=>x.id!==id);
-    persist(); render();
-  });
-}
-
-function renderSettingsAnalysts(){
-  return `<div class="section-card">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-      <h3>Analistas e Utilizadores</h3>
-      ${isAdminUser() ? `<button class="btn btn-primary btn-sm" onclick="openModal('new-analyst')">+ Novo Analista</button>` : ''}
-    </div>
-
-    <table>
-      <thead>
-        <tr>
-          <th>Analista</th>
-          <th>Usuário Login</th>
-          <th>Perfil</th>
-          <th>Estado</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${state.analysts.map(a=> `
-          <tr class="${a.inactive?'row-inactive':''}">
-            <td>
-              <div style="display:flex;align-items:center;gap:8px;">
-                <span class="side-dot" style="background:${a.color};"></span>
-                <strong>${esc(a.name)}</strong>
-              </div>
-            </td>
-            <td>${esc(a.username||'—')}</td>
-            <td>${a.isAdmin ? '<strong>Administrador</strong>' : 'Analista'}</td>
-            <td>
-              <label class="switch">
-                <input type="checkbox" ${!a.inactive?'checked':''} onchange="setAnalystActive('${a.id}', this.checked);persist();render();" ${a.isAdmin?'disabled':''}>
-                <span class="slider"></span>
-              </label>
-              <span class="status-label ${!a.inactive?'active':'inactive'}">${!a.inactive?'Ativo':'Inativo'}</span>
-            </td>
-            <td>
-              <div class="row-actions">
-                ${isAdminUser() ? `<button class="btn btn-ghost btn-sm" onclick="openModal('edit-analyst',{analystId:'${a.id}'})">✏️ Editar</button>` : ''}
-                ${isAdminUser() && !a.isAdmin ? `<button class="btn btn-danger btn-sm" onclick="confirmDeleteAnalyst('${a.id}')">🗑 Excluir</button>` : ''}
-              </div>
-            </td>
-          </tr>
-        `).join('')}
-      </tbody>
-    </table>
-  </div>`;
-}
-
-function confirmDeleteAnalyst(id){
-  const a = getAnalyst(id); if(!a) return;
-  showConfirm(`Excluir o analista "${a.name}"? O seu quadro e agendamentos serão eliminados.`, ()=>{
-    deleteAnalyst(id); persist(); render();
-  });
-}
-
-function renderSettingsCloud(){
-  return `<div class="section-card">
-    <h3>☁ Configurações de Nuvem (Supabase)</h3>
-    <p style="font-size:12.5px;color:var(--ink-soft);margin-bottom:14px;">Status atual: <strong>${cloudStatus==='connected'?'Conectado à nuvem': cloudStatus==='connecting'?'Conectando...':'Apenas armazenamento local'}</strong></p>
-
-    <div style="background:var(--surface-2);padding:14px;border-radius:10px;border:1px solid var(--border);margin-bottom:16px;">
-      <div id="save-status-line" style="font-weight:700;margin-bottom:8px;"></div>
-      <div id="force-save-msg" style="font-size:12px;"></div>
-      <button class="btn btn-sm" style="margin-top:8px;" onclick="forceSaveNow()">🔄 Forçar sincronização agora</button>
-    </div>
-
-    ${cloudStatus==='connected' ? `
-      <button class="btn btn-danger btn-sm" onclick="disconnectCloud()">Desconectar da Nuvem</button>
-    `: `
-      <form onsubmit="event.preventDefault();handleConnectCloud(this);" style="display:flex;flex-direction:column;gap:10px;max-width:400px;">
-        <div class="field"><label>URL do Supabase</label><input type="text" name="url" value="${DEFAULT_CLOUD_CONFIG.url}"></div>
-        <div class="field"><label>Anon Key</label><input type="text" name="anonKey" value="${DEFAULT_CLOUD_CONFIG.anonKey}"></div>
-        <button type="submit" class="btn btn-primary btn-sm">Conectar à Nuvem</button>
-      </form>
-    `}
-  </div>`;
-}
-
-function handleConnectCloud(form){
-  const v = captureFormValues(form);
-  if(v.url && v.anonKey) connectCloud(v.url, v.anonKey);
-}
-
-/* ============================= CARD MODAL ============================= */
-function renderCardModal(){
-  const card = getCard(ui.openCardId);
-  if(!card){ ui.openCardId = null; return ''; }
-
-  const client = getClient(card.clientId);
-  const board = getBoard(card.boardId);
-  const analyst = board ? getAnalyst(board.analystId) : null;
-  const scheds = schedulesForCard(card.id);
-  const usedMin = cardUsedMinutes(card);
-  const balanceHours = cardBalanceHours(card);
-
-  return `<div class="overlay card-overlay" onclick="if(event.target===this){ui.openCardId=null;render();}">
-    <div class="modal wide">
-      <div class="modal-header">
-        <div style="flex:1;">
-          <h3 style="font-size:20px;color:var(--brand-dark);">${esc(client?client.name:'Cliente não encontrado')}</h3>
-          <div class="card-modal-meta">
-            <span>Quadro: <strong>${esc(analyst?analyst.name:'—')}</strong></span>
-            <span>Tipo: <strong>${client? (client.clientType==='novo'?'Novo Cliente':'Cliente Base') :'—'}</strong></span>
-          </div>
-        </div>
-        <button class="modal-close" onclick="ui.openCardId=null;render()">✕</button>
-      </div>
-
-      <div class="balance-box">
-        <div class="balance-item">
-          <div class="num">${(card.contractedHours||0).toFixed(1)}h</div>
-          <div class="lbl">Horas Contratadas</div>
-        </div>
-        <div class="balance-item">
-          <div class="num">${(usedMin/60).toFixed(1)}h</div>
-          <div class="lbl">Horas Utilizadas</div>
-        </div>
-        <div class="balance-item">
-          <div class="num" style="color:${balanceHours<0?'var(--danger)':'var(--ok)'};">${balanceHours.toFixed(1)}h</div>
-          <div class="lbl">Saldo Restante</div>
-        </div>
-      </div>
-
-      <div class="tabs">
-        <button class="tab-btn ${ui.cardTab==='info'?'active':''}" onclick="ui.cardTab='info';render();">Informações & Tags</button>
-        <button class="tab-btn ${ui.cardTab==='schedules'?'active':''}" onclick="ui.cardTab='schedules';render();">Agendamentos (${scheds.length})</button>
-        <button class="tab-btn ${ui.cardTab==='history'?'active':''}" onclick="ui.cardTab='history';render();">Histórico</button>
-      </div>
-
-      ${ui.cardTab==='info' ? renderCardTabInfo(card) : ''}
-      ${ui.cardTab==='schedules' ? renderCardTabSchedules(card, scheds) : ''}
-      ${ui.cardTab==='history' ? renderCardTabHistory(card) : ''}
-
-      <div class="form-actions" style="margin-top:20px;">
-        <button class="btn btn-danger btn-sm" onclick="confirmDeleteCard('${card.id}')">Excluir Card</button>
-        <button class="btn btn-ghost" onclick="ui.openCardId=null;render()">Fechar</button>
-      </div>
-    </div>
-  </div>`;
-}
-
-function renderCardTabInfo(card){
-  return `<form onsubmit="event.preventDefault();handleSaveCardInfo('${card.id}', this);">
-    <div class="field">
-      <label>Horas Contratadas</label>
-      <input type="number" step="0.5" name="contractedHours" value="${card.contractedHours||0}">
-    </div>
-
-    <div class="field">
-      <label>Produtos Vinculados</label>
-      <div class="check-grid">
-        ${activeProductTags().map(t=> {
-          const checked = (card.productTags||[]).includes(t.id);
-          return `<label class="check-pill">
-            <input type="checkbox" name="productTags" value="${t.id}" ${checked?'checked':''}>${esc(t.name)}
-          </label>`;
-        }).join('')}
-      </div>
-    </div>
-
-    <div class="field">
-      <label>Observações do Card</label>
-      <textarea name="notes" rows="3">${esc(card.notes||'')}</textarea>
-    </div>
-
-    <button type="submit" class="btn btn-primary btn-sm">Salvar Alterações</button>
-  </form>`;
-}
-
-function handleSaveCardInfo(cardId, form){
-  const v = captureFormValues(form);
-  const card = getCard(cardId); if(!card) return;
-  card.contractedHours = Number(v.contractedHours)||0;
-  card.productTags = Array.isArray(v.productTags) ? v.productTags : (v.productTags ? [v.productTags] : []);
-  card.notes = v.notes||'';
-  addHistory(card, 'Informações do card atualizadas.');
-  persist(); render();
-}
-
-function renderCardTabSchedules(card, scheds){
-  return `<div>
-    <div style="margin-bottom:12px;">
-      <button class="btn btn-primary btn-sm" onclick="openModal('new-schedule',{cardId:'${card.id}', analystId:'${getBoard(card.boardId)?.analystId}'})">+ Agendar para este card</button>
-    </div>
-
-    ${scheds.length===0 ? `<div style="text-align:center;padding:20px;color:var(--ink-faint);">Nenhum agendamento registado para este card.</div>` : ''}
-
-    ${scheds.map(s=> {
-      const isDue = scheduleIsDue(s);
-      return `<div class="sched-row ${isDue?'due':''}">
-        <div class="sched-main">
-          <div class="sched-time">${fmtDateBR(s.date)} — ${s.startTime} às ${s.endTime}</div>
-          <div class="sched-sub">${esc(s.type)} \vert{} Módulos: ${(s.modules||[]).join(', ')|||'Nenhum'}</div>
-        </div>
-        <span class="badge ${s.status}">${s.status==='concluida'?'Concluído': s.status==='nao_realizada'?'Não realizada':'Pendente'}</span>
-        <div class="row-actions">
-          <button class="btn btn-ghost btn-sm" onclick="openModal('edit-schedule',{schedId:'${s.id}'})">✏️</button>
-          ${s.status==='pendente' ? `<button class="btn btn-primary btn-sm" onclick="openModal('confirm-schedule',{schedId:'${s.id}'})">✓</button>` : ''}
-        </div>
-      </div>`;
-    }).join('')}
-  </div>`;
-}
-
-function renderCardTabHistory(card){
-  const hist = card.history||[];
-  return `<div style="max-height:280px;overflow-y:auto;">
-    ${hist.length===0 ? `<div style="text-align:center;padding:20px;color:var(--ink-faint);">Nenhum histórico registado.</div>` : ''}
-    ${hist.map(h=> `
-      <div class="hist-row">
-        <div>${esc(h.text)}</div>
-        <div class="ts">${fmtDT(h.ts)}</div>
-      </div>
-    `).join('')}
-  </div>`;
-}
-
-function confirmDeleteCard(cardId){
-  showConfirm('Tem certeza que deseja excluir este card? Todos os agendamentos vinculados a ele serão apagados.', ()=>{
-    deleteCard(cardId); ui.openCardId = null; persist(); render();
-  });
-}
-
-/* ============================= GENERIC MODAL ROUTER ============================= */
-function openModal(type, data={}){ ui.modal = {type, data}; render(); }
-function closeModal(){ ui.modal = null; ui.formErr = ''; render(); }
-
-function renderModal(){
-  if(!ui.modal) return '';
-  const {type, data} = ui.modal;
-
-  if(type==='new-card') return renderModalNewCard(data);
-  if(type==='new-client' || type==='edit-client') return renderModalClient(type, data);
-  if(type==='import-clients') return renderModalImportClients();
-  if(type==='new-schedule' || type==='edit-schedule') return renderModalSchedule(type, data);
-  if(type==='confirm-schedule') return renderModalConfirmSchedule(data);
-  if(type==='new-analyst' || type==='edit-analyst') return renderModalAnalyst(type, data);
-
-  return '';
-}
-
-/* Modal Novo Card */
-function renderModalNewCard(data){
-  const boardId = data.boardId || ui.currentBoardId;
-  const board = getBoard(boardId);
-  const analyst = board ? getAnalyst(board.analystId) : null;
-
-  return `<div class="overlay" onclick="if(event.target===this)closeModal()">
-    <div class="modal">
-      <div class="modal-header">
-        <h3>Criar Novo Card</h3>
-        <button class="modal-close" onclick="closeModal()">✕</button>
-      </div>
-
-      ${ui.formErr ? `<div class="error-msg">${esc(ui.formErr)}</div>` : ''}
-
-      <form onsubmit="event.preventDefault();handleCreateCardSubmit(this, '${boardId}');">
-        <div class="field">
-          <label>Quadro / Analista</label>
-          <input type="text" value="${esc(analyst?analyst.name:'')}" disabled>
-        </div>
-
-        <div class="field">
-          <label>Cliente</label>
-          <select name="clientId" required>
-            <option value="">Selecione o cliente...</option>
-            ${state.clients.map(c=> `<option value="${c.id}">${esc(c.name)} (${esc(c.city||'Sem cidade')})</option>`).join('')}
-          </select>
-        </div>
-
-        <div class="field">
-          <label>Horas Contratadas</label>
-          <input type="number" step="0.5" name="contractedHours" value="10" required>
-        </div>
-
-        <div class="field">
-          <label>Produtos Vinculados</label>
-          <div class="check-grid">
-            ${activeProductTags().map(t=> `
-              <label class="check-pill">
-                <input type="checkbox" name="productTags" value="${t.id}">
-                ${esc(t.name)}
-              </label>
-            `).join('')}
-          </div>
-        </div>
-
-        <div class="form-actions">
-          <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Criar Card</button>
-        </div>
-      </form>
-    </div>
-  </div>`;
-}
-
-function handleCreateCardSubmit(form, boardId){
-  const v = captureFormValues(form);
-  if(!v.clientId){ ui.formErr = 'Selecione um cliente.'; render(); return; }
-
-  const card = createCard({
-    boardId, clientId: v.clientId,
-    contractedHours: Number(v.contractedHours)||0,
-    productTags: Array.isArray(v.productTags) ? v.productTags : (v.productTags ? [v.productTags] : [])
-  });
-
-  persist(); closeModal();
-}
-
-/* Modal Cliente */
-function renderModalClient(type, data){
-  const isEdit = type==='edit-client';
-  const client = isEdit ? getClient(data.clientId) : {};
-
-  return `<div class="overlay" onclick="if(event.target===this)closeModal()">
-    <div class="modal">
-      <div class="modal-header">
-        <h3>${isEdit?'Editar Cliente':'Novo Cliente'}</h3>
-        <button class="modal-close" onclick="closeModal()">✕</button>
-      </div>
-
-      <form onsubmit="event.preventDefault();handleSaveClientSubmit('${isEdit?client.id:''}', this);">
-        <div class="field-row">
-          <div class="field">
-            <label>Código</label>
-            <input type="text" name="code" value="${esc(client.code||'')}">
-          </div>
-          <div class="field">
-            <label>Tipo de Cliente</label>
-            <select name="clientType">
-              <option value="novo" ${client.clientType==='novo'?'selected':''}>Novo Cliente</option>
-              <option value="base" ${client.clientType==='base'?'selected':''}>Cliente Base</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="field">
-          <label>Nome Fantasia / Nome Curto *</label>
-          <input type="text" name="name" value="${esc(client.name||'')}" required>
-        </div>
-
-        <div class="field">
-          <label>Razão Social</label>
-          <input type="text" name="companyName" value="${esc(client.companyName||'')}">
-        </div>
-
-        <div class="field-row">
-          <div class="field">
-            <label>CNPJ</label>
-            <input type="text" name="cnpj" value="${esc(client.cnpj||'')}">
-          </div>
-          <div class="field">
-            <label>Cidade</label>
-            <input type="text" name="city" value="${esc(client.city||'')}">
-          </div>
-        </div>
-
-        <div class="form-actions">
-          <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Salvar Cliente</button>
-        </div>
-      </form>
-    </div>
-  </div>`;
-}
-
-function handleSaveClientSubmit(clientId, form){
-  const v = captureFormValues(form);
-  if(!v.name){ ui.formErr = 'Preencha o nome do cliente.'; render(); return; }
-
-  if(clientId){ updateClient(clientId, v); }
-  else { createClient(v); }
-
-  persist(); closeModal();
-}
-
-/* Modal Importar Clientes */
-function renderModalImportClients(){
-  return `<div class="overlay" onclick="if(event.target===this)closeModal()">
-    <div class="modal">
-      <div class="modal-header">
-        <h3>Importar Clientes via Excel/CSV</h3>
-        <button class="modal-close" onclick="closeModal()">✕</button>
-      </div>
-
-      <p style="font-size:12.5px;color:var(--ink-soft);margin-bottom:14px;">Selecione uma planilha contendo as colunas: Nome Fantasia, Código, CNPJ, Razão Social, Cidade, etc.</p>
-
-      <div class="field">
-        <input type="file" id="import-file-input" accept=".xlsx, .xls, .csv">
-      </div>
-
-      <div class="form-actions">
-        <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
-        <button type="button" class="btn btn-primary" onclick="handleImportFileProcess()">Processar Ficheiro</button>
-      </div>
-    </div>
-  </div>`;
-}
-
-function handleImportFileProcess(){
-  const fileInput = document.getElementById('import-file-input');
-  if(!fileInput || !fileInput.files[0]) return;
-  const file = fileInput.files[0];
-
-  const reader = new FileReader();
-  reader.onload = function(e){
-    try{
-      const data = new Uint8Array(e.target.result);
-      const workbook = XLSX.read(data, {type: 'array'});
-      const sheet = workbook.Sheets[workbook.SheetNames[0]];
-      const json = XLSX.utils.sheet_to_json(sheet);
-
-      let imported = 0;
-      json.forEach(row=>{
-        const parsed = parseImportRow(row);
-        if(parsed && parsed.name){
-          createClient(parsed);
-          imported++;
-        }
-      });
-
-      showAlert(`${imported} clientes importados com sucesso!`);
-      persist(); closeModal();
-    }catch(err){
-      showAlert('Erro ao processar o ficheiro Excel/CSV.');
-    }
-  };
-  reader.readAsArrayBuffer(file);
-}
-
-/* Modal Agendamento (Novo / Edição) com a nova regra de negócio para Agenda Interna */
-function renderModalSchedule(type, data){
-  const isEdit = type==='edit-schedule';
-  const sched = isEdit ? state.schedules.find(x=>x.id===data.schedId) : {};
-
-  const defaultDate = data.date || todayISO();
-  const card = sched.cardId ? getCard(sched.cardId) : (data.cardId ? getCard(data.cardId) : null);
-  const selectedAnalystId = sched.analystId || data.analystId || (currentUser && currentUser.analystId ? currentUser.analystId : state.analysts[0]?.id);
-
-  return `<div class="overlay" onclick="if(event.target===this)closeModal()">
-    <div class="modal">
-      <div class="modal-header">
-        <h3>${isEdit?'Editar Agendamento':'Novo Agendamento'}</h3>
-        <button class="modal-close" onclick="closeModal()">✕</button>
-      </div>
-
-      ${ui.formErr ? `<div class="error-msg">${esc(ui.formErr)}</div>` : ''}
-
-      <form onsubmit="event.preventDefault();handleSaveScheduleSubmit('${isEdit?sched.id:''}', this);">
-        <div class="field">
-          <label>Analista *</label>
-          <select name="analystId" required>
-            ${activeAnalysts().map(a=> `<option value="${a.id}" ${(selectedAnalystId===a.id)?'selected':''}>${esc(a.name)}</option>`).join('')}
-          </select>
-        </div>
-
-        <div class="field">
-          <label>Cliente *</label>
-          <select name="clientId" required>
-            <option value="">Selecione o cliente...</option>
-            ${state.clients.map(c=> {
-              const isSelected = (card && card.clientId===c.id) || (sched.clientId===c.id);
-              return `<option value="${c.id}" ${isSelected?'selected':''}>${esc(c.name)}</option>`;
-            }).join('')}
-          </select>
-        </div>
-
-        <div class="field-row">
-          <div class="field">
-            <label>Data *</label>
-            <input type="date" name="date" value="${sched.date || defaultDate}" required>
-          </div>
-          <div class="field">
-            <label>Início *</label>
-            <input type="time" name="startTime" value="${sched.startTime || '09:00'}" required>
-          </div>
-          <div class="field">
-            <label>Fim *</label>
-            <input type="time" name="endTime" value="${sched.endTime || '10:00'}" required>
-          </div>
-        </div>
-
-        <div class="field">
-          <label>Tipo de Agenda *</label>
-          <select name="type" required>
-            ${activeAgendaTypes().map(t=> `<option value="${t.name}" ${sched.type===t.name?'selected':''}>${esc(t.name)}${t.isInternal?'(Interno)':''}</option>`).join('')}
-          </select>
-        </div>
-
-        <div class="field">
-          <label>Módulos Abordados</label>
-          <div class="check-grid">
-            ${activeModules().map(m=> {
-              const checked = (sched.modules||[]).includes(m.name);
-              return `<label class="check-pill">
-                <input type="checkbox" name="modules" value="${m.name}" ${checked?'checked':''}>${esc(m.name)}
-              </label>`;
-            }).join('')}
-          </div>
-        </div>
-
-        <div class="field">
-          <label>Observações</label>
-          <textarea name="notes" rows="2">${esc(sched.notes||'')}</textarea>
-        </div>
-
-        <div class="form-actions">
-          ${isEdit ? `<button type="button" class="btn btn-danger btn-sm" style="margin-right:auto;" onclick="confirmDeleteSchedule('${sched.id}')">Excluir</button>` : ''}
-          <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Salvar Agendamento</button>
-        </div>
-      </form>
-    </div>
-  </div>`;
-}
-
-function confirmDeleteSchedule(id){
-  showConfirm('Excluir este agendamento?', ()=>{
-    deleteSchedule(id); persist(); closeModal();
-  });
-}
-
-function handleSaveScheduleSubmit(schedId, form){
-  const v = captureFormValues(form);
-  if(!v.clientId || !v.analystId || !v.date || !v.startTime || !v.endTime || !v.type){
-    ui.formErr = 'Preencha todos os campos obrigatórios (*).'; render(); return;
+  const admin = isAdminUser();
+  const allTabs = [
+    {k:'analistas', l:'Analistas', adminOnly:true},
+    {k:'produtos',  l:'Produtos',  adminOnly:false},
+    {k:'modulos',   l:'Módulos do sistema', adminOnly:false},
+    {k:'telas',     l:'Telas',     adminOnly:false},
+    {k:'tipos',     l:'Tipos de agenda', adminOnly:false},
+    {k:'acesso',    l:'Acesso',    adminOnly:true},
+    {k:'nuvem',     l:'Nuvem',     adminOnly:true}
+  ];
+  const visibleTabs = allTabs.filter(t=> admin || !t.adminOnly);
+
+  if(!visibleTabs.some(t=> t.k===ui.settingsTab)){
+    ui.settingsTab = visibleTabs[0] ? visibleTabs[0].k : 'produtos';
   }
 
-  /* Conflito de horário */
-  if(scheduleConflict(v.analystId, v.date, v.startTime, v.endTime, schedId)){
-    ui.formErr = 'Existe um conflito de horário para este analista nesta data.'; render(); return;
+  let html = '<div class="settings-tabs">';
+  visibleTabs.forEach(t=>{
+    html += '<button class="btn btn-sm'+(ui.settingsTab===t.k?' btn-primary':'')+'" data-action="settings-tab" data-tab="'+t.k+'">'+t.l+'</button>';
+  });
+  html += '</div>';
+
+  if(ui.settingsTab!=='nuvem'){
+    html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">'
+      + '<button class="btn btn-primary btn-sm" data-action="force-save">💾 Salvar agora</button>'
+      + '<span id="force-save-msg" class="hint" style="margin-top:0;"></span>'
+      + '</div>';
   }
 
-  const selectedBoard = boardOfAnalyst(v.analystId);
-  const typeObj = state.agendaTypes.find(t=> t.name === v.type);
-
-  let targetCardId = null;
-
-  /* Aplicação das regras de negócio para encontrar/criar card */
-  if(selectedBoard){
-    const existingCard = state.cards.find(c=> c.clientId === v.clientId && c.boardId === selectedBoard.id);
-
-    if(existingCard){
-      targetCardId = existingCard.id;
+  if(ui.settingsTab==='analistas'){
+    html += '<div class="section-card"><h3>Analistas</h3>'
+      + '<p class="hint" style="margin-top:-4px;">Cada analista precisa de um login e senha próprios. Analistas inativos não conseguem logar nem aparecem nas listas de seleção, mas seus quadros e cards são preservados. Analistas com agendamentos vinculados não podem ser excluídos — inative-os.</p>'
+      + '<table><thead><tr><th></th><th>Nome</th><th>Usuário</th><th>Quadro</th><th>Perfil</th><th>Situação</th><th></th></tr></thead><tbody>';
+    state.analysts.forEach(a=>{
+      const board = boardOfAnalyst(a.id);
+      const linkedScheds = schedulesForAnalyst(a.id).length;
+      const canDelete = !a.isAdmin && linkedScheds === 0 && !(board && cardsInBoard(board.id).length);
+      const blockTitle = a.isAdmin ? 'Administrador do sistema não pode ser excluído.' : (linkedScheds ? 'Não é possível excluir: há '+linkedScheds+' agendamento(s) vinculado(s) a este analista.' : (board && cardsInBoard(board.id).length ? 'Não é possível excluir: há cards vinculados ao quadro deste analista.' : ''));
+      html += '<tr'+(a.inactive?' class="row-inactive"':'')+'>'
+        + '<td><span class="side-dot" style="background:'+(a.inactive?'#B9CAD5':a.color)+';display:inline-block;"></span></td>'
+        + '<td>'+esc(a.name)+'</td>'
+        + '<td>'+(a.username? '<code style="font-size:12px;background:var(--surface-2);padding:2px 6px;border-radius:5px;">'+esc(a.username)+'</code>' : '<span class="hint">Não definido</span>')+'</td>'
+        + '<td>'+esc(board?board.name:'—')+'</td>'
+        + '<td>'+(a.isAdmin? '<span class="badge" style="background:var(--gold-soft);color:var(--gold);">Administrador</span>' : '<span class="badge" style="background:var(--brand-soft);color:var(--brand);">Analista</span>')+'</td>'
+        + '<td>'+(a.isAdmin? '<span class="badge" style="background:var(--ok-soft);color:var(--ok);">Ativo</span>' : switchCell('analyst', a.id, a.inactive, 'Ativo', 'Inativo'))+'</td>'
+        + '<td><div class="row-actions">'
+          + '<button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="analyst-edit" data-id="'+a.id+'">Editar</button>'
+          + '<button class="btn btn-sm btn-danger" data-action="delete-analyst" data-id="'+a.id+'" '+(canDelete?'':'disabled title="'+esc(blockTitle)+'"')+'>Excluir</button>'
+          + '</div></td></tr>';
+    });
+    html += '</tbody></table><div style="margin-top:12px;"><button class="btn btn-primary btn-sm" data-action="open-modal" data-modal="analyst-new">+ Novo analista</button></div></div>';
+  } else if(ui.settingsTab==='produtos'){
+    html += '<div class="section-card"><h3>Produtos contratados — cadastro</h3>'
+      + '<p class="hint" style="margin-top:-4px;">Produtos inativos ficam ocultos nos novos cards, mas continuam vinculados aos que já os utilizam.</p>';
+    if(!state.productTags.length){
+      html += '<p class="hint" style="margin-top:-2px;">Nenhum produto cadastrado ainda.</p>';
     } else {
-      /* Se for vinculado a uma agenda interna */
-      if(typeObj && typeObj.isInternal){
-        showConfirm('O cliente selecionado não possui um quadro neste analista. Deseja criar um novo quadro/card para este cliente?', ()=>{
-          /* SE SIM: criar o Card e seguir o padrão */
-          const newCard = createCard({
-            boardId: selectedBoard.id,
-            clientId: v.clientId,
-            contractedHours: 0
-          });
-          executeSaveSchedule(schedId, v, newCard ? newCard.id : null);
-        }, ()=>{
-          /* SE NÃO: não criar o card, mas registar o agendamento (horas não abatidas) */
-          executeSaveSchedule(schedId, v, null);
-        });
-        return;
+      html += '<table><thead><tr><th></th><th>Produto</th><th>Clientes vinculados</th><th>Situação</th><th></th></tr></thead><tbody>';
+      state.productTags.forEach(t=>{
+        const linkedCards = cardsUsingProduct(t.id);
+        const names = linkedCards.map(c=>{ const cl=getClient(c.clientId); return esc(cl?cl.name:'—'); });
+        const canDelete = linkedCards.length===0;
+        html += '<tr'+(t.inactive?' class="row-inactive"':'')+'><td><span class="side-dot" style="background:'+(t.inactive?'#B9CAD5':t.color)+';display:inline-block;"></span></td>'
+          + '<td style="font-weight:700;">'+esc(t.name)+'</td>'
+          + '<td>'+(names.length? names.join(', ') : '<span class="hint">Nenhum</span>')+'</td>'
+          + '<td>'+switchCell('product', t.id, t.inactive, 'Ativo', 'Inativo')+'</td>'
+          + '<td><div class="row-actions">'
+            + '<button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="product-edit" data-id="'+t.id+'">Editar</button>'
+            + '<button class="btn btn-sm btn-danger" data-action="delete-product" data-id="'+t.id+'" '+(canDelete?'':'disabled title="Não é possível excluir: há '+linkedCards.length+' cliente(s) vinculado(s) a este produto."')+'>Excluir</button>'
+            + '</div></td></tr>';
+      });
+      html += '</tbody></table>';
+    }
+    html += '<div style="margin-top:12px;"><button class="btn btn-primary btn-sm" data-action="open-modal" data-modal="product-new">+ Novo produto</button></div></div>';
+  } else if(ui.settingsTab==='modulos'){
+    html += '<div class="section-card"><h3>Módulos do sistema — cadastro</h3>'
+      + '<p class="hint" style="margin-top:-4px;">Módulos inativos ficam ocultos em novos agendamentos, mas permanecem vinculados aos já existentes. Módulos com agendamentos ou telas vinculadas não podem ser excluídos — inative-os.</p>';
+    if(!state.modules.length){
+      html += '<p class="hint" style="margin-top:-2px;">Nenhum módulo cadastrado ainda.</p>';
+    } else {
+      html += '<table><thead><tr><th>Módulo</th><th>Agendamentos vinculados</th><th>Situação</th><th></th></tr></thead><tbody>';
+      state.modules.forEach(m=>{
+        const linked = schedulesUsingModule(m.name);
+        const clientNames = clientNamesForSchedules(linked);
+        const linkedScreens = screensForModule(m.id);
+        const canDelete = linked.length===0 && linkedScreens.length===0;
+        const blockTitle = linked.length ? 'Não é possível excluir: há '+linked.length+' agendamento(s) usando este módulo.' : (linkedScreens.length ? 'Não é possível excluir: há '+linkedScreens.length+' tela(s) cadastrada(s) neste módulo.' : '');
+        html += '<tr'+(m.inactive?' class="row-inactive"':'')+'><td style="font-weight:700;">'+esc(m.name)+'</td>'
+          + '<td>'+(linked.length ? (linked.length+' agendamento(s)'+(clientNames.length? ' — '+clientNames.map(esc).join(', '):'')) : '<span class="hint">Nenhum</span>')+'</td>'
+          + '<td>'+switchCell('module', m.id, m.inactive, 'Ativo', 'Inativo')+'</td>'
+          + '<td><div class="row-actions">'
+            + '<button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="module-edit" data-id="'+m.id+'">Editar</button>'
+            + '<button class="btn btn-sm btn-danger" data-action="delete-module" data-id="'+m.id+'" '+(canDelete?'':'disabled title="'+esc(blockTitle)+'"')+'>Excluir</button>'
+            + '</div></td></tr>';
+      });
+      html += '</tbody></table>';
+    }
+    html += '<div style="margin-top:12px;"><button class="btn btn-primary btn-sm" data-action="open-modal" data-modal="module-new">+ Novo módulo</button></div></div>';
+  } else if(ui.settingsTab==='telas'){
+    html += '<div class="section-card"><h3>Telas — cadastro</h3>'
+      + '<p class="hint" style="margin-top:-4px;">Telas inativas ficam ocultas em novos agendamentos de treinamento, mas permanecem vinculadas aos já existentes. Use o botão de ativar/inativar para desativar sem perder os vínculos.</p>';
+    if(!state.modules.length){
+      html += '<p class="hint" style="margin-top:-2px;">Cadastre um módulo primeiro — toda tela precisa estar vinculada a um módulo.</p>';
+    } else if(!state.screens.length){
+      html += '<p class="hint" style="margin-top:-2px;">Nenhuma tela cadastrada ainda.</p>';
+    } else {
+      html += '<table><thead><tr><th>Tela</th><th>Módulo</th><th>Agendamentos vinculados</th><th>Situação</th><th></th></tr></thead><tbody>';
+      state.screens.forEach(scr=>{
+        const mod = byId(state.modules, scr.moduleId);
+        const linked = schedulesUsingScreen(scr.name);
+        const clientNames = clientNamesForSchedules(linked);
+        const canDelete = linked.length===0;
+        html += '<tr'+(scr.inactive?' class="row-inactive"':'')+'><td style="font-weight:700;">'+esc(scr.name)+'</td><td>'+esc(mod?mod.name:'—')+'</td>'
+          + '<td>'+(linked.length ? (linked.length+' agendamento(s)'+(clientNames.length? ' — '+clientNames.map(esc).join(', '):'')) : '<span class="hint">Nenhum</span>')+'</td>'
+          + '<td>'+switchCell('screen', scr.id, scr.inactive, 'Ativo', 'Inativo')+'</td>'
+          + '<td><div class="row-actions">'
+            + '<button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="screen-edit" data-id="'+scr.id+'">Editar</button>'
+            + '<button class="btn btn-sm btn-danger" data-action="delete-screen" data-id="'+scr.id+'" '+(canDelete?'':'disabled title="Não é possível excluir: há '+linked.length+' agendamento(s) usando esta tela."')+'>Excluir</button>'
+            + '</div></td></tr>';
+      });
+      html += '</tbody></table>';
+    }
+    if(state.modules.length){
+      html += '<div style="margin-top:12px;"><button class="btn btn-primary btn-sm" data-action="open-modal" data-modal="screen-new">+ Nova tela</button></div>';
+    }
+    html += '</div>';
+  } else if(ui.settingsTab==='tipos'){
+    html += '<div class="section-card"><h3>Tipos de agenda — cadastro</h3>'
+      + '<p class="hint" style="margin-top:-4px;">Tipos inativos ficam ocultos em novos agendamentos, mas permanecem vinculados aos já existentes. Tipos com agendamentos não podem ser excluídos — inative-os.</p>';
+    if(!state.agendaTypes.length){
+      html += '<p class="hint" style="margin-top:-2px;">Nenhum tipo cadastrado ainda.</p>';
+    } else {
+      html += '<table><thead><tr><th>Tipo</th><th>Categoria</th><th>Agendamentos vinculados</th><th>Situação</th><th></th></tr></thead><tbody>';
+      state.agendaTypes.forEach(t=>{
+        const linked = schedulesUsingType(t.name);
+        const clientNames = clientNamesForSchedules(linked);
+        const canDelete = linked.length===0;
+        html += '<tr'+(t.inactive?' class="row-inactive"':'')+'><td style="font-weight:700;">'+esc(t.name)+'</td>'
+          + '<td><span class="badge" style="background:'+(t.isInternal?'var(--gold-soft)':'var(--brand-soft)')+';color:'+(t.isInternal?'var(--gold)':'var(--brand)')+';">'+(t.isInternal?'Interna':'Implantação')+'</span></td>'
+          + '<td>'+(linked.length ? (linked.length+' agendamento(s)'+(clientNames.length? ' — '+clientNames.map(esc).join(', '):'')) : '<span class="hint">Nenhum</span>')+'</td>'
+          + '<td>'+switchCell('type', t.id, t.inactive, 'Ativo', 'Inativo')+'</td>'
+          + '<td><div class="row-actions">'
+            + '<button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="type-edit" data-id="'+t.id+'">Editar</button>'
+            + '<button class="btn btn-sm btn-danger" data-action="delete-type" data-id="'+t.id+'" '+(canDelete?'':'disabled title="Não é possível excluir: há '+linked.length+' agendamento(s) usando este tipo."')+'>Excluir</button>'
+            + '</div></td></tr>';
+      });
+      html += '</tbody></table>';
+    }
+    html += '<div style="margin-top:12px;"><button class="btn btn-primary btn-sm" data-action="open-modal" data-modal="type-new">+ Novo tipo</button></div></div>';
+  } else if(ui.settingsTab==='acesso' && admin){
+    const meAnalyst = currentUser && currentUser.analystId ? getAnalyst(currentUser.analystId) : null;
+    html += '<div class="section-card"><h3>Credenciais de acesso</h3>'
+      + '<p class="hint" style="margin-top:-4px;">Todos os logins cadastrados no sistema. As senhas ficam salvas junto aos dados (visíveis apenas para administradores).</p>';
+    if(!state.analysts.length){
+      html += '<p class="hint">Nenhum analista cadastrado.</p>';
+    } else {
+      html += '<table><thead><tr><th>Nome</th><th>Usuário (login)</th><th>Senha</th><th>Perfil</th><th>Situação</th><th></th></tr></thead><tbody>';
+      state.analysts.forEach(a=>{
+        html += '<tr'+(a.inactive?' class="row-inactive"':'')+'>'
+          + '<td style="font-weight:700;">'+esc(a.name)+(a.isAdmin?' <span class="badge" style="background:var(--gold-soft);color:var(--gold);">ADMIN</span>':'')+'</td>'
+          + '<td>'+(a.username? '<code style="font-size:12px;background:var(--surface-2);padding:2px 6px;border-radius:5px;">'+esc(a.username)+'</code>' : '<span class="hint">Não definido</span>')+'</td>'
+          + '<td>'+(a.password? '•••••••• <button class="btn btn-sm btn-ghost" data-action="toggle-show-pass" data-id="'+a.id+'" style="font-size:11px;">👁 ver</button>' : '<span class="hint">Não definida</span>')+'</td>'
+          + '<td>'+(a.isAdmin?'Administrador':'Analista')+'</td>'
+          + '<td>'+(a.inactive? '<span class="badge" style="background:#B9CAD5;color:#fff;">Inativo</span>' : '<span class="badge" style="background:var(--ok-soft);color:var(--ok);">Ativo</span>')+'</td>'
+          + '<td><button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="analyst-edit" data-id="'+a.id+'">Editar</button></td>'
+          + '</tr>';
+      });
+      html += '</tbody></table>';
+    }
+    html += '</div>';
+
+    if(meAnalyst){
+      html += '<div class="section-card"><h3>Trocar minha senha</h3>'
+        + '<p class="hint" style="margin-top:-4px;">Logado como <strong>'+esc(meAnalyst.name)+'</strong> ('+esc(meAnalyst.username||'—')+').</p>'
+        + '<form data-form="change-password" data-id="'+meAnalyst.id+'">'
+        + '<div class="field-row">'
+        + '<div class="field"><label>Senha atual</label><input type="password" name="currentPassword" required></div>'
+        + '<div class="field"><label>Nova senha</label><input type="password" name="newPassword" minlength="4" required></div>'
+        + '<div class="field"><label>Confirmar nova senha</label><input type="password" name="confirmPassword" minlength="4" required></div>'
+        + '</div>'
+        + '<div class="form-actions"><button type="submit" class="btn btn-primary">Alterar senha</button></div>'
+        + '</form></div>';
+    }
+
+    html += '<div class="section-card"><h3>Conta mestra de emergência</h3>'
+      + '<p class="hint" style="margin-top:-4px;">Esta conta sempre funciona, mesmo que todas as credenciais de analistas sejam perdidas. Guarde com segurança.</p>'
+      + '<table><thead><tr><th>Usuário</th><th>Senha</th></tr></thead><tbody>'
+      + '<tr><td><code style="background:var(--surface-2);padding:2px 6px;border-radius:5px;">'+MASTER_USER+'</code></td>'
+      + '<td><code style="background:var(--surface-2);padding:2px 6px;border-radius:5px;">'+MASTER_PASS+'</code></td></tr>'
+      + '</tbody></table>'
+      + '</div>';
+  } else if(ui.settingsTab==='nuvem' && admin){
+    html += '<div class="section-card"><h3>Sincronização na nuvem</h3>';
+    const hasDefault = !!(DEFAULT_CLOUD_CONFIG.url && DEFAULT_CLOUD_CONFIG.anonKey);
+    if(cloudStatus==='connected'){
+      html += '<p class="hint" style="margin-top:-2px;">☁ Conectado'+(usingDefaultCloud?' à nuvem padrão deste site':' a uma nuvem configurada manualmente neste navegador')+'. Os dados deste app são salvos em um banco de dados na nuvem (Supabase) e ficam disponíveis em qualquer navegador ou dispositivo que abra esta mesma página.</p>'
+        + '<button class="btn btn-danger btn-sm" data-action="cloud-disconnect" style="margin-top:10px;">Desconectar (voltar a salvar só neste navegador)</button>';
+    } else {
+      if(cloudStatus==='error') html += '<div class="error-msg">'+esc(cloudErrorMsg)+'</div>';
+      if(hasDefault){
+        html += '<p class="hint" style="margin-top:-2px;">Este navegador está configurado para salvar só localmente (você desconectou da nuvem padrão deste site, ou a conexão falhou).</p>'
+          + '<button class="btn btn-primary btn-sm" data-action="cloud-reconnect-default" style="margin-bottom:16px;">Reconectar à nuvem deste site</button>';
       } else {
-        /* Se for tipo normal e não possui card, cria o card automaticamente conforme fluxo padrão */
-        const newCard = createCard({
-          boardId: selectedBoard.id,
-          clientId: v.clientId,
-          contractedHours: 0
+        html += '<p class="hint" style="margin-top:-2px;">Por padrão, os dados ficam salvos só neste navegador. Para acessar de outros computadores/dispositivos com os mesmos dados, conecte a um banco de dados gratuito no Supabase.</p>';
+      }
+      html += '<form data-form="cloud-config">'
+        + '<div class="field"><label>Project URL</label><input type="text" name="url" placeholder="https://xxxxx.supabase.co" value="'+esc(cloudConfig?cloudConfig.url:'')+'" required></div>'
+        + '<div class="field"><label>Anon public key</label><input type="text" name="anonKey" placeholder="eyJhbGci..." value="'+esc(cloudConfig?cloudConfig.anonKey:'')+'" required></div>'
+        + '<div class="form-actions"><span style="flex:1;"></span><button type="submit" class="btn btn-primary">Conectar</button></div>'
+        + '</form>'
+        + '<p class="hint">Veja o passo a passo de como criar o banco gratuito e obter esses dados na conversa com o Claude que gerou este app.</p>';
+    }
+    html += '</div>';
+  }
+  return html;
+}
+
+/* ============================= MODALS ============================= */
+function renderModal(){
+  const m = ui.modal;
+  let inner = '';
+  if(m.type==='analyst-new' || m.type==='analyst-edit'){
+    if(!isAdminUser()){
+      return '<div class="overlay"><div class="modal"><p>Sem permissão para esta ação.</p><div class="form-actions"><button class="btn btn-primary" data-action="close-modal">Fechar</button></div></div></div>';
+    }
+    const a = m.type==='analyst-edit' ? getAnalyst(m.id) : null;
+    const isSelf = a && currentUser && currentUser.analystId===a.id;
+    const editingAdmin = a && a.isAdmin;
+    const canToggleAdmin = isAdminUser() && !editingAdmin;
+    inner = '<div class="modal-header"><h3>'+(a?'Editar analista':'Novo analista')+'</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
+      + (editingAdmin ? '<div class="hint" style="background:var(--gold-soft);color:var(--gold);border-radius:8px;padding:8px 11px;font-weight:600;margin-bottom:12px;">Este é o analista administrador do sistema. O login e a senha são usados para acessar como administrador.</div>' : '')
+      + '<form data-form="analyst" data-id="'+(a?a.id:'')+'">'
+      + '<div class="field"><label>Nome</label><input type="text" name="name" value="'+esc(a?a.name:'')+'" required></div>'
+      + '<div class="field-row">'
+      + '<div class="field"><label>Usuário (login)</label><input type="text" name="username" value="'+esc(a?a.username:'')+'" placeholder="ex: joao.silva" required autocomplete="off"></div>'
+      + '<div class="field"><label>Cor</label><input type="color" name="color" value="'+(a?a.color:colorForIndex(state.analysts.length))+'"></div>'
+      + '</div>'
+      + '<div class="field-row">'
+      + '<div class="field"><label>'+(a?'Nova senha (deixe em branco para manter)':'Senha')+'</label><input type="password" name="password" placeholder="'+(a?'••••••••':'Mínimo 4 caracteres')+'" '+(a?'':'required')+' minlength="4" autocomplete="new-password"></div>'
+      + '<div class="field"><label>'+(a?'Confirmar nova senha':'Confirmar senha')+'</label><input type="password" name="passwordConfirm" placeholder="Repita a senha" '+(a?'':'required')+' minlength="4" autocomplete="new-password"></div>'
+      + '</div>'
+      + (canToggleAdmin ? '<div class="field"><label class="check-pill" style="width:fit-content;"><input type="checkbox" name="isAdmin"> Conceder perfil de administrador</label></div>' : '')
+      + (isSelf ? '<div class="hint">Você está editando seu próprio usuário.</div>' : '')
+      + '<div class="form-actions"><button type="submit" class="btn btn-primary">Salvar</button></div></form>';
+  } else if(m.type==='client-new' || m.type==='client-edit'){
+    const c = m.type==='client-edit' ? getClient(m.id) : null;
+    const ctype = c ? (c.clientType||'novo') : 'novo';
+    inner = '<div class="modal-header"><h3>'+(c?'Editar cliente':'Novo cliente')+'</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
+      + '<form data-form="client" data-id="'+(c?c.id:'')+'" data-then="'+(m.then||'')+'">'
+      + '<div class="field-row"><div class="field"><label>Código</label><input type="text" name="code" value="'+esc(c?c.code:'')+'" placeholder="Código único do cliente"></div><div class="field"><label>Tipo de cliente</label><select name="clientType">'
+        + '<option value="novo" '+(ctype==='novo'?'selected':'')+'>Cliente novo</option>'
+        + '<option value="base" '+(ctype==='base'?'selected':'')+'>Cliente da base</option>'
+        + '</select></div></div>'
+      + '<div class="field"><label>Nome fantasia</label><input type="text" name="name" value="'+esc(c?c.name:'')+'" required></div>'
+      + '<div class="field"><label>Razão social</label><input type="text" name="companyName" value="'+esc(c?c.companyName:'')+'"></div>'
+      + '<div class="field-row"><div class="field"><label>CNPJ</label><input type="text" name="cnpj" value="'+esc(c?c.cnpj:'')+'" placeholder="00.000.000/0000-00"></div><div class="field"><label>IE</label><input type="text" name="ie" value="'+esc(c?c.ie:'')+'"></div></div>'
+      + '<div class="field-row"><div class="field"><label>Segmento</label><input type="text" name="segment" value="'+esc(c?c.segment:'')+'" placeholder="Ex: Varejo, Alimentício..."></div><div class="field"><label>Cidade</label><input type="text" name="city" value="'+esc(c?c.city:'')+'"></div></div>'
+      + '<div class="field"><label>Contato (pessoa)</label><input type="text" name="contact" value="'+esc(c?c.contact:'')+'"></div>'
+      + '<div class="field-row"><div class="field"><label>E-mail</label><input type="email" name="email" value="'+esc(c?c.email:'')+'"></div><div class="field"><label>Telefone</label><input type="tel" name="phone" value="'+esc(c?c.phone:'')+'"></div></div>'
+      + '<div class="form-actions"><button type="submit" class="btn btn-primary">Salvar</button></div></form>';
+  } else if(m.type==='product-new' || m.type==='product-edit'){
+    const p = m.type==='product-edit' ? byId(state.productTags, m.id) : null;
+    inner = '<div class="modal-header"><h3>'+(p?'Editar produto':'Novo produto')+'</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
+      + '<form data-form="product" data-id="'+(p?p.id:'')+'">'
+      + '<div class="field"><label>Nome do produto</label><input type="text" name="name" value="'+esc(p?p.name:'')+'" required></div>'
+      + '<div class="field"><label>Cor</label><input type="color" name="color" value="'+(p?p.color:colorForIndex(state.productTags.length))+'"></div>'
+      + '<div class="form-actions"><button type="submit" class="btn btn-primary">Salvar</button></div></form>';
+  } else if(m.type==='module-new' || m.type==='module-edit'){
+    const md = m.type==='module-edit' ? byId(state.modules, m.id) : null;
+    inner = '<div class="modal-header"><h3>'+(md?'Editar módulo':'Novo módulo')+'</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
+      + '<form data-form="module" data-id="'+(md?md.id:'')+'">'
+      + '<div class="field"><label>Nome do módulo</label><input type="text" name="name" value="'+esc(md?md.name:'')+'" required></div>'
+      + '<div class="form-actions"><button type="submit" class="btn btn-primary">Salvar</button></div></form>';
+  } else if(m.type==='screen-new' || m.type==='screen-edit'){
+    const scr = m.type==='screen-edit' ? byId(state.screens, m.id) : null;
+    inner = '<div class="modal-header"><h3>'+(scr?'Editar tela':'Nova tela')+'</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
+      + '<form data-form="screen" data-id="'+(scr?scr.id:'')+'">'
+      + '<div class="field"><label>Nome da tela</label><input type="text" name="name" value="'+esc(scr?scr.name:'')+'" required></div>'
+      + '<div class="field"><label>Módulo</label><select name="moduleId">';
+    state.modules.forEach(md=> inner += '<option value="'+md.id+'" '+(scr && scr.moduleId===md.id?'selected':'')+'>'+esc(md.name)+(md.inactive?' (inativo)':'')+'</option>');
+    inner += '</select></div>'
+      + '<div class="form-actions"><button type="submit" class="btn btn-primary">Salvar</button></div></form>';
+  } else if(m.type==='type-new' || m.type==='type-edit'){
+    const tp = m.type==='type-edit' ? byId(state.agendaTypes, m.id) : null;
+    inner = '<div class="modal-header"><h3>'+(tp?'Editar tipo':'Novo tipo')+'</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
+      + '<form data-form="agenda-type" data-id="'+(tp?tp.id:'')+'">'
+      + '<div class="field"><label>Nome do tipo</label><input type="text" name="name" value="'+esc(tp?tp.name:'')+'" required></div>'
+      + '<div class="field"><label class="check-pill" style="width:fit-content;"><input type="checkbox" name="isInternal" '+(tp&&tp.isInternal?'checked':'')+'> É uma agenda interna (não é atendimento direto ao cliente)</label></div>'
+      + '<div class="form-actions"><button type="submit" class="btn btn-primary">Salvar</button></div></form>';
+  } else if(m.type==='list-new'){
+    inner = '<div class="modal-header"><h3>Nova lista</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
+      + '<form data-form="list-new" data-board="'+m.board+'"><div class="field"><label>Nome da lista</label><input type="text" name="name" required></div>'
+      + '<div class="form-actions"><button type="submit" class="btn btn-primary">Criar</button></div></form>';
+  } else if(m.type==='card-new'){
+    const board = getBoard(m.board);
+    const cdraft = m.values || {};
+    const cnClientId = cdraft.clientId || '';
+    const cnHours = cdraft.contractedHours!=null ? cdraft.contractedHours : 0;
+    const cnStart = cdraft.startDate || todayISO();
+    const cnNewName = cdraft.newClientName || '';
+    inner = '<div class="modal-header"><h3>Novo cliente no quadro</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
+      + '<form data-form="card-new" data-board="'+m.board+'" data-list="'+(m.list||board.lists[0].id)+'">'
+      + '<div class="field"><label>Cliente</label>'+renderClientPicker('clientId', cnClientId, m.clientQuery)+'</div>';
+    if(!cnClientId){
+      inner += '<div class="field" id="new-client-name-field"><label>Nome do novo cliente</label><input type="text" name="newClientName" value="'+esc(cnNewName)+'" placeholder="Obrigatório se não selecionar um cliente acima"></div>';
+    }
+    inner += '<div class="field-row"><div class="field"><label>Horas contratadas</label><input type="number" min="0" step="0.5" name="contractedHours" value="'+esc(cnHours)+'"></div><div class="field"><label>Início da implantação</label><input type="date" name="startDate" value="'+esc(cnStart)+'"></div></div>'
+      + '<div class="form-actions"><button type="submit" class="btn btn-primary">Criar card</button></div></form>';
+  } else if(m.type==='schedule-new' || m.type==='schedule-edit'){
+    inner = renderScheduleForm(m);
+  } else if(m.type==='confirm-complete'){
+    const s = byId(state.schedules, m.id);
+    const dur = timeToMin(s.endTime)-timeToMin(s.startTime);
+    inner = '<div class="modal-header"><h3>Confirmar conclusão</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
+      + '<p class="hint" style="margin-top:-6px;">'+fmtDateBR(s.date)+' · '+s.startTime+'–'+s.endTime+' · '+esc(s.type)+'</p>'
+      + '<form data-form="confirm-complete" data-id="'+s.id+'">'
+      + '<div class="field"><label>Minutos a abater do saldo</label><input type="number" min="0" name="deductMinutes" value="'+dur+'"></div>'
+      + '<div class="field"><label>Observação (opcional)</label><textarea name="notes"></textarea></div>'
+      + '<div class="form-actions"><button type="submit" class="btn btn-primary">Confirmar conclusão</button></div></form>';
+  } else if(m.type==='schedule-report'){
+    inner = renderScheduleReportContent(m.id);
+  }
+  return '<div class="overlay"><div class="modal'+(m.type&&m.type.startsWith('schedule')?' wide':'')+'">'+inner+'</div></div>';
+}
+
+function renderScheduleReportContent(scheduleId){
+  const s = byId(state.schedules, scheduleId);
+  if(!s) return '<div class="modal-header"><h3>Agendamento não encontrado</h3><button class="modal-close" data-action="close-modal">✕</button></div>';
+  const client = s.clientId ? getClient(s.clientId) : null;
+  const analyst = getAnalyst(s.analystId);
+  const modules = (s.modules||[]).join(', ') || '—';
+  const screens = (s.trainedScreens||[]).join(', ') || '—';
+  const users = s.trainedUsers || '—';
+  const duration = s.deductMinutes!=null ? s.deductMinutes : (timeToMin(s.endTime)-timeToMin(s.startTime));
+  let html = '<div class="modal-header no-print"><h3>Relatório de atendimento</h3><button class="modal-close" data-action="close-modal">✕</button></div>';
+  html += '<div id="print-report">'
+    + '<h2 style="margin-bottom:2px;">Relatório de Atendimento</h2>'
+    + '<p class="hint" style="margin:0 0 16px;">Documento gerado em '+fmtDT(Date.now())+'</p>'
+    + '<table><tbody>'
+    + '<tr><td style="font-weight:700;white-space:nowrap;">Cliente</td><td>'+esc(client?client.name:'Interno / sem cliente')+'</td></tr>'
+    + '<tr><td style="font-weight:700;">Analista responsável</td><td>'+esc(analyst?analyst.name:'—')+'</td></tr>'
+    + '<tr><td style="font-weight:700;">Data</td><td>'+fmtDateBR(s.date)+'</td></tr>'
+    + '<tr><td style="font-weight:700;">Horário</td><td>'+s.startTime+' – '+s.endTime+' ('+minToHM(duration)+')</td></tr>'
+    + '<tr><td style="font-weight:700;">Tipo de agenda</td><td>'+esc(s.type)+'</td></tr>'
+    + '<tr><td style="font-weight:700;">Módulo(s) abordado(s)</td><td>'+esc(modules)+'</td></tr>'
+    + '<tr><td style="font-weight:700;">Tela(s) treinada(s)</td><td>'+esc(screens)+'</td></tr>'
+    + '<tr><td style="font-weight:700;">Usuário(s) treinado(s)</td><td>'+esc(users)+'</td></tr>'
+    + '<tr><td style="font-weight:700;vertical-align:top;">Observações</td><td>'+esc(s.notes||'—')+'</td></tr>'
+    + '</tbody></table>'
+    + '</div>';
+  html += '<div class="form-actions no-print"><span style="flex:1;"></span><button class="btn btn-primary" data-action="print-report">🖨 Imprimir / Salvar PDF</button></div>';
+  return html;
+}
+
+function renderClientPicker(fieldName, selectedClientId, query){
+  const selected = selectedClientId ? getClient(selectedClientId) : null;
+  let html = '<div class="client-picker" data-field="'+fieldName+'">';
+  if(selected){
+    html += '<div class="client-picker-selected"><span>🔍 '+esc(selected.name)+(selected.code?' <span class="hint" style="margin:0;">('+esc(selected.code)+')</span>':'')+'</span>'
+      + '<button type="button" class="btn btn-sm btn-ghost" data-action="client-picker-clear" data-field="'+fieldName+'">Trocar</button></div>'
+      + '<input type="hidden" name="'+fieldName+'" value="'+selected.id+'">';
+  } else {
+    const q = (query||'').trim().toLowerCase();
+    html += '<div class="client-picker-input-wrap"><span>🔍</span><input type="text" id="client-picker-input" class="client-picker-input" data-field="'+fieldName+'" placeholder="Buscar cliente por nome ou código..." value="'+esc(query||'')+'" autocomplete="off"></div>'
+      + '<input type="hidden" name="'+fieldName+'" value="">';
+    if(q){
+      const matches = state.clients.filter(c=> c.name.toLowerCase().includes(q) || (c.code||'').toLowerCase().includes(q) || (c.cnpj||'').toLowerCase().includes(q)).slice(0,8);
+      html += '<div class="client-picker-results">';
+      if(!matches.length) html += '<div class="client-picker-empty">Nenhum cliente encontrado.</div>';
+      matches.forEach(c=> html += '<button type="button" class="client-picker-result" data-action="client-picker-select" data-field="'+fieldName+'" data-id="'+c.id+'">'+esc(c.name)+(c.code?' <span class="hint" style="margin:0;">('+esc(c.code)+')</span>':'')+'</button>');
+      html += '</div>';
+    }
+  }
+  html += '</div>';
+  return html;
+}
+function renderScheduleForm(m){
+  const editing = m.type==='schedule-edit' ? byId(state.schedules, m.id) : null;
+  const readOnly = false;
+  const cardCtx = m.card ? getCard(m.card) : (editing && editing.cardId ? getCard(editing.cardId) : null);
+  const fixedAnalystId = cardCtx ? getBoard(cardCtx.boardId).analystId : (editing ? editing.analystId : '');
+  const draft = m.values || null;
+  const effClientId = draft ? (draft.clientId||'') : (editing ? editing.clientId||'' : '');
+  const clientExistingCards = effClientId ? state.cards.filter(c=>c.clientId===effClientId) : [];
+  const defaultLinkCardId = editing ? (editing.cardId || '__new__') : (clientExistingCards.length ? clientExistingCards[0].id : '__new__');
+  const eff = {
+    clientId: effClientId,
+    analystId: draft ? (draft.analystId || fixedAnalystId) : (fixedAnalystId || m.prefillAnalyst || ''),
+    date: draft ? draft.date : (editing ? editing.date : (m.prefillDate || todayISO())),
+    startTime: draft ? draft.startTime : (editing ? editing.startTime : (m.prefillStart || '09:00')),
+    endTime: draft ? draft.endTime : (editing ? editing.endTime : (m.prefillEnd || '10:00')),
+    type: draft ? draft.type : (editing ? editing.type : (activeAgendaTypes().find(t=>!t.isInternal) ? activeAgendaTypes().find(t=>!t.isInternal).name : (activeAgendaTypes()[0]?activeAgendaTypes()[0].name:''))),
+    category: draft ? (draft.category||'implantacao') : (editing ? (editing.category||'implantacao') : 'implantacao'),
+    modules: draft ? (draft.modules||[]) : (editing ? (editing.modules||[]) : []),
+    trainedScreens: draft ? (draft.trainedScreens||[]) : (editing ? (editing.trainedScreens||[]) : []),
+    trainedUsers: draft ? (draft.trainedUsers||'') : (editing ? (editing.trainedUsers||'') : ''),
+    linkCardId: draft ? (draft.linkCardId || defaultLinkCardId) : defaultLinkCardId,
+    notes: draft ? (draft.notes||'') : (editing ? editing.notes : '')
+  };
+  let html = '<div class="modal-header"><h3>'+(editing?'Editar agendamento':'Novo agendamento')+'</h3><button class="modal-close" data-action="close-modal">✕</button></div>';
+  if(editing) html += '<p class="hint" style="margin-top:-8px;">Status: <span class="badge '+editing.status+'">'+statusLabel(editing.status)+'</span>'+(editing.status==='concluida'? ' · '+minToHM(editing.deductMinutes)+' abatido(s)':'')+'</p>';
+  if(ui.formErr){ html += '<div class="error-msg">'+esc(ui.formErr)+'</div>'; }
+  html += '<form data-form="schedule" data-id="'+(editing?editing.id:'')+'" data-card="'+(cardCtx?cardCtx.id:'')+'">';
+
+  html += '<div class="field"><label>Categoria da agenda</label><select name="category">'
+    + '<option value="implantacao" '+(eff.category==='implantacao'?'selected':'')+'>Implantação</option>'
+    + '<option value="interna" '+(eff.category==='interna'?'selected':'')+'>Interna</option>'
+    + '</select><span class="hint" style="margin-top:2px;">Interna = trabalho não faturável ao cliente (ex: reunião de equipe). Ainda assim dá pra vincular a um cliente, se for sobre um cliente específico.</span></div>';
+  if(cardCtx){
+    const client = getClient(cardCtx.clientId);
+    html += '<div class="field"><label>Cliente</label><input type="text" value="'+esc(client?client.name:'')+'" disabled></div>';
+  } else {
+    html += '<div class="field"><label>Cliente (opcional — deixe em branco para agenda interna sem cliente)</label>'+renderClientPicker('clientId', eff.clientId, m.clientQuery)+'</div>';
+    if(eff.clientId){
+      const existingCards = state.cards.filter(c=>c.clientId===eff.clientId);
+      if(existingCards.length){
+        html += '<div class="field"><label>Vincular ao card</label><select name="linkCardId">'
+          + '<option value="__new__" '+(eff.linkCardId==='__new__'?'selected':'')+'>+ Criar novo card no quadro deste analista</option>';
+        existingCards.forEach(c=>{
+          const b = getBoard(c.boardId); const an = b ? getAnalyst(b.analystId) : null; const list = b ? byId(b.lists, c.listId) : null;
+          html += '<option value="'+c.id+'" '+(eff.linkCardId===c.id?'selected':'')+'>Card no quadro de '+esc(an?an.name:'—')+(list?' — '+esc(list.name):'')+'</option>';
         });
-        if(newCard) targetCardId = newCard.id;
+        html += '</select><span class="hint" style="margin-top:2px;">Este cliente já tem card em outro quadro — escolha vincular a ele em vez de criar um novo, se for o mesmo atendimento.</span></div>';
       }
     }
   }
-
-  executeSaveSchedule(schedId, v, targetCardId);
-}
-
-function executeSaveSchedule(schedId, v, cardId){
-  const modules = Array.isArray(v.modules) ? v.modules : (v.modules ? [v.modules] : []);
-
-  if(schedId){
-    updateSchedule(schedId, {
-      analystId: v.analystId, clientId: v.clientId, cardId,
-      date: v.date, startTime: v.startTime, endTime: v.endTime,
-      type: v.type, modules, notes: v.notes||''
-    });
-  } else {
-    createSchedule({
-      analystId: v.analystId, clientId: v.clientId, cardId,
-      date: v.date, startTime: v.startTime, endTime: v.endTime,
-      type: v.type, modules, notes: v.notes||''
-    });
+  html += '<div class="field"><label>Analista</label><select name="analystId" '+(cardCtx?'disabled':'')+'>';
+  state.analysts.forEach(a=>{
+    /* Mostra todos, mas marca inativos; ao editar mantém o analista atual mesmo se estiver inativo. */
+    const showInactive = a.inactive && (editing && editing.analystId===a.id);
+    if(a.inactive && !showInactive) return;
+    html += '<option value="'+a.id+'" '+((eff.analystId===a.id)?'selected':'')+'>'+esc(a.name)+(a.inactive?' (inativo)':'')+'</option>';
+  });
+  html += '</select></div>';
+  html += '<div class="field-row">'
+    + '<div class="field"><label>Data</label><input type="date" name="date" value="'+esc(eff.date)+'"></div>'
+    + '<div class="field"><label>Início</label><input type="time" name="startTime" value="'+esc(eff.startTime)+'"></div>'
+    + '<div class="field"><label>Fim</label><input type="time" name="endTime" value="'+esc(eff.endTime)+'"></div>'
+    + '</div>';
+  html += '<div class="field"><label>Tipo</label><select name="type">';
+  /* Mostra apenas tipos ativos da categoria; mantém o tipo atual mesmo se estiver inativo (ao editar). */
+  state.agendaTypes.filter(t=> !!t.isInternal === (eff.category==='interna')).forEach(t=>{
+    const showInactive = t.inactive && (editing && editing.type===t.name);
+    if(t.inactive && !showInactive) return;
+    html += '<option value="'+esc(t.name)+'" '+(eff.type===t.name?'selected':'')+'>'+esc(t.name)+(t.inactive?' (inativo)':'')+'</option>';
+  });
+  html += '</select></div>';
+  html += '<div class="field"><label>Módulo(s) do sistema</label><div class="check-grid">';
+  /* Mostra módulos ativos; se o agendamento atual usa algum módulo inativo, mostra com aviso para poder remover. */
+  state.modules.forEach(mod=>{
+    const isInactive = mod.inactive;
+    const isChecked = eff.modules.includes(mod.name);
+    if(isInactive && !isChecked) return;
+    const checked = isChecked ? 'checked':'';
+    html += '<label class="check-pill" style="'+(isInactive?'opacity:.6;':'')+'"><input type="checkbox" name="modules" value="'+esc(mod.name)+'" '+checked+'>'+esc(mod.name)+(isInactive?' <small style="color:var(--ink-faint);">(inativo)</small>':'')+'</label>';
+  });
+  html += '</div>';
+  if(!readOnly){
+    html += '<div style="display:flex;gap:6px;margin-top:9px;">'
+      + '<input type="text" class="quick-add-input" data-for="module" placeholder="Novo módulo...">'
+      + '<button type="button" class="btn btn-sm btn-primary" data-action="quick-add-module">+ Adicionar</button>'
+      + '</div>';
   }
-
-  persist(); closeModal();
-}
-
-/* Modal Confirmação de Agendamento Concluído */
-function renderModalConfirmSchedule(data){
-  const sched = state.schedules.find(x=>x.id===data.schedId);
-  if(!sched) return '';
-
-  const client = sched.cardId ? getClient(getCard(sched.cardId)?.clientId) : (sched.clientId ? getClient(sched.clientId) : null);
-  const defaultDuration = timeToMin(sched.endTime) - timeToMin(sched.startTime);
-
-  return `<div class="overlay" onclick="if(event.target===this)closeModal()">
-    <div class="modal">
-      <div class="modal-header">
-        <h3>Confirmar Agendamento</h3>
-        <button class="modal-close" onclick="closeModal()">✕</button>
-      </div>
-
-      <p style="font-size:13px;margin-bottom:12px;"><strong>Cliente:</strong> ${esc(client?client.name:'Sem cliente')} (${fmtDateBR(sched.date)} ${sched.startTime}-${sched.endTime})</p>
-
-      <form onsubmit="event.preventDefault();handleConfirmScheduleSubmit('${sched.id}', this);">
-        <div class="field">
-          <label>Status Final *</label>
-          <select name="status" required>
-            <option value="concluida">Concluída (Abater Horas)</option>
-            <option value="nao_realizada">Não Realizada (Cliente Faltou / Cancelou)</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label>Minutos a Abater do Saldo (Padrão: ${defaultDuration} min)</label>
-          <input type="number" name="deductMinutes" value="${defaultDuration}">
-        </div>
-
-        <div class="field">
-          <label>Observações do Atendimento</label>
-          <textarea name="notes" rows="3" placeholder="Resumo do que foi realizado..."></textarea>
-        </div>
-
-        <div class="form-actions">
-          <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Salvar Status</button>
-        </div>
-      </form>
-    </div>
-  </div>`;
-}
-
-function handleConfirmScheduleSubmit(schedId, form){
-  const v = captureFormValues(form);
-  completeSchedule(schedId, v.status, v.notes, v.deductMinutes);
-  persist(); closeModal();
-}
-
-/* Modal Analista */
-function renderModalAnalyst(type, data){
-  const isEdit = type==='edit-analyst';
-  const analyst = isEdit ? getAnalyst(data.analystId) : {};
-
-  return `<div class="overlay" onclick="if(event.target===this)closeModal()">
-    <div class="modal">
-      <div class="modal-header">
-        <h3>${isEdit?'Editar Analista':'Novo Analista'}</h3>
-        <button class="modal-close" onclick="closeModal()">✕</button>
-      </div>
-
-      <form onsubmit="event.preventDefault();handleSaveAnalystSubmit('${isEdit?analyst.id:''}', this);">
-        <div class="field">
-          <label>Nome do Analista *</label>
-          <input type="text" name="name" value="${esc(analyst.name||'')}" required>
-        </div>
-
-        <div class="field-row">
-          <div class="field">
-            <label>Usuário de Login</label>
-            <input type="text" name="username" value="${esc(analyst.username||'')}">
-          </div>
-          <div class="field">
-            <label>Senha</label>
-            <input type="password" name="password" value="${esc(analyst.password||'')}">
-          </div>
-        </div>
-
-        <div class="field-row">
-          <div class="field">
-            <label>Cor do Quadro</label>
-            <input type="color" name="color" value="${analyst.color || '#0B5C8E'}">
-          </div>
-          <div class="field" style="display:flex;align-items:center;padding-top:20px;">
-            <label class="check-pill"><input type="checkbox" name="isAdmin" ${analyst.isAdmin?'checked':''}> Perfil Administrador</label>
-          </div>
-        </div>
-
-        <div class="form-actions">
-          <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Salvar Analista</button>
-        </div>
-      </form>
-    </div>
-  </div>`;
-}
-
-function handleSaveAnalystSubmit(analystId, form){
-  const v = captureFormValues(form);
-  if(!v.name){ ui.formErr = 'Preencha o nome do analista.'; render(); return; }
-
-  if(analystId){
-    const a = getAnalyst(analystId);
-    if(a){
-      a.name = v.name;
-      a.username = v.username||'';
-      a.password = v.password||'';
-      a.color = v.color||a.color;
-      a.isAdmin = !!v.isAdmin;
+  html += '</div>';
+  const checkedModules = state.modules.filter(m=> eff.modules.includes(m.name));
+  checkedModules.forEach(mod=>{
+    const screensForMod = screensForModule(mod.id);
+    if(!screensForMod.length) return;
+    html += '<div class="field"><label>Telas treinadas — '+esc(mod.name)+'</label><div class="check-grid">';
+    screensForMod.forEach(scr=>{
+      const isChecked = eff.trainedScreens.includes(scr.name);
+      if(scr.inactive && !isChecked) return;
+      const checked = isChecked ? 'checked':'';
+      html += '<label class="check-pill" style="'+(scr.inactive?'opacity:.6;':'')+'"><input type="checkbox" name="trainedScreens" value="'+esc(scr.name)+'" '+checked+'>'+esc(scr.name)+(scr.inactive?' <small style="color:var(--ink-faint);">(inativo)</small>':'')+'</label>';
+    });
+    html += '</div></div>';
+  });
+  html += '<div class="field"><label>Usuários treinados</label><textarea name="trainedUsers" placeholder="Nomes das pessoas que receberam o treinamento, separados por vírgula">'+esc(eff.trainedUsers)+'</textarea><span class="hint" style="margin-top:2px;">Para identificar quem do cliente participou do treinamento.</span></div>';
+  html += '<div class="field"><label>Observações</label><textarea name="notes">'+esc(eff.notes)+'</textarea></div>';
+  if(!readOnly){
+    let quick = '';
+    if(editing && editing.status==='pendente'){
+      quick = '<button type="button" class="btn btn-sm btn-primary" data-action="open-modal" data-modal="confirm-complete" data-id="'+editing.id+'">Concluir agora</button>'
+        + '<button type="button" class="btn btn-sm btn-ghost" data-action="mark-not-done" data-id="'+editing.id+'">Não realizada</button>';
+    } else if(editing){
+      quick = '<button type="button" class="btn btn-sm btn-ghost" data-action="revert-to-pending" data-id="'+editing.id+'">'+(editing.status==='concluida'?'Reverter conclusão':'Reverter p/ pendente')+'</button>';
+      if(editing.status==='concluida') quick += '<button type="button" class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="schedule-report" data-id="'+editing.id+'">🖨 Relatório</button>';
     }
-  } else {
-    createAnalyst(v.name, v.color, v.username, v.password, !!v.isAdmin);
+    html += '<div class="form-actions">'+quick+(editing?'<button type="button" class="btn btn-danger" data-action="delete-schedule" data-id="'+editing.id+'">Excluir</button>':'')+'<span style="flex:1;"></span><button type="submit" class="btn btn-primary">Salvar agendamento</button></div>';
   }
-
-  persist(); closeModal();
+  html += '</form>';
+  return html;
 }
 
-/* Modal de Confirmação Alerta Geral */
-function renderConfirmModal(){
-  if(!ui.confirmDialog) return '';
-  const {type, message, onYes} = ui.confirmDialog;
-
-  return `<div class="overlay confirm-overlay">
-    <div class="modal" style="max-width:420px;text-align:center;">
-      <h3 style="margin-bottom:12px;font-size:17px;">${type==='alert'?'Atenção':'Confirmação'}</h3>
-      <p style="font-size:13.5px;color:var(--ink-soft);margin-bottom:20px;white-space:pre-line;">${esc(message)}</p>
-
-      <div style="display:flex;justify-content:center;gap:10px;">
-        ${type==='confirm' ? `
-          <button class="btn btn-ghost" onclick="closeConfirm()">Não</button>
-          <button class="btn btn-primary" onclick="closeConfirm();if(typeof ui._onYes==='function')ui._onYes();">Sim</button>
-        ` : `
-          <button class="btn btn-primary" onclick="closeConfirm()">OK</button>
-        `}
-      </div>
-    </div>
-  </div>`;
+/* ============================= EVENT HANDLING ============================= */
+function closeModal(){ ui.modal=null; ui.formErr=''; render(); }
+function showConfirm(message, onConfirm){ ui.confirmDialog = {message, onConfirm, alertOnly:false}; render(); }
+function showAlert(message){ ui.confirmDialog = {message, onConfirm:null, alertOnly:true}; render(); }
+function renderConfirmDialog(){
+  const d = ui.confirmDialog;
+  const buttons = d.alertOnly
+    ? '<button class="btn btn-primary" data-action="confirm-ok">OK</button>'
+    : '<button class="btn btn-ghost" data-action="confirm-cancel">Cancelar</button><button class="btn btn-primary" data-action="confirm-ok">Confirmar</button>';
+  return '<div class="overlay confirm-overlay"><div class="modal" style="max-width:420px;">'
+    + '<p style="margin:4px 0 18px;white-space:pre-line;">'+esc(d.message)+'</p>'
+    + '<div class="form-actions">'+buttons+'</div>'
+    + '</div></div>';
 }
 
-function showConfirm(msg, onYes, onNo){
-  ui.confirmDialog = {type:'confirm', message:msg};
-  ui._onYes = onYes;
-  ui._onNo = onNo;
-  render();
-}
+document.addEventListener('click', function(e){
+  let needsRender = false;
+  const notifPanelClick = e.target.closest('.notif-panel');
+  const bellClick = e.target.closest('[data-action="toggle-notif"]');
+  if(ui.showNotif && !notifPanelClick && !bellClick){ ui.showNotif=false; needsRender = true; }
 
-function closeConfirm(){
-  const onNo = ui._onNo;
-  ui.confirmDialog = null;
-  ui._onYes = null;
-  ui._onNo = null;
-  if(typeof onNo === 'function') onNo();
-  render();
-}
+  if(e.target.classList && e.target.classList.contains('overlay')){
+    if(e.target.classList.contains('card-overlay')){ ui.openCardId=null; render(); return; }
+    if(e.target.classList.contains('confirm-overlay')){ ui.confirmDialog=null; render(); return; }
+    closeModal(); return;
+  }
+  const el = e.target.closest('[data-action]');
+  if(!el){ if(needsRender) render(); return; }
+  const a = el.dataset.action;
 
-/* ============================= RENDER INITIALIZATION ============================= */
-function render(){
-  const app = document.getElementById('app');
-  if(!app) return;
+  if(a==='goto-view'){
+    ui.view = el.dataset.view; ui.showNotif=false; ui.sidebarOpen=false;
+    refreshFromCloudIfChanged('view-change').finally(()=>render());
+  }
+  else if(a==='open-board'){
+    ui.view='board';
+    const b = getBoard(el.dataset.id);
+    ui.boardAnalystFilter = b ? b.analystId : 'all';
+    ui.currentBoardId = b ? b.id : (state.boards[0] ? state.boards[0].id : null);
+    ui.search='';
+    ui.sidebarOpen=false;
+    refreshFromCloudIfChanged('board-change').finally(()=>render());
+  }
+  else if(a==='board-analyst-filter'){
+    const id = el.dataset.id || el.value || 'all';
+    ui.view='board';
+    ui.boardAnalystFilter = id;
+    if(id!=='all'){
+      const b = boardOfAnalyst(id);
+      ui.currentBoardId = b ? b.id : null;
+    } else {
+      ui.currentBoardId = state.boards[0] ? state.boards[0].id : null;
+    }
+    ui.search='';
+    refreshFromCloudIfChanged('analyst-filter').finally(()=>render());
+  }
+  else if(a==='toggle-sidebar'){ ui.sidebarOpen = !ui.sidebarOpen; render(); }
+  else if(a==='close-sidebar'){ ui.sidebarOpen = false; render(); }
+  else if(a==='open-modal'){
+    const type = el.dataset.modal;
+    ui.formErr='';
+    ui.modal = {type, id:el.dataset.id, board:el.dataset.board, list:el.dataset.list, card:el.dataset.card};
+    render();
+  }
+  else if(a==='close-modal' || a==='close-modal-bg'){ closeModal(); }
+  else if(a==='confirm-ok'){ const d=ui.confirmDialog; ui.confirmDialog=null; if(d && d.onConfirm) d.onConfirm(); render(); }
+  else if(a==='confirm-cancel'){ ui.confirmDialog=null; render(); }
+  else if(a==='close-card'){ ui.openCardId=null; ui.cardDraft=null; render(); }
+  else if(a==='toggle-notif'){ ui.showNotif = !ui.showNotif; render(); }
+  else if(a==='open-card'){ const holder = el.closest('[data-card-id]'); if(holder){ if(ui.cardDraft && ui.cardDraft.cardId!==holder.dataset.cardId) ui.cardDraft=null; ui.openCardId = holder.dataset.cardId; ui.cardTab='info'; render(); } }
+  else if(a==='card-tab'){ ui.cardTab = el.dataset.tab; render(); }
+  else if(a==='delete-card'){
+    const id = el.dataset.id;
+    showConfirm('Excluir este card e seus agendamentos vinculados?', function(){ deleteCard(id); ui.openCardId=null; ui.cardDraft=null; ui.modal=null; });
+  }
+  else if(a==='quick-add-product'){
+    const form = el.closest('form[data-form="card-info"]');
+    const input = form.querySelector('.quick-add-input[data-for="product"]');
+    const colorInput = form.querySelector('.quick-add-color[data-for="product"]');
+    const name = (input.value||'').trim();
+    if(!name){ input.focus(); return; }
+    const values = captureFormValues(form);
+    const newTag = {id:uid('pt'), name, color: colorInput ? colorInput.value : colorForIndex(state.productTags.length), inactive:false};
+    state.productTags.push(newTag);
+    values.productTags = (values.productTags||[]).concat(newTag.id);
+    ui.cardDraft = {cardId: form.dataset.card, values};
+    render();
+  }
+  else if(a==='client-picker-select'){
+    const form = el.closest('form');
+    const field = el.dataset.field;
+    const values = captureFormValues(form);
+    values[field] = el.dataset.id;
+    if(field==='clientId'){ delete values.newClientName; delete values.linkCardId; }
+    if(ui.modal){ ui.modal.clientQuery = ''; ui.modal.values = values; render(); }
+  }
+  else if(a==='client-picker-clear'){
+    const form = el.closest('form');
+    const field = el.dataset.field;
+    const values = captureFormValues(form);
+    values[field] = '';
+    if(field==='clientId') delete values.linkCardId;
+    if(ui.modal){ ui.modal.clientQuery = ''; ui.modal.values = values; render(); }
+  }
+  else if(a==='quick-add-module'){
+    const form = el.closest('form[data-form="schedule"]');
+    const input = form.querySelector('.quick-add-input[data-for="module"]');
+    const name = (input.value||'').trim();
+    if(!name){ input.focus(); return; }
+    const values = captureFormValues(form);
+    if(!state.modules.some(m=>m.name===name)) state.modules.push({id:uid('md'), name, inactive:false});
+    values.modules = (values.modules||[]).concat(name);
+    ui.modal.values = values;
+    render();
+  }
+  else if(a==='delete-list'){ deleteListFromBoard(el.dataset.board, el.dataset.list); render(); }
+  else if(a==='delete-analyst'){
+    if(!isAdminUser()){ showAlert('Apenas administradores podem excluir analistas.'); return; }
+    const id = el.dataset.id;
+    const an = getAnalyst(id);
+    if(!an) return;
+    /* Bloqueio de exclusão quando houver qualquer vínculo */
+    if(an.isAdmin){ showAlert('O analista administrador do sistema não pode ser excluído.'); return; }
+    const linkedScheds = schedulesForAnalyst(id).length;
+    const board = boardOfAnalyst(id);
+    const boardCards = board ? cardsInBoard(board.id).length : 0;
+    if(linkedScheds > 0){
+      showAlert('Não é possível excluir "'+an.name+'": há '+linkedScheds+' agendamento(s) vinculado(s). Inative o analista em vez de excluir, ou remova os agendamentos primeiro.');
+      return;
+    }
+    if(boardCards > 0){
+      showAlert('Não é possível excluir "'+an.name+'": há '+boardCards+' card(s) no quadro deste analista. Inative o analista em vez de excluir, ou remova os cards primeiro.');
+      return;
+    }
+    showConfirm('Excluir este analista, seu quadro e todos os cards/agendamentos vinculados?', function(){
+      deleteAnalyst(id);
+      if(ui.currentBoardId && !getBoard(ui.currentBoardId)) ui.currentBoardId = state.boards[0]?state.boards[0].id:null;
+    });
+  }
+  else if(a==='toggle-entity-active'){
+    /* switch com data-kind=analyst|module|screen|type|product */
+    const kind = el.dataset.kind;
+    const id = el.dataset.id;
+    const willBeActive = el.checked;
+    if(kind==='analyst'){
+      if(!isAdminUser()){ showAlert('Apenas administradores podem alterar o status de analistas.'); el.checked = !el.checked; return; }
+      const a = getAnalyst(id);
+      if(a && a.isAdmin && !willBeActive){
+        showAlert('O analista administrador do sistema não pode ser inativado.');
+        el.checked = true; return;
+      }
+      setAnalystActive(id, willBeActive);
+    } else {
+      setEntityActive(kind, id, willBeActive);
+    }
+    render();
+  }
+  else if(a==='analyst-deactivate'){
+    if(!isAdminUser()){ showAlert('Apenas administradores podem inativar analistas.'); return; }
+    const id = el.dataset.id;
+    const an = getAnalyst(id);
+    if(!an) return;
+    showConfirm('Inativar "'+an.name+'"? O analista não conseguirá mais logar nem aparecerá nas listas de seleção, mas seus cards e agendamentos serão preservados.', function(){ setAnalystActive(id, false); });
+  }
+  else if(a==='analyst-activate'){
+    if(!isAdminUser()){ showAlert('Apenas administradores podem ativar analistas.'); return; }
+    setAnalystActive(el.dataset.id, true);
+    render();
+  }
+  else if(a==='delete-client'){
+    const id = el.dataset.id;
+    const cl = getClient(id);
+    if(!cl) return;
+    const linkedCards = cardsForClient(id).length;
+    const linkedScheds = schedulesForClient(id).length;
+    if(linkedCards > 0 || linkedScheds > 0){
+      showAlert('Não é possível excluir "'+cl.name+'": há '+linkedCards+' card(s) e '+linkedScheds+' agendamento(s) vinculado(s). Remova esses vínculos primeiro.');
+      return;
+    }
+    showConfirm('Excluir este cliente?', function(){ deleteClient(id); });
+  }
+  else if(a==='delete-schedule'){
+    const id = el.dataset.id;
+    showConfirm('Excluir este agendamento?', function(){ deleteSchedule(id); ui.modal=null; });
+  }
+  else if(a==='mark-not-done'){ markNotDone(el.dataset.id); render(); }
+  else if(a==='revert-to-pending'){
+    const id = el.dataset.id;
+    const s = byId(state.schedules, id);
+    const msg = s && s.status==='concluida'
+      ? 'Reverter a conclusão desta agenda? O saldo de horas será estornado e ela voltará para pendente.'
+      : 'Reverter esta agenda para pendente?';
+    showConfirm(msg, function(){ revertToPending(id); ui.modal=null; });
+  }
+  else if(a==='delete-product'){
+    const tagId = el.dataset.id;
+    const linked = cardsUsingProduct(tagId);
+    if(linked.length){
+      const names = linked.map(c=>{ const cl=getClient(c.clientId); return cl?cl.name:'—'; });
+      showAlert('Não é possível excluir: este produto está vinculado a '+linked.length+' cliente(s) — '+names.join(', ')+'. Inative o produto em vez de excluir, ou remova dos clientes primeiro.');
+    } else {
+      showConfirm('Excluir este produto do cadastro?', function(){ state.productTags = state.productTags.filter(t=>t.id!==tagId); });
+    }
+  }
+  else if(a==='delete-module'){
+    const id = el.dataset.id;
+    const mod = byId(state.modules, id);
+    if(!mod) return;
+    const linked = schedulesUsingModule(mod.name);
+    const linkedScreens = screensForModule(id);
+    if(linked.length){
+      showAlert('Não é possível excluir: este módulo está sendo usado em '+linked.length+' agendamento(s). Inative o módulo em vez de excluir, ou remova dos agendamentos primeiro.');
+    } else if(linkedScreens.length){
+      showAlert('Não é possível excluir: este módulo tem '+linkedScreens.length+' tela(s) cadastrada(s) — '+linkedScreens.map(s=>s.name).join(', ')+'. Exclua ou reatribua essas telas primeiro.');
+    } else {
+      showConfirm('Excluir este módulo do cadastro?', function(){ state.modules = state.modules.filter(m=>m.id!==id); });
+    }
+  }
+  else if(a==='delete-screen'){
+    const id = el.dataset.id;
+    const scr = byId(state.screens, id);
+    if(!scr) return;
+    const linked = schedulesUsingScreen(scr.name);
+    if(linked.length){
+      showAlert('Não é possível excluir: esta tela está marcada como treinada em '+linked.length+' agendamento(s). Inative a tela em vez de excluir, ou remova-a dos agendamentos primeiro.');
+    } else {
+      showConfirm('Excluir esta tela do cadastro?', function(){ state.screens = state.screens.filter(s=>s.id!==id); });
+    }
+  }
+  else if(a==='cloud-disconnect'){ showConfirm('Desconectar da nuvem? O app volta a salvar só neste navegador (os dados na nuvem continuam existindo).', function(){ disconnectCloud(); }); }
+  else if(a==='force-save'){ forceSaveNow(); }
+  else if(a==='import-clients-trigger'){ const el=document.getElementById('import-clients-file'); if(el) el.click(); }
+  else if(a==='download-client-template'){ downloadClientTemplate(); }
+  else if(a==='print-report'){ window.print(); }
+  else if(a==='cloud-reconnect-default'){ connectCloud(DEFAULT_CLOUD_CONFIG.url, DEFAULT_CLOUD_CONFIG.anonKey); }
+  else if(a==='delete-type'){
+    const id = el.dataset.id;
+    const tp = byId(state.agendaTypes, id);
+    if(!tp) return;
+    const linked = schedulesUsingType(tp.name);
+    if(linked.length){
+      showAlert('Não é possível excluir: este tipo está sendo usado em '+linked.length+' agendamento(s). Inative o tipo em vez de excluir, ou remova-o dos agendamentos primeiro.');
+    } else {
+      showConfirm('Excluir este tipo do cadastro?', function(){ state.agendaTypes = state.agendaTypes.filter(t=>t.id!==id); });
+    }
+  }
+  else if(a==='settings-tab'){
+    const tab = el.dataset.tab;
+    const adminOnly = ['analistas','acesso','nuvem'];
+    if(adminOnly.includes(tab) && !isAdminUser()){ showAlert('Apenas administradores podem acessar esta aba.'); return; }
+    ui.settingsTab = tab; render();
+  }
+  else if(a==='cal-nav'){ const dir=el.dataset.dir; if(dir==='0') ui.calStart=startOfWeekISO(todayISO()); else ui.calStart = addDaysISO(ui.calStart, 7*parseInt(dir,10)); render(); }
+  else if(a==='cal-grid-click'){
+    const rect = el.getBoundingClientRect();
+    const offsetY = e.clientY - rect.top;
+    const startHour = parseFloat(el.dataset.startHour);
+    const pxPerHour = parseFloat(el.dataset.pxPerHour);
+    let minutesFromStart = (offsetY/pxPerHour)*60;
+    minutesFromStart = Math.round(minutesFromStart/30)*30;
+    let totalMin = Math.max(0, Math.min(24*60-30, startHour*60 + minutesFromStart));
+    const pad = n=>String(n).padStart(2,'0');
+    const startH = Math.floor(totalMin/60), startM = totalMin%60;
+    const endTotal = Math.min(24*60, totalMin+60);
+    const endH = Math.floor(endTotal/60), endM = endTotal%60;
+    ui.formErr = '';
+    ui.modal = {
+      type:'schedule-new',
+      prefillDate: el.dataset.date,
+      prefillStart: pad(startH)+':'+pad(startM),
+      prefillEnd: pad(endH===24?23:endH)+':'+(endM===60?'59':pad(endM)),
+      prefillAnalyst: ui.calAnalyst!=='all' ? ui.calAnalyst : undefined
+    };
+    render();
+  }
+  else if(a==='toggle-show-pass'){
+    const id = el.dataset.id;
+    const a2 = getAnalyst(id);
+    if(a2) alert('Senha de "'+a2.name+'":\n\n'+(a2.password||'(vazia)'));
+  }
+  else if(a==='logout'){ logout(); }
+  else { render(); }
+});
 
-  if(!currentUser){
-    app.innerHTML = renderLoginScreen();
+document.addEventListener('change', function(e){
+  if(e.target.id==='cal-analyst-filter'){ ui.calAnalyst = e.target.value; render(); }
+  else if(e.target.id==='cal-category-filter'){ ui.calCategory = e.target.value; render(); }
+  else if(e.target.id==='import-clients-file'){
+    const file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if(file){ importClientsFromFile(file).catch(err=>{ showAlert('Erro ao importar o arquivo: '+(err && err.message ? err.message : err)); }); }
+  }
+  else if(e.target.matches('select[name="moveTo"]')){
+    const cardId = e.target.closest('form').dataset.card;
+    const [boardId,listId] = e.target.value.split('::');
+    moveCard(cardId, boardId, listId);
+    render();
+  }
+  else if(e.target.matches('form[data-form="schedule"] input[name="modules"]')){
+    const form = e.target.closest('form');
+    if(ui.modal){ ui.modal.values = captureFormValues(form); render(); }
+  }
+  else if(e.target.matches('form[data-form="schedule"] select[name="category"]')){
+    const form = e.target.closest('form');
+    const values = captureFormValues(form);
+    const newCategory = e.target.value;
+    const validTypes = activeAgendaTypes().filter(t=> !!t.isInternal === (newCategory==='interna'));
+    if(!validTypes.some(t=>t.name===values.type)){ values.type = validTypes.length ? validTypes[0].name : ''; }
+    values.category = newCategory;
+    if(ui.modal){ ui.modal.values = values; render(); }
+  }
+  else if(e.target.matches('form[data-form="schedule"] select[name="clientId"]')){
+    const form = e.target.closest('form');
+    const values = captureFormValues(form);
+    delete values.linkCardId;
+    if(ui.modal){ ui.modal.values = values; render(); }
+  }
+});
+
+document.addEventListener('input', function(e){
+  if(e.target.id==='search-input'){
+    ui.search = e.target.value;
+    ui._focus = {id:'search-input', pos: e.target.selectionStart};
+    render();
+  }
+  else if(e.target.id==='client-search-input'){
+    ui.clientSearch = e.target.value;
+    ui._focus = {id:'client-search-input', pos: e.target.selectionStart};
+    render();
+  }
+  else if(e.target.id==='client-picker-input'){
+    const form = e.target.closest('form');
+    const values = captureFormValues(form);
+    if(ui.modal){
+      ui.modal.clientQuery = e.target.value;
+      ui.modal.values = values;
+      ui._focus = {id:'client-picker-input', pos: e.target.selectionStart};
+      render();
+    }
+  }
+});
+
+document.addEventListener('keydown', function(e){
+  if(e.key==='Enter' && e.target.classList && e.target.classList.contains('quick-add-input')){
+    e.preventDefault();
+    const btn = e.target.parentElement.querySelector('button[data-action]');
+    if(btn) btn.click();
+  }
+  if(e.key==='Enter' && e.target.id==='login-pass'){ doLogin(); }
+});
+
+document.addEventListener('submit', async function(e){
+  const form = e.target.closest('form[data-form]');
+  if(!form) return;
+  e.preventDefault();
+  const type = form.dataset.form;
+  const fd = new FormData(form);
+
+  if(type==='analyst'){
+    if(!isAdminUser()){ showAlert('Apenas administradores podem criar/editar analistas.'); return; }
+    const name = fd.get('name').trim();
+    const color = fd.get('color');
+    const username = (fd.get('username')||'').trim().toLowerCase();
+    const password = fd.get('password')||'';
+    const passwordConfirm = fd.get('passwordConfirm')||'';
+    const id = form.dataset.id;
+    const wantsAdmin = fd.get('isAdmin')==='on';
+
+    if(!username){ showAlert('Informe o usuário (login).'); return; }
+    if(!/^[a-z0-9._-]+$/.test(username)){ showAlert('O usuário pode conter apenas letras, números, ponto, underscore e hífen.'); return; }
+    if(state.analysts.some(a=> a.username && a.username.toLowerCase()===username && a.id!==id)){
+      showAlert('Já existe um analista com o usuário "'+username+'". Escolha outro.'); return;
+    }
+    if(!id && !password){ showAlert('Defina uma senha para o novo analista.'); return; }
+    if(password || passwordConfirm){
+      if(password !== passwordConfirm){ showAlert('As senhas não coincidem.'); return; }
+      if(password.length < 4){ showAlert('A senha deve ter pelo menos 4 caracteres.'); return; }
+    }
+    if(id){
+      const a = getAnalyst(id);
+      if(!a) return;
+      a.name = name; a.color = color; a.username = username;
+      if(password) a.password = password;
+      if(!a.isAdmin && wantsAdmin) a.isAdmin = true;
+      const b = boardOfAnalyst(id); if(b) b.name = 'Quadro — '+name;
+    } else {
+      createAnalyst(name, color, username, password, wantsAdmin);
+    }
+    ui.modal=null; render();
+  }
+  else if(type==='change-password'){
+    const id = form.dataset.id;
+    const a = getAnalyst(id);
+    if(!a) return;
+    const cur = fd.get('currentPassword')||'';
+    const nw = fd.get('newPassword')||'';
+    const cf = fd.get('confirmPassword')||'';
+    if(a.password && a.password !== cur){ showAlert('Senha atual incorreta.'); return; }
+    if(nw.length < 4){ showAlert('A nova senha deve ter pelo menos 4 caracteres.'); return; }
+    if(nw !== cf){ showAlert('As senhas não coincidem.'); return; }
+    a.password = nw;
+    if(currentUser && currentUser.analystId===a.id) currentUser.password = nw;
+    render();
+    showAlert('Senha alterada com sucesso.');
+  }
+  else if(type==='client'){
+    const data = {
+      code: fd.get('code').trim(), name: fd.get('name').trim(), companyName: fd.get('companyName').trim(),
+      cnpj: fd.get('cnpj').trim(), ie: fd.get('ie').trim(),
+      contact: fd.get('contact').trim(), email: fd.get('email').trim(), phone: fd.get('phone').trim(),
+      segment: fd.get('segment').trim(), city: fd.get('city').trim(), clientType: fd.get('clientType')||'novo'
+    };
+    const id = form.dataset.id;
+    if(data.code && state.clients.some(c=>c.code===data.code && c.id!==id)){
+      showAlert('Já existe um cliente cadastrado com o código "'+data.code+'". Verifique o código informado.');
+      return;
+    }
+    if(id) updateClient(id, data); else createClient(data);
+    ui.modal=null; render();
+  }
+  else if(type==='list-new'){
+    addList(form.dataset.board, fd.get('name').trim());
+    ui.modal=null; render();
+  }
+  else if(type==='card-new'){
+    let clientId = fd.get('clientId');
+    if(!clientId){
+      const newName = (fd.get('newClientName')||'').trim();
+      if(!newName){ showAlert('Selecione um cliente existente ou informe o nome do novo cliente.'); return; }
+      clientId = createClient({name:newName}).id;
+    }
+    const card = createCard(form.dataset.board, form.dataset.list, clientId, {
+      contractedHours: parseFloat(fd.get('contractedHours'))||0,
+      startDate: fd.get('startDate')||todayISO()
+    });
+    ui.modal=null; render();
+  }
+  else if(type==='card-info'){
+    const cardId = form.dataset.card;
+    const card = getCard(cardId);
+    const newHours = parseFloat(fd.get('contractedHours'))||0;
+    const newStart = fd.get('startDate');
+    const newTags = fd.getAll('productTags');
+    let histTexts = [];
+    if(newHours !== card.contractedHours) histTexts.push('Horas contratadas alteradas de '+card.contractedHours+'h para '+newHours+'h');
+    if(newStart !== card.startDate) histTexts.push('Data de início alterada para '+fmtDateBR(newStart));
+    card.contractedHours = newHours; card.startDate = newStart; card.productTags = newTags;
+    histTexts.forEach(t=> addHistory(card, t));
+    const moveVal = fd.get('moveTo');
+    if(moveVal){ const [b,l] = moveVal.split('::'); moveCard(cardId, b, l); }
+    ui.cardDraft = null;
+    render();
+  }
+  else if(type==='schedule'){
+    const cardIdFromCtx = form.dataset.card || null;
+    const card = cardIdFromCtx ? getCard(cardIdFromCtx) : null;
+    const analystId = card ? getBoard(card.boardId).analystId : fd.get('analystId');
+    const clientId = card ? card.clientId : (fd.get('clientId') || null);
+    const date = fd.get('date'), startTime = fd.get('startTime'), endTime = fd.get('endTime');
+    if(timeToMin(endTime) <= timeToMin(startTime)){ ui.formErr = 'O horário de término deve ser depois do início.'; render(); return; }
+    const id = form.dataset.id;
+    if(scheduleConflict(analystId, date, startTime, endTime, id||null)){
+      ui.formErr = 'O analista já possui um agendamento nesse horário. Escolha outro horário.';
+      render(); return;
+    }
+    ui.formErr = '';
+
+    let resolvedCardId = cardIdFromCtx;
+    if(!resolvedCardId && clientId){
+      const linkChoice = fd.get('linkCardId');
+      if(linkChoice === '__new__'){
+        const board = boardOfAnalyst(analystId);
+        if(board){ const newCard = createCard(board.id, board.lists[0].id, clientId, {}); resolvedCardId = newCard.id; }
+      } else if(linkChoice){
+        resolvedCardId = linkChoice;
+      } else {
+        const existing = state.cards.find(c=>c.clientId===clientId);
+        if(existing){
+          resolvedCardId = existing.id;
+        } else {
+          const board = boardOfAnalyst(analystId);
+          if(board){ const newCard = createCard(board.id, board.lists[0].id, clientId, {}); resolvedCardId = newCard.id; }
+        }
+      }
+    }
+
+    const data = { analystId, clientId, cardId: resolvedCardId, date, startTime, endTime, type: fd.get('type'), category: fd.get('category')||'implantacao', modules: fd.getAll('modules'), trainedScreens: fd.getAll('trainedScreens'), trainedUsers: fd.get('trainedUsers')||'', notes: fd.get('notes')||'' };
+    if(id){ updateSchedule(id, data); }
+    else{ createSchedule(data); }
+    ui.modal = null;
+    render();
+  }
+  else if(type==='confirm-complete'){
+    const minutes = parseInt(fd.get('deductMinutes'),10)||0;
+    completeSchedule(form.dataset.id, minutes, fd.get('notes'));
+    ui.modal=null; render();
+  }
+  else if(type==='product'){
+    const name = fd.get('name').trim();
+    const color = fd.get('color');
+    const id = form.dataset.id;
+    if(id){ const p=byId(state.productTags,id); if(p){ p.name=name; p.color=color; } }
+    else{ state.productTags.push({id:uid('pt'), name, color, inactive:false}); }
+    ui.modal=null; render();
+  }
+  else if(type==='module'){
+    const name = fd.get('name').trim();
+    const id = form.dataset.id;
+    if(state.modules.some(m=>m.name===name && m.id!==id)){
+      showAlert('Já existe um módulo chamado "'+name+'". Escolha outro nome.');
+      return;
+    }
+    if(id){
+      const md = byId(state.modules, id);
+      if(md){ renameModuleEverywhere(md.name, name); md.name = name; }
+    } else if(name){
+      state.modules.push({id:uid('md'), name, inactive:false});
+    }
+    ui.modal=null; render();
+  }
+  else if(type==='screen'){
+    const name = fd.get('name').trim();
+    const moduleId = fd.get('moduleId');
+    const id = form.dataset.id;
+    if(state.screens.some(s=>s.name===name && s.moduleId===moduleId && s.id!==id)){
+      showAlert('Já existe uma tela chamada "'+name+'" cadastrada nesse módulo. Escolha outro nome.');
+      return;
+    }
+    if(id){
+      const scr = byId(state.screens, id);
+      if(scr){ renameScreenEverywhere(scr.name, name); scr.name = name; scr.moduleId = moduleId; }
+    } else if(name){
+      state.screens.push({id:uid('scr'), name, moduleId, inactive:false});
+    }
+    ui.modal=null; render();
+  }
+  else if(type==='agenda-type'){
+    const name = fd.get('name').trim();
+    const isInternal = fd.get('isInternal')==='on';
+    const id = form.dataset.id;
+    if(state.agendaTypes.some(t=>t.name===name && t.id!==id)){
+      showAlert('Já existe um tipo de agenda chamado "'+name+'". Escolha outro nome.');
+      return;
+    }
+    if(id){
+      const tp = byId(state.agendaTypes, id);
+      if(tp){ renameTypeEverywhere(tp.name, name); tp.name = name; tp.isInternal = isInternal; }
+    } else if(name){
+      state.agendaTypes.push({id:uid('at'), name, isInternal, inactive:false});
+    }
+    ui.modal=null; render();
+  }
+  else if(type==='cloud-config'){
+    if(!isAdminUser()){ showAlert('Apenas administradores podem configurar a nuvem.'); return; }
+    const url = fd.get('url').trim();
+    const anonKey = fd.get('anonKey').trim();
+    await connectCloud(url, anonKey);
+  }
+});
+
+/* Drag and drop */
+document.addEventListener('dragstart', function(e){
+  const card = e.target.closest('.card-mini');
+  if(card){ e.dataTransfer.setData('text/plain', card.dataset.cardId); e.dataTransfer.effectAllowed='move'; setTimeout(()=>card.classList.add('dragging'),0); return; }
+  const evt = e.target.closest('.cal-tg-event');
+  if(evt && evt.dataset.draggable==='1'){
+    const rect = evt.getBoundingClientRect();
+    const grabOffset = e.clientY - rect.top;
+    e.dataTransfer.setData('text/plain', 'sched:'+evt.dataset.id+':'+grabOffset);
+    e.dataTransfer.effectAllowed='move';
+    setTimeout(()=>evt.classList.add('dragging'),0);
+  }
+});
+document.addEventListener('dragend', function(e){
+  const card = e.target.closest('.card-mini'); if(card) card.classList.remove('dragging');
+  const evt = e.target.closest('.cal-tg-event'); if(evt) evt.classList.remove('dragging');
+});
+document.addEventListener('dragover', function(e){
+  const list = e.target.closest('.list-cards'); if(list){ e.preventDefault(); list.classList.add('drag-over'); return; }
+  const daycol = e.target.closest('.cal-tg-daycol'); if(daycol){ e.preventDefault(); daycol.classList.add('drag-over'); }
+});
+document.addEventListener('dragleave', function(e){
+  const list = e.target.closest('.list-cards'); if(list){ list.classList.remove('drag-over'); }
+  const daycol = e.target.closest('.cal-tg-daycol'); if(daycol){ daycol.classList.remove('drag-over'); }
+});
+document.addEventListener('drop', function(e){
+  const list = e.target.closest('.list-cards');
+  if(list){
+    e.preventDefault(); list.classList.remove('drag-over');
+    const payload = e.dataTransfer.getData('text/plain');
+    if(payload && !payload.startsWith('sched:')){
+      const card = getCard(payload);
+      if(card){
+        const listName = list.dataset.unifiedListName;
+        const targetBoard = getBoard(card.boardId);
+        const targetList = targetBoard && targetBoard.lists.find(l=>l.name===listName);
+        if(targetList){
+          moveCard(payload, targetBoard.id, targetList.id);
+          render();
+        } else {
+          showAlert('Este estágio não existe no quadro do analista responsável pelo cliente.');
+        }
+      }
+    }
     return;
   }
-
-  app.innerHTML = renderShell();
+  const daycol = e.target.closest('.cal-tg-daycol');
+  if(daycol){
+    e.preventDefault(); daycol.classList.remove('drag-over');
+    const payload = e.dataTransfer.getData('text/plain');
+    if(payload && payload.startsWith('sched:')){
+      const parts = payload.split(':');
+      moveScheduleToGridPosition(parts[1], daycol, e.clientY, parseFloat(parts[2])||0);
+    }
+  }
+});
+function moveScheduleToGridPosition(schedId, daycolEl, clientY, grabOffset){
+  const s = byId(state.schedules, schedId);
+  if(!s || s.status!=='pendente') return;
+  const rect = daycolEl.getBoundingClientRect();
+  const startHour = parseFloat(daycolEl.dataset.startHour);
+  const pxPerHour = parseFloat(daycolEl.dataset.pxPerHour);
+  const dropTop = clientY - rect.top - grabOffset;
+  let minutesFromStart = Math.round(((dropTop/pxPerHour)*60)/15)*15;
+  const duration = timeToMin(s.endTime)-timeToMin(s.startTime);
+  let newStartTotal = Math.max(0, Math.min(24*60-duration, startHour*60 + minutesFromStart));
+  const pad = n=>String(n).padStart(2,'0');
+  const newStart = pad(Math.floor(newStartTotal/60))+':'+pad(newStartTotal%60);
+  const newEndTotal = newStartTotal+duration;
+  const newEnd = pad(Math.floor(newEndTotal/60))+':'+pad(newEndTotal%60);
+  const newDate = daycolEl.dataset.date;
+  if(newDate===s.date && newStart===s.startTime) return;
+  if(scheduleConflict(s.analystId, newDate, newStart, newEnd, s.id)){
+    showAlert('O analista já possui um agendamento nesse horário. Escolha outro horário ou dia.');
+    return;
+  }
+  const oldDate = s.date, oldStart = s.startTime, oldEnd = s.endTime;
+  s.date = newDate; s.startTime = newStart; s.endTime = newEnd;
+  if(s.cardId){
+    const c = getCard(s.cardId);
+    if(c) addHistory(c, 'Agenda reagendada de '+fmtDateBR(oldDate)+' '+oldStart+'–'+oldEnd+' para '+fmtDateBR(newDate)+' '+newStart+'–'+newEnd);
+  }
+  render();
 }
 
-/* Boot inicial */
-getStoredUser();
-boot();
+/* Card detail overlay */
+function renderCardDetailOverlay(){
+  const existing = document.getElementById('card-detail-overlay');
+  if(existing) existing.remove();
+  if(!ui.openCardId) return;
+  const card = getCard(ui.openCardId);
+  if(!card){ ui.openCardId=null; return; }
+  const wrap = document.createElement('div');
+  wrap.id = 'card-detail-overlay';
+  wrap.className = 'overlay card-overlay';
+  wrap.innerHTML = '<div class="modal wide">'+renderCardModalContent(card)+'</div>';
+  document.body.appendChild(wrap);
+}
+const _origRender = render;
+render = function(){
+  _origRender();
+  if(ui.openCardId){ renderCardDetailOverlay(); } else { const ex=document.getElementById('card-detail-overlay'); if(ex) ex.remove(); }
+};
+
+/* Initial paint */
+currentUser = getStoredUser();
+if(currentUser){
+  boot();
+} else {
+  document.getElementById('app').innerHTML = renderLoginScreen();
+}
 </script>
 </body>
 </html>
