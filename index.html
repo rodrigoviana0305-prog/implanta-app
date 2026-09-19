@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NEO — Gestão de Implantação</title>
+<title>Implanta — Gestão de Implantação</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -157,7 +157,7 @@ h1,h2,h3,h4{ font-family:var(--font-head); margin:0; color:var(--ink); }
 .modal-close:hover{ color:var(--ink); }
 .field{ margin-bottom:13px; display:flex; flex-direction:column; gap:5px; }
 .field label{ font-size:12.5px; font-weight:700; color:var(--ink-soft); }
-.field input[type=text], .field input[type=date], .field input[type=time], .field input[type=number], .field input[type=email], .field input[type=tel], .field select, .field textarea{
+.field input[type=text], .field input[type=date], .field input[type=time], .field input[type=number], .field input[type=email], .field input[type=tel], .field input[type=password], .field select, .field textarea{
   border:1px solid var(--border); border-radius:8px; padding:9px 10px; background:var(--surface-2); color:var(--ink); outline:none; width:100%;
 }
 .field input:focus, .field select:focus, .field textarea:focus{ border-color:var(--brand); background:var(--surface); }
@@ -388,7 +388,7 @@ body{font-size:14px;color:var(--ink);}
 table{box-shadow:var(--shadow-1);}
 th{background:#F1F6F9;color:#607587;}
 .modal{border:1px solid #E1E8ED;}
-.field input[type=text],.field input[type=date],.field input[type=time],.field input[type=number],.field input[type=email],.field input[type=tel],.field select,.field textarea{background:#F7F9FB;border-color:#DCE5EB;border-radius:9px;}
+.field input[type=text],.field input[type=date],.field input[type=time],.field input[type=number],.field input[type=email],.field input[type=tel],.field input[type=password],.field select,.field textarea{background:#F7F9FB;border-color:#DCE5EB;border-radius:9px;}
 .field input:focus,.field select:focus,.field textarea:focus{border-color:#79AFCB;box-shadow:0 0 0 3px rgba(11,92,142,.07);}
 .tabs{border-color:var(--border);}
 .tab-btn.active{color:var(--brand);border-color:var(--brand);}
@@ -508,6 +508,8 @@ th{background:#F1F6F9;color:#607587;}
   padding:10px 12px; font-size:12.5px; font-weight:600; margin-bottom:14px; text-align:left;
 }
 .login-footer{ margin-top:22px; font-size:11px; color:var(--ink-faint); }
+.login-footer a{ color:var(--brand); text-decoration:none; font-weight:600; cursor:pointer; }
+.login-footer a:hover{ text-decoration:underline; }
 </style>
 </head>
 <body>
@@ -518,8 +520,10 @@ th{background:#F1F6F9;color:#607587;}
 <script>
 /* ============================= LOGIN ============================= */
 const LOGIN_KEY = 'implanta_logged_user_v1';
-const ADMIN_USER = 'administrador';
-const ADMIN_PASS = '71209403';
+/* Conta mestra de emergência — sempre funciona, independente dos analistas cadastrados.
+   Serve para o administrador conseguir entrar caso perca a própria senha. */
+const MASTER_USER = 'administrador';
+const MASTER_PASS = '71209403';
 
 var currentUser = null;
 
@@ -558,20 +562,34 @@ function doLogin(){
     document.getElementById('app').innerHTML = renderLoginScreen('Preencha usuário e senha.');
     return;
   }
-  if(u === ADMIN_USER && p === ADMIN_PASS){
-    setStoredUser({username:ADMIN_USER, displayName:'Administrador', role:'admin'});
+
+  // 1) Conta mestra de emergência (sempre funciona)
+  if(u === MASTER_USER && p === MASTER_PASS){
+    setStoredUser({username:MASTER_USER, displayName:'Administrador', role:'admin', isMaster:true});
     document.getElementById('app').innerHTML = '';
     boot();
     return;
   }
-  // Analistas cadastrados podem entrar com o próprio nome (sem senha individual definida)
-  const analyst = state.analysts.find(a=> a.name.toLowerCase() === u);
+
+  // 2) Analistas cadastrados com login/senha próprios
+  const analyst = state.analysts.find(a=> a.username && a.username.toLowerCase() === u);
   if(analyst){
-    setStoredUser({username:analyst.name, displayName:analyst.name, role:'analyst', analystId:analyst.id});
+    if(!analyst.password || analyst.password !== p){
+      document.getElementById('app').innerHTML = renderLoginScreen('Usuário ou senha inválidos. Tente novamente.');
+      return;
+    }
+    setStoredUser({
+      username: analyst.username,
+      displayName: analyst.name,
+      role: analyst.isAdmin ? 'admin' : 'analyst',
+      analystId: analyst.id,
+      isAdmin: !!analyst.isAdmin
+    });
     document.getElementById('app').innerHTML = '';
     boot();
     return;
   }
+
   document.getElementById('app').innerHTML = renderLoginScreen('Usuário ou senha inválidos. Tente novamente.');
 }
 
@@ -583,9 +601,10 @@ function logout(){
 /* ============================= STATE ============================= */
 const STORAGE_KEY = 'implanta_v1';
 const PALETTE = ['#3E8E7E','#C99A2E','#7B4B94','#3E74B0','#B15577','#6E7B3B','#A05A2C','#52616B'];
+const ADMIN_ANALYST_NAME = 'Rodrigo Soares';
 
 function defaultState(){
-  return {
+  const st = {
     analysts: [],
     boards: [],
     clients: [],
@@ -606,8 +625,53 @@ function defaultState(){
       {id:uid('at'), name:'Interna', isInternal:true}
     ]
   };
+  // Vincula Rodrigo Soares como analista administrador já na primeira carga,
+  // garantindo que exista um usuário admin próprio do sistema (além da conta mestra).
+  const adminAnalyst = {id:uid('an'), name:ADMIN_ANALYST_NAME, color:'#0B5C8E', username:'rodrigo.soares', password:'71209403', isAdmin:true};
+  st.analysts.push(adminAnalyst);
+  st.boards.push({id:uid('bd'), name:'Quadro — '+ADMIN_ANALYST_NAME, analystId:adminAnalyst.id, lists:[
+    {id:uid('ls'), name:'Fila / Cadastro'},
+    {id:uid('ls'), name:'Em implantação'},
+    {id:uid('ls'), name:'Treinamento'},
+    {id:uid('ls'), name:'Concluído'}
+  ]});
+  return st;
 }
 function uid(p){ return p+'_'+Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4); }
+
+function ensureAdminAnalyst(s){
+  // Garante que o analista administrador (Rodrigo Soares) sempre exista e esteja
+  // marcado como admin, mesmo em estados antigos que não tinham esse conceito.
+  let admin = s.analysts.find(a=> a.isAdmin);
+  if(!admin){
+    admin = s.analysts.find(a=> a.name && a.name.toLowerCase() === ADMIN_ANALYST_NAME.toLowerCase());
+  }
+  if(!admin){
+    admin = {id:uid('an'), name:ADMIN_ANALYST_NAME, color:'#0B5C8E', username:'rodrigo.soares', password:'71209403', isAdmin:true};
+    s.analysts.push(admin);
+    s.boards.push({id:uid('bd'), name:'Quadro — '+ADMIN_ANALYST_NAME, analystId:admin.id, lists:[
+      {id:uid('ls'), name:'Fila / Cadastro'},
+      {id:uid('ls'), name:'Em implantação'},
+      {id:uid('ls'), name:'Treinamento'},
+      {id:uid('ls'), name:'Concluído'}
+    ]});
+  } else {
+    admin.isAdmin = true;
+    if(!admin.username) admin.username = 'rodrigo.soares';
+    if(!admin.password) admin.password = '71209403';
+  }
+  // Se o analista admin não tem quadro ainda, cria um
+  if(!s.boards.some(b=> b.analystId===admin.id)){
+    s.boards.push({id:uid('bd'), name:'Quadro — '+admin.name, analystId:admin.id, lists:[
+      {id:uid('ls'), name:'Fila / Cadastro'},
+      {id:uid('ls'), name:'Em implantação'},
+      {id:uid('ls'), name:'Treinamento'},
+      {id:uid('ls'), name:'Concluído'}
+    ]});
+  }
+  return s;
+}
+
 function normalizeState(raw){
   let s = raw;
   if(!s || typeof s!=='object') s = defaultState();
@@ -618,7 +682,15 @@ function normalizeState(raw){
     if(t.isInternal===undefined) return Object.assign({}, t, {isInternal: t.name==='Interna'});
     return t;
   });
+  s.analysts = s.analysts.map(a=>{
+    const copy = Object.assign({}, a);
+    if(!copy.username) copy.username = '';
+    if(!copy.password) copy.password = '';
+    if(copy.isAdmin===undefined) copy.isAdmin = false;
+    return copy;
+  });
   s = dedupeRegistries(s);
+  s = ensureAdminAnalyst(s);
   return s;
 }
 function loadLocalState(){
@@ -909,11 +981,12 @@ async function boot(){
         const beforeCounts = {
           modules: Array.isArray(before.modules) ? before.modules.length : 0,
           agendaTypes: Array.isArray(before.agendaTypes) ? before.agendaTypes.length : 0,
-          screens: Array.isArray(before.screens) ? before.screens.length : 0
+          screens: Array.isArray(before.screens) ? before.screens.length : 0,
+          analysts: Array.isArray(before.analysts) ? before.analysts.length : 0
         };
         state = normalizeState(before);
         lastKnownUpdatedAt = data.updated_at || null;
-        if(state.modules.length < beforeCounts.modules || state.agendaTypes.length < beforeCounts.agendaTypes || state.screens.length < beforeCounts.screens){
+        if(state.modules.length < beforeCounts.modules || state.agendaTypes.length < beforeCounts.agendaTypes || state.screens.length < beforeCounts.screens || state.analysts.length > beforeCounts.analysts){
           needsImmediateResave = true;
         }
       } else {
@@ -1025,10 +1098,14 @@ function scheduleIsDue(s){ if(s.status!=='pendente') return false; const end=new
 function pendingConfirmations(analystId){ return state.schedules.filter(s=> scheduleIsDue(s) && (!analystId || s.analystId===analystId)); }
 function addHistory(card, text){ card.history = card.history||[]; card.history.unshift({ts:Date.now(), text}); }
 function colorForIndex(i){ return PALETTE[i % PALETTE.length]; }
+function isAdminUser(){ return !!(currentUser && (currentUser.isAdmin || currentUser.role==='admin')); }
 
 /* ============================= MUTATIONS ============================= */
-function createAnalyst(name, color){
-  const analyst = {id:uid('an'), name, color: color || colorForIndex(state.analysts.length)};
+function createAnalyst(name, color, username, password, isAdmin){
+  const analyst = {
+    id:uid('an'), name, color: color || colorForIndex(state.analysts.length),
+    username: username||'', password: password||'', isAdmin: !!isAdmin
+  };
   state.analysts.push(analyst);
   const board = {id:uid('bd'), name:'Quadro — '+name, analystId:analyst.id, lists:[
     {id:uid('ls'), name:'Fila / Cadastro'},
@@ -1040,6 +1117,8 @@ function createAnalyst(name, color){
   return {analyst, board};
 }
 function deleteAnalyst(id){
+  const target = getAnalyst(id);
+  if(target && target.isAdmin){ showAlert('Não é possível excluir o analista administrador do sistema.'); return; }
   const board = boardOfAnalyst(id);
   if(board){
     const cardIds = cardsInBoard(board.id).map(c=>c.id);
@@ -1205,7 +1284,7 @@ function renderSidebar(){
     const pend = pendingConfirmations(a.id).length;
     const active = ui.view==='board' && ui.boardAnalystFilter===a.id;
     html += '<button class="side-item'+(active?' active':'')+'" data-action="board-analyst-filter" data-id="'+a.id+'">'
-      + '<span class="side-dot" style="background:'+a.color+'"></span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+esc(a.name)+'</span>'
+      + '<span class="side-dot" style="background:'+a.color+'"></span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+esc(a.name)+(a.isAdmin?' <span style="font-size:9px;font-weight:800;color:#F0A72F;letter-spacing:.5px;">ADMIN</span>':'')+'</span>'
       + (pend? '<span class="side-badge">'+pend+'</span>' : '')
       + '</button>';
   });
@@ -1270,7 +1349,11 @@ function renderTopbar(){
   } else if(ui.view==='settings'){
     left = '<div class="topbar-title"><h2>Configurações</h2></div>';
   }
-  let right = '<div class="icon-btn" data-action="toggle-notif" title="Notificações">🔔'+(totalPend? '<span class="notif-dot">'+totalPend+'</span>':'')+'</div>';
+  let right = '';
+  if(currentUser){
+    right += '<span style="font-size:12.5px;color:var(--ink-soft);font-weight:600;margin-right:4px;">👤 '+esc(currentUser.displayName||currentUser.username||'')+(isAdminUser()?' <span class="badge" style="background:var(--gold-soft);color:var(--gold);">ADMIN</span>':'')+'</span>';
+  }
+  right += '<div class="icon-btn" data-action="toggle-notif" title="Notificações">🔔'+(totalPend? '<span class="notif-dot">'+totalPend+'</span>':'')+'</div>';
   if(ui.showNotif) right += renderNotifPanel();
   return hamburger + left + '<div class="topbar-right">'+right+'</div>';
 }
@@ -1717,7 +1800,8 @@ function renderClientsView(){
 /* ============================= SETTINGS VIEW ============================= */
 function renderSettingsView(){
   let html = '<div class="settings-tabs">';
-  [['analistas','Analistas'],['produtos','Produtos'],['modulos','Módulos do sistema'],['telas','Telas'],['tipos','Tipos de agenda'],['nuvem','Nuvem']].forEach(([k,l])=>{
+  [['analistas','Analistas'],['produtos','Produtos'],['modulos','Módulos do sistema'],['telas','Telas'],['tipos','Tipos de agenda'],['acesso','Acesso'],['nuvem','Nuvem']].forEach(([k,l])=>{
+    if(k==='nuvem' && !isAdminUser()) return; // apenas admin vê a aba Nuvem
     html += '<button class="btn btn-sm'+(ui.settingsTab===k?' btn-primary':'')+'" data-action="settings-tab" data-tab="'+k+'">'+l+'</button>';
   });
   html += '</div>';
@@ -1730,11 +1814,20 @@ function renderSettingsView(){
   }
 
   if(ui.settingsTab==='analistas'){
-    html += '<div class="section-card"><h3>Analistas</h3><table><thead><tr><th></th><th>Nome</th><th>Quadro</th><th></th></tr></thead><tbody>';
+    html += '<div class="section-card"><h3>Analistas</h3>'
+      + '<p class="hint" style="margin-top:-4px;">Cada analista precisa de um login e senha próprios para acessar o sistema.</p>'
+      + '<table><thead><tr><th></th><th>Nome</th><th>Usuário</th><th>Quadro</th><th>Perfil</th><th></th></tr></thead><tbody>';
     state.analysts.forEach(a=>{
       const board = boardOfAnalyst(a.id);
-      html += '<tr><td><span class="side-dot" style="background:'+a.color+';display:inline-block;"></span></td><td>'+esc(a.name)+'</td><td>'+esc(board?board.name:'—')+'</td>'
-        + '<td><div class="row-actions"><button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="analyst-edit" data-id="'+a.id+'">Editar</button><button class="btn btn-sm btn-danger" data-action="delete-analyst" data-id="'+a.id+'">Excluir</button></div></td></tr>';
+      html += '<tr><td><span class="side-dot" style="background:'+a.color+';display:inline-block;"></span></td>'
+        + '<td>'+esc(a.name)+'</td>'
+        + '<td>'+(a.username? '<code style="font-size:12px;background:var(--surface-2);padding:2px 6px;border-radius:5px;">'+esc(a.username)+'</code>' : '<span class="hint">Não definido</span>')+'</td>'
+        + '<td>'+esc(board?board.name:'—')+'</td>'
+        + '<td>'+(a.isAdmin? '<span class="badge" style="background:var(--gold-soft);color:var(--gold);">Administrador</span>' : '<span class="badge" style="background:var(--brand-soft);color:var(--brand);">Analista</span>')+'</td>'
+        + '<td><div class="row-actions">'
+          + '<button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="analyst-edit" data-id="'+a.id+'">Editar</button>'
+          + (a.isAdmin?'':'<button class="btn btn-sm btn-danger" data-action="delete-analyst" data-id="'+a.id+'">Excluir</button>')
+          + '</div></td></tr>';
     });
     html += '</tbody></table><div style="margin-top:12px;"><button class="btn btn-primary btn-sm" data-action="open-modal" data-modal="analyst-new">+ Novo analista</button></div></div>';
   } else if(ui.settingsTab==='produtos'){
@@ -1827,6 +1920,52 @@ function renderSettingsView(){
       html += '</tbody></table>';
     }
     html += '<div style="margin-top:12px;"><button class="btn btn-primary btn-sm" data-action="open-modal" data-modal="type-new">+ Novo tipo</button></div></div>';
+  } else if(ui.settingsTab==='acesso'){
+    // Aba "Acesso": resumo de credenciais + troca de própria senha
+    const meAnalyst = currentUser && currentUser.analystId ? getAnalyst(currentUser.analystId) : null;
+    html += '<div class="section-card"><h3>Credenciais de acesso</h3>'
+      + '<p class="hint" style="margin-top:-4px;">Todos os logins cadastrados no sistema. As senhas ficam salvas junto aos dados (visíveis apenas nesta tela de configuração).</p>';
+    if(!state.analysts.length){
+      html += '<p class="hint">Nenhum analista cadastrado.</p>';
+    } else {
+      html += '<table><thead><tr><th>Nome</th><th>Usuário (login)</th><th>Senha</th><th>Perfil</th><th></th></tr></thead><tbody>';
+      state.analysts.forEach(a=>{
+        html += '<tr>'
+          + '<td style="font-weight:700;">'+esc(a.name)+(a.isAdmin?' <span class="badge" style="background:var(--gold-soft);color:var(--gold);">ADMIN</span>':'')+'</td>'
+          + '<td>'+(a.username? '<code style="font-size:12px;background:var(--surface-2);padding:2px 6px;border-radius:5px;">'+esc(a.username)+'</code>' : '<span class="hint">Não definido</span>')+'</td>'
+          + '<td>'+(a.password? '•••••••• <button class="btn btn-sm btn-ghost" data-action="toggle-show-pass" data-id="'+a.id+'" style="font-size:11px;">👁 ver</button>' : '<span class="hint">Não definida</span>')+'</td>'
+          + '<td>'+(a.isAdmin?'Administrador':'Analista')+'</td>'
+          + '<td><button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="analyst-edit" data-id="'+a.id+'">Editar</button></td>'
+          + '</tr>';
+      });
+      html += '</tbody></table>';
+    }
+    html += '</div>';
+
+    // Troca da própria senha (analista logado)
+    if(meAnalyst){
+      html += '<div class="section-card"><h3>Trocar minha senha</h3>'
+        + '<p class="hint" style="margin-top:-4px;">Logado como <strong>'+esc(meAnalyst.name)+'</strong> ('+esc(meAnalyst.username||'—')+').</p>'
+        + '<form data-form="change-password" data-id="'+meAnalyst.id+'">'
+        + '<div class="field-row">'
+        + '<div class="field"><label>Senha atual</label><input type="password" name="currentPassword" required></div>'
+        + '<div class="field"><label>Nova senha</label><input type="password" name="newPassword" minlength="4" required></div>'
+        + '<div class="field"><label>Confirmar nova senha</label><input type="password" name="confirmPassword" minlength="4" required></div>'
+        + '</div>'
+        + '<div class="form-actions"><button type="submit" class="btn btn-primary">Alterar senha</button></div>'
+        + '</form></div>';
+    }
+
+    // Conta mestra (só admin vê)
+    if(isAdminUser()){
+      html += '<div class="section-card"><h3>Conta mestra de emergência</h3>'
+        + '<p class="hint" style="margin-top:-4px;">Esta conta sempre funciona, mesmo que todas as credenciais de analistas sejam perdidas. Guarde com segurança.</p>'
+        + '<table><thead><tr><th>Usuário</th><th>Senha</th></tr></thead><tbody>'
+        + '<tr><td><code style="background:var(--surface-2);padding:2px 6px;border-radius:5px;">'+MASTER_USER+'</code></td>'
+        + '<td><code style="background:var(--surface-2);padding:2px 6px;border-radius:5px;">'+MASTER_PASS+'</code></td></tr>'
+        + '</tbody></table>'
+        + '</div>';
+    }
   } else if(ui.settingsTab==='nuvem'){
     html += '<div class="section-card"><h3>Sincronização na nuvem</h3>';
     const hasDefault = !!(DEFAULT_CLOUD_CONFIG.url && DEFAULT_CLOUD_CONFIG.anonKey);
@@ -1859,10 +1998,24 @@ function renderModal(){
   let inner = '';
   if(m.type==='analyst-new' || m.type==='analyst-edit'){
     const a = m.type==='analyst-edit' ? getAnalyst(m.id) : null;
+    const isSelf = a && currentUser && currentUser.analystId===a.id;
+    const editingAdmin = a && a.isAdmin;
+    // Só o próprio admin (ou quem já é admin) pode conceder/retirar perfil admin de outros.
+    const canToggleAdmin = isAdminUser() && !editingAdmin;
     inner = '<div class="modal-header"><h3>'+(a?'Editar analista':'Novo analista')+'</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
+      + (editingAdmin ? '<div class="hint" style="background:var(--gold-soft);color:var(--gold);border-radius:8px;padding:8px 11px;font-weight:600;margin-bottom:12px;">Este é o analista administrador do sistema. O login e a senha são usados para acessar como administrador.</div>' : '')
       + '<form data-form="analyst" data-id="'+(a?a.id:'')+'">'
       + '<div class="field"><label>Nome</label><input type="text" name="name" value="'+esc(a?a.name:'')+'" required></div>'
+      + '<div class="field-row">'
+      + '<div class="field"><label>Usuário (login)</label><input type="text" name="username" value="'+esc(a?a.username:'')+'" placeholder="ex: joao.silva" required autocomplete="off"></div>'
       + '<div class="field"><label>Cor</label><input type="color" name="color" value="'+(a?a.color:colorForIndex(state.analysts.length))+'"></div>'
+      + '</div>'
+      + '<div class="field-row">'
+      + '<div class="field"><label>'+(a?'Nova senha (deixe em branco para manter)':'Senha')+'</label><input type="password" name="password" placeholder="'+(a?'••••••••':'Mínimo 4 caracteres')+'" '+(a?'':'required')+' minlength="4" autocomplete="new-password"></div>'
+      + '<div class="field"><label>'+(a?'Confirmar nova senha':'Confirmar senha')+'</label><input type="password" name="passwordConfirm" placeholder="Repita a senha" '+(a?'':'required')+' minlength="4" autocomplete="new-password"></div>'
+      + '</div>'
+      + (canToggleAdmin ? '<div class="field"><label class="check-pill" style="width:fit-content;"><input type="checkbox" name="isAdmin"> Conceder perfil de administrador</label></div>' : '')
+      + (isSelf ? '<div class="hint">Você está editando seu próprio usuário.</div>' : '')
       + '<div class="form-actions"><button type="submit" class="btn btn-primary">Salvar</button></div></form>';
   } else if(m.type==='client-new' || m.type==='client-edit'){
     const c = m.type==='client-edit' ? getClient(m.id) : null;
@@ -2314,6 +2467,12 @@ document.addEventListener('click', function(e){
     };
     render();
   }
+  else if(a==='toggle-show-pass'){
+    // Revela a senha numa janela simples (não usamos alert para não expor em logs)
+    const id = el.dataset.id;
+    const a2 = getAnalyst(id);
+    if(a2) alert('Senha de "'+a2.name+'":\n\n'+(a2.password||'(vazia)'));
+  }
   else if(a==='logout'){ logout(); }
   else { render(); }
 });
@@ -2393,11 +2552,55 @@ document.addEventListener('submit', async function(e){
   const fd = new FormData(form);
 
   if(type==='analyst'){
-    const name = fd.get('name').trim(); const color = fd.get('color');
+    const name = fd.get('name').trim();
+    const color = fd.get('color');
+    const username = (fd.get('username')||'').trim().toLowerCase();
+    const password = fd.get('password')||'';
+    const passwordConfirm = fd.get('passwordConfirm')||'';
     const id = form.dataset.id;
-    if(id){ const a=getAnalyst(id); if(a){ a.name=name; a.color=color; const b=boardOfAnalyst(id); if(b) b.name='Quadro — '+name; } }
-    else { createAnalyst(name, color); }
+    const wantsAdmin = fd.get('isAdmin')==='on';
+
+    if(!username){ showAlert('Informe o usuário (login).'); return; }
+    if(!/^[a-z0-9._-]+$/.test(username)){ showAlert('O usuário pode conter apenas letras, números, ponto, underscore e hífen.'); return; }
+
+    // Impede username duplicado em outro analista
+    if(state.analysts.some(a=> a.username && a.username.toLowerCase()===username && a.id!==id)){
+      showAlert('Já existe um analista com o usuário "'+username+'". Escolha outro.'); return;
+    }
+
+    // Senha: obrigatória na criação; na edição, só se preenchida
+    if(!id && !password){ showAlert('Defina uma senha para o novo analista.'); return; }
+    if(password || passwordConfirm){
+      if(password !== passwordConfirm){ showAlert('As senhas não coincidem.'); return; }
+      if(password.length < 4){ showAlert('A senha deve ter pelo menos 4 caracteres.'); return; }
+    }
+
+    if(id){
+      const a = getAnalyst(id);
+      if(!a) return;
+      a.name = name; a.color = color; a.username = username;
+      if(password) a.password = password;
+      if(!a.isAdmin && wantsAdmin) a.isAdmin = true; // só o admin logado consegue conceder (campo nem aparece senão)
+      const b = boardOfAnalyst(id); if(b) b.name = 'Quadro — '+name;
+    } else {
+      createAnalyst(name, color, username, password, wantsAdmin);
+    }
     ui.modal=null; render();
+  }
+  else if(type==='change-password'){
+    const id = form.dataset.id;
+    const a = getAnalyst(id);
+    if(!a) return;
+    const cur = fd.get('currentPassword')||'';
+    const nw = fd.get('newPassword')||'';
+    const cf = fd.get('confirmPassword')||'';
+    if(a.password && a.password !== cur){ showAlert('Senha atual incorreta.'); return; }
+    if(nw.length < 4){ showAlert('A nova senha deve ter pelo menos 4 caracteres.'); return; }
+    if(nw !== cf){ showAlert('As senhas não coincidem.'); return; }
+    a.password = nw;
+    if(currentUser && currentUser.analystId===a.id) currentUser.password = nw;
+    render();
+    showAlert('Senha alterada com sucesso.');
   }
   else if(type==='client'){
     const data = {
