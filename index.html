@@ -56,48 +56,32 @@ h1,h2,h3,h4{ font-family:var(--font-head); margin:0; color:var(--ink); }
 ::-webkit-scrollbar-track{ background:transparent; }
 
 .shell{ display:flex; height:100vh; width:100%; overflow:hidden; }
-.sidebar{
-  width:230px; flex:0 0 230px; background:var(--brand-dark); color:#EFF4F1;
-  display:flex; flex-direction:column; padding:18px 14px; gap:18px; overflow-y:auto;
-}
+.sidebar{ width:230px; flex:0 0 230px; background:var(--brand-dark); color:#EFF4F1; display:flex; flex-direction:column; padding:18px 14px; gap:18px; overflow-y:auto; }
 .brand{ display:flex; align-items:center; gap:10px; padding:0 4px; }
 .brand-mark{ width:30px;height:30px;border-radius:9px;background:var(--gold); display:flex;align-items:center;justify-content:center; font-family:var(--font-head); font-weight:800; color:#241a06; font-size:15px; flex:0 0 auto;}
 .brand-name{ font-family:var(--font-head); font-weight:800; font-size:17px; letter-spacing:.2px; }
 .side-section{ display:flex; flex-direction:column; gap:3px; }
 .side-label{ font-size:11px; color:#B9CCC3; font-weight:600; padding:6px 8px 2px; display:flex; justify-content:space-between; align-items:center; }
-.side-item{
-  display:flex; align-items:center; gap:9px; padding:8px 9px; border-radius:8px; border:none;
-  background:transparent; color:#E4EEE9; text-align:left; width:100%; font-size:13.5px; font-weight:500;
-}
+.side-item{ display:flex; align-items:center; gap:9px; padding:8px 9px; border-radius:8px; border:none; background:transparent; color:#E4EEE9; text-align:left; width:100%; font-size:13.5px; font-weight:500; }
 .side-item:hover{ background:rgba(255,255,255,.08); }
 .side-item.active{ background:rgba(255,255,255,.16); color:#fff; }
 .side-item.inactive-analyst{ opacity:.5; }
 .side-dot{ width:9px;height:9px;border-radius:50%; flex:0 0 auto; box-shadow:0 0 0 2px rgba(255,255,255,.25) inset; }
 .side-badge{ margin-left:auto; background:var(--gold); color:#241a06; font-size:11px; font-weight:800; border-radius:20px; padding:1px 7px; }
-.side-badge.inativo{ background:#6B7A73; color:#E4EEE9; }
 .side-add{ display:flex; align-items:center; gap:6px; padding:7px 8px; border-radius:8px; border:1px dashed rgba(255,255,255,.3); background:transparent; color:#CFE0D8; font-size:13px; width:100%; }
 .side-add:hover{ background:rgba(255,255,255,.06); }
 .side-spacer{ flex:1; }
 .side-foot{ font-size:11px; color:#9FB6AC; padding:6px 8px; line-height:1.5; }
 
 .main{ flex:1; display:flex; flex-direction:column; min-width:0; }
-.topbar{
-  display:flex; align-items:center; gap:14px; padding:14px 22px; background:var(--surface);
-  border-bottom:1px solid var(--border); flex:0 0 auto;
-}
+.topbar{ display:flex; align-items:center; gap:14px; padding:14px 22px; background:var(--surface); border-bottom:1px solid var(--border); flex:0 0 auto; }
 .topbar h2{ font-size:19px; }
 .topbar .sub{ color:var(--ink-soft); font-size:12.5px; margin-top:1px; }
 .topbar-title{ display:flex; flex-direction:column; gap:1px; min-width:0; }
 .topbar-right{ margin-left:auto; display:flex; align-items:center; gap:10px; position:relative; }
-.search-box{
-  display:flex; align-items:center; gap:7px; background:var(--surface-2); border:1px solid var(--border);
-  border-radius:8px; padding:7px 11px; min-width:200px;
-}
+.search-box{ display:flex; align-items:center; gap:7px; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:7px 11px; min-width:200px; }
 .search-box input{ border:none; background:transparent; outline:none; width:100%; color:var(--ink); }
-.icon-btn{
-  width:36px;height:36px;border-radius:9px;border:1px solid var(--border); background:var(--surface-2);
-  display:flex;align-items:center;justify-content:center; position:relative; flex:0 0 auto;
-}
+.icon-btn{ width:36px;height:36px;border-radius:9px;border:1px solid var(--border); background:var(--surface-2); display:flex;align-items:center;justify-content:center; position:relative; flex:0 0 auto; }
 .icon-btn:hover{ background:var(--bg-soft); }
 .notif-dot{ position:absolute; top:-4px; right:-4px; background:var(--danger); color:#fff; font-size:10px; font-weight:800; border-radius:20px; min-width:16px; height:16px; display:flex;align-items:center;justify-content:center; padding:0 3px; }
 .view{ flex:1; overflow:auto; padding:20px 22px 40px; }
@@ -286,7 +270,6 @@ tr.row-inactive{ opacity:.55; }
 .cal-tg-event.allday.continuation{ border-left:1px dashed rgba(0,0,0,.15); border-top-left-radius:0; border-bottom-left-radius:0; }
 .cal-tg-event.allday.continuation .t{ opacity:.85; }
 
-/* Previsão de módulos/telas */
 .compare-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:10px; }
 .compare-col{ border:1px solid var(--border); border-radius:10px; padding:12px 14px; background:var(--surface-2); }
 .compare-col h4{ font-size:12.5px; text-transform:uppercase; letter-spacing:.5px; color:var(--ink-soft); margin-bottom:8px; }
@@ -301,24 +284,44 @@ tr.row-inactive{ opacity:.55; }
 .compare-sections{ margin-top:14px; display:flex; flex-direction:column; gap:14px; }
 .compare-section-title{ font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:var(--ink-soft); margin-bottom:6px; }
 
+/* ===== Agrupamento Módulo → Telas ===== */
+.mod-group{ border:1px solid var(--border); border-radius:10px; overflow:hidden; margin-bottom:10px; background:var(--surface); }
+.mod-group-header{ display:flex; align-items:center; gap:8px; padding:9px 12px; background:var(--surface-2); font-weight:800; font-size:13px; color:var(--brand-dark); border-bottom:1px solid var(--border); cursor:default; }
+.mod-group-header .mod-icon{ font-size:14px; }
+.mod-group-header .mod-count{ margin-left:auto; font-size:11px; font-weight:700; color:var(--ink-soft); background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:1px 8px; }
+.mod-group-body{ padding:6px 12px 10px; }
+.mod-group-body .screens-list{ display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+.mod-screen-chip{ display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:14px; background:var(--brand-soft); color:var(--brand-dark); font-size:12px; font-weight:600; border:1px solid #C9DEE6; }
+.mod-screen-chip.trained{ background:var(--ok-soft); color:var(--ok); border-color:#B7E0CA; }
+.mod-screen-chip.miss{ background:var(--danger-soft); color:var(--danger); border-color:#F0B8AC; }
+.mod-screen-chip.extra{ background:var(--gold-soft); color:var(--gold); border-color:#F0D9A8; }
+.mod-screen-empty{ font-size:12px; color:var(--ink-faint); font-style:italic; }
+.mod-tree-line{ display:flex; align-items:center; gap:6px; padding:2px 0; font-size:12.5px; }
+.mod-tree-line .tline-bullet{ color:var(--ink-faint); font-weight:700; }
+.mod-tree-title{ font-weight:800; color:var(--brand-dark); }
+.mod-tree-screens{ color:var(--ink-soft); }
+.mod-tree-chips{ display:inline-flex; flex-wrap:wrap; gap:4px; margin-left:4px; }
+.mod-chip-mini{ font-size:11px; padding:1px 8px; border-radius:12px; background:var(--brand-soft); color:var(--brand-dark); border:1px solid #C9DEE6; font-weight:600; }
+.mod-chip-mini.ok{ background:var(--ok-soft); color:var(--ok); border-color:#B7E0CA; }
+.mod-chip-mini.miss{ background:var(--danger-soft); color:var(--danger); border-color:#F0B8AC; }
+.mod-chip-mini.extra{ background:var(--gold-soft); color:var(--gold); border-color:#F0D9A8; }
+.mod-schedule-block{ padding:6px 0; border-top:1px dashed var(--border); margin-top:4px;}
+.mod-schedule-block:first-child{ border-top:none; margin-top:0; }
+
+/* Bloco especial: módulo é um "container" que, quando marcado, revela as telas.
+   Antes de marcar, mostra o módulo com um aviso "clique para ver as telas". */
+.mod-group.mod-group-collapsed .mod-group-body{ display:none; }
+.mod-group .mod-hint-hidden{ font-size:11.5px; color:var(--ink-faint); padding:6px 12px 10px; font-style:italic; }
+
 /* ============ ANEXOS ============ */
-.attach-dropzone{
-  border:2px dashed var(--border); border-radius:10px; padding:14px; text-align:center;
-  background:var(--surface-2); cursor:pointer; transition:.15s ease;
-}
+.attach-dropzone{ border:2px dashed var(--border); border-radius:10px; padding:14px; text-align:center; background:var(--surface-2); cursor:pointer; transition:.15s ease; }
 .attach-dropzone:hover, .attach-dropzone.drag-over{ border-color:var(--brand); background:var(--brand-soft); }
 .attach-dropzone .adz-icon{ font-size:22px; }
 .attach-dropzone .adz-title{ font-weight:700; font-size:13px; margin-top:4px; color:var(--ink); }
 .attach-dropzone .adz-sub{ font-size:11.5px; color:var(--ink-faint); margin-top:2px; }
 .attach-list{ margin-top:12px; display:flex; flex-direction:column; gap:8px; }
-.attach-item{
-  display:flex; align-items:center; gap:10px; padding:9px 11px; border:1px solid var(--border);
-  border-radius:9px; background:var(--surface);
-}
-.attach-item .att-icon{
-  width:36px; height:36px; border-radius:8px; display:flex; align-items:center; justify-content:center;
-  font-size:18px; flex:0 0 auto; color:#fff;
-}
+.attach-item{ display:flex; align-items:center; gap:10px; padding:9px 11px; border:1px solid var(--border); border-radius:9px; background:var(--surface); }
+.attach-item .att-icon{ width:36px; height:36px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:18px; flex:0 0 auto; color:#fff; }
 .attach-item .att-body{ flex:1; min-width:0; }
 .attach-item .att-name{ font-weight:700; font-size:13px; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .attach-item .att-meta{ font-size:11.5px; color:var(--ink-faint); margin-top:1px; }
@@ -329,11 +332,7 @@ tr.row-inactive{ opacity:.55; }
 .att-icon.xls{ background:#1E8449; }
 .att-icon.zip{ background:#B7950B; }
 .att-icon.other{ background:#5D6D7E; }
-
-.attach-warn{
-  background:var(--gold-soft); color:var(--gold); border-radius:8px; padding:8px 11px;
-  font-size:12px; font-weight:600; margin-top:8px;
-}
+.attach-warn{ background:var(--gold-soft); color:var(--gold); border-radius:8px; padding:8px 11px; font-size:12px; font-weight:600; margin-top:8px; }
 
 @media (max-width:820px){
   .shell{ position:relative; }
@@ -458,83 +457,58 @@ th{background:#F1F6F9;color:#607587;}
 const LOGIN_KEY = 'implanta_logged_user_v1';
 const MASTER_USER = 'administrador';
 const MASTER_PASS = '71209403';
-
 var currentUser = null;
-
 function getStoredUser(){ try{ return JSON.parse(localStorage.getItem(LOGIN_KEY)); }catch(e){ return null; } }
 function setStoredUser(u){ currentUser = u; if(u) localStorage.setItem(LOGIN_KEY, JSON.stringify(u)); else localStorage.removeItem(LOGIN_KEY); }
 
 function renderLoginScreen(errorMsg){
-  return '<div id="login-screen">'
-    + '<div class="login-card">'
-      + '<div class="login-brand"><div class="login-brand-mark">RT</div><div style="text-align:left;"><h1>Implanta</h1><p>REALTEC</p></div></div>'
-      + '<p class="login-subtitle">Entre com seu usuário para acessar o sistema</p>'
-      + (errorMsg ? '<div class="login-error">'+esc(errorMsg)+'</div>' : '')
-      + '<form id="login-form" onsubmit="event.preventDefault();doLogin();">'
-        + '<div class="field"><label>Usuário</label><input type="text" id="login-user" placeholder="Digite seu usuário" autocomplete="username" autofocus></div>'
-        + '<div class="field"><label>Senha</label><input type="password" id="login-pass" placeholder="Digite sua senha" autocomplete="current-password"></div>'
-        + '<button type="submit" class="btn btn-primary">Entrar</button>'
-      + '</form>'
-      + '<div class="login-footer">Acesso restrito — fale com o administrador se não tiver acesso.</div>'
-    + '</div>'
-  + '</div>';
+  return '<div id="login-screen"><div class="login-card">'
+    + '<div class="login-brand"><div class="login-brand-mark">RT</div><div style="text-align:left;"><h1>Implanta</h1><p>REALTEC</p></div></div>'
+    + '<p class="login-subtitle">Entre com seu usuário para acessar o sistema</p>'
+    + (errorMsg ? '<div class="login-error">'+esc(errorMsg)+'</div>' : '')
+    + '<form id="login-form" onsubmit="event.preventDefault();doLogin();">'
+    + '<div class="field"><label>Usuário</label><input type="text" id="login-user" autocomplete="username" autofocus></div>'
+    + '<div class="field"><label>Senha</label><input type="password" id="login-pass" autocomplete="current-password"></div>'
+    + '<button type="submit" class="btn btn-primary">Entrar</button>'
+    + '</form><div class="login-footer">Acesso restrito — fale com o administrador.</div></div></div>';
 }
-
 function doLogin(){
-  const userEl = document.getElementById('login-user');
-  const passEl = document.getElementById('login-pass');
-  const u = (userEl.value||'').trim().toLowerCase();
-  const p = passEl.value||'';
-
+  const u = (document.getElementById('login-user').value||'').trim().toLowerCase();
+  const p = document.getElementById('login-pass').value||'';
   if(!u || !p){ document.getElementById('app').innerHTML = renderLoginScreen('Preencha usuário e senha.'); return; }
   if(u === MASTER_USER && p === MASTER_PASS){
     setStoredUser({username:MASTER_USER, displayName:'Administrador', role:'admin', isMaster:true});
-    document.getElementById('app').innerHTML = '';
-    boot();
-    return;
+    document.getElementById('app').innerHTML = ''; boot(); return;
   }
   const analyst = state.analysts.find(a=> a.username && a.username.toLowerCase() === u);
   if(analyst){
-    if(analyst.inactive){ document.getElementById('app').innerHTML = renderLoginScreen('Este usuário está inativo. Fale com o administrador.'); return; }
-    if(!analyst.password || analyst.password !== p){ document.getElementById('app').innerHTML = renderLoginScreen('Usuário ou senha inválidos. Tente novamente.'); return; }
-    setStoredUser({ username: analyst.username, displayName: analyst.name, role: analyst.isAdmin ? 'admin' : 'analyst', analystId: analyst.id, isAdmin: !!analyst.isAdmin });
-    document.getElementById('app').innerHTML = '';
-    boot();
-    return;
+    if(analyst.inactive){ document.getElementById('app').innerHTML = renderLoginScreen('Usuário inativo.'); return; }
+    if(!analyst.password || analyst.password !== p){ document.getElementById('app').innerHTML = renderLoginScreen('Usuário ou senha inválidos.'); return; }
+    setStoredUser({username: analyst.username, displayName: analyst.name, role: analyst.isAdmin ? 'admin' : 'analyst', analystId: analyst.id, isAdmin: !!analyst.isAdmin});
+    document.getElementById('app').innerHTML = ''; boot(); return;
   }
-  document.getElementById('app').innerHTML = renderLoginScreen('Usuário ou senha inválidos. Tente novamente.');
+  document.getElementById('app').innerHTML = renderLoginScreen('Usuário ou senha inválidos.');
 }
-
 function logout(){ setStoredUser(null); document.getElementById('app').innerHTML = renderLoginScreen(); }
 
 /* ============================= STATE ============================= */
 const STORAGE_KEY = 'implanta_v1';
-const PALETTE = [
-  '#0B5C8E','#C0392B','#1E8449','#8E44AD','#E67E22','#16A085','#C2185B','#2980B9',
-  '#7B3F00','#5D6D7E','#D35400','#27AE60','#884EA0','#B7950B','#138D75'
-];
+const PALETTE = ['#0B5C8E','#C0392B','#1E8449','#8E44AD','#E67E22','#16A085','#C2185B','#2980B9','#7B3F00','#5D6D7E','#D35400','#27AE60','#884EA0','#B7950B','#138D75'];
 const ADMIN_ANALYST_NAME = 'Rodrigo Soares';
 const FERIAS_TYPE_NAME = 'Férias';
 const FERIAS_MIN_PER_WEEKDAY = 8*60 + 48;
 const DONE_LIST_NAMES = ['concluido','concluídos','concluida','concluída','finalizado','fechado'];
-/* Limite máximo de tamanho por arquivo anexado (bytes) */
-const ATTACH_MAX_BYTES = 3 * 1024 * 1024; // 3 MB
+const ATTACH_MAX_BYTES = 3 * 1024 * 1024;
 
 function defaultState(){
-  const st = {
-    analysts: [],
-    boards: [],
-    clients: [],
-    cards: [],
-    schedules: [],
+  const st = { analysts: [], boards: [], clients: [], cards: [], schedules: [],
     productTags: [
       {id:uid('pt'), name:'PDV', color:'#0E6655', inactive:false},
       {id:uid('pt'), name:'Frota', color:'#B9770E', inactive:false},
       {id:uid('pt'), name:'Financeiro', color:'#6C3483', inactive:false},
       {id:uid('pt'), name:'Estoque', color:'#1A5276', inactive:false}
     ],
-    modules: [],
-    screens: [],
+    modules: [], screens: [],
     agendaTypes: [
       {id:uid('at'), name:'Treinamento', isInternal:false, isServico:false, inactive:false},
       {id:uid('at'), name:'Reunião', isInternal:false, isServico:false, inactive:false},
@@ -547,24 +521,19 @@ function defaultState(){
   const adminAnalyst = {id:uid('an'), name:ADMIN_ANALYST_NAME, color:'#0B5C8E', username:'rodrigo.soares', password:'71209403', isAdmin:true, inactive:false};
   st.analysts.push(adminAnalyst);
   st.boards.push({id:uid('bd'), name:'Quadro — '+ADMIN_ANALYST_NAME, analystId:adminAnalyst.id, lists:[
-    {id:uid('ls'), name:'Fila / Cadastro'},
-    {id:uid('ls'), name:'Em implantação'},
-    {id:uid('ls'), name:'Treinamento'},
-    {id:uid('ls'), name:'Concluído'}
+    {id:uid('ls'), name:'Fila / Cadastro'},{id:uid('ls'), name:'Em implantação'},{id:uid('ls'), name:'Treinamento'},{id:uid('ls'), name:'Concluído'}
   ]});
   return st;
 }
 function uid(p){ return p+'_'+Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4); }
-
 function normalizeHeader(h){ return String(h||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim(); }
 function isDoneListName(name){
   const n = normalizeHeader(name);
   return DONE_LIST_NAMES.some(x => n === x || n.startsWith(x));
 }
-
 function ensureAdminAnalyst(s){
   let admin = s.analysts.find(a=> a.isAdmin);
-  if(!admin){ admin = s.analysts.find(a=> a.name && a.name.toLowerCase() === ADMIN_ANALYST_NAME.toLowerCase()); }
+  if(!admin) admin = s.analysts.find(a=> a.name && a.name.toLowerCase() === ADMIN_ANALYST_NAME.toLowerCase());
   if(!admin){
     admin = {id:uid('an'), name:ADMIN_ANALYST_NAME, color:'#0B5C8E', username:'rodrigo.soares', password:'71209403', isAdmin:true, inactive:false};
     s.analysts.push(admin);
@@ -583,7 +552,6 @@ function ensureAdminAnalyst(s){
   }
   return s;
 }
-
 function normalizeState(raw){
   let s = raw;
   if(!s || typeof s!=='object') s = defaultState();
@@ -619,7 +587,6 @@ function normalizeState(raw){
     else { copy.endDate = copy.date; }
     return copy;
   });
-  /* Migração dos cards: campos novos (módulos/telas previstas, data de conclusão, anexos) */
   s.cards = s.cards.map(c=>{
     const copy = Object.assign({}, c);
     if(!Array.isArray(copy.expectedModules)) copy.expectedModules = [];
@@ -661,7 +628,6 @@ var cloudErrorMsg = '';
 var saveStatus = 'idle';
 var saveTimer = null;
 var lastKnownUpdatedAt = null;
-
 var realtimeChannel = null;
 var realtimePollTimer = null;
 var realtimeRefreshInFlight = false;
@@ -672,30 +638,17 @@ var REALTIME_MIN_REFRESH_GAP_MS = 1200;
 
 function showLiveSyncIndicator(){
   let el = document.getElementById('live-sync-indicator');
-  if(!el){
-    el = document.createElement('div');
-    el.id = 'live-sync-indicator';
-    el.className = 'live-sync-indicator';
-    el.innerHTML = '<span class="live-sync-dot"></span><span>Informações atualizadas</span>';
-    document.body.appendChild(el);
-  }
-  el.classList.remove('show');
-  void el.offsetWidth;
-  el.classList.add('show');
-  clearTimeout(el._hideTimer);
-  el._hideTimer = setTimeout(()=>el.classList.remove('show'), 1100);
+  if(!el){ el = document.createElement('div'); el.id = 'live-sync-indicator'; el.className = 'live-sync-indicator'; el.innerHTML = '<span class="live-sync-dot"></span><span>Informações atualizadas</span>'; document.body.appendChild(el); }
+  el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+  clearTimeout(el._hideTimer); el._hideTimer = setTimeout(()=>el.classList.remove('show'), 1100);
 }
 function flashLiveUpdate(){
-  const app = document.getElementById('app');
-  if(!app) return;
-  app.classList.remove('rt-live-update');
-  void app.offsetWidth;
-  app.classList.add('rt-live-update');
+  const app = document.getElementById('app'); if(!app) return;
+  app.classList.remove('rt-live-update'); void app.offsetWidth; app.classList.add('rt-live-update');
   setTimeout(()=>app.classList.remove('rt-live-update'), 500);
 }
 function renderWithoutPersist(){
-  const app = document.getElementById('app');
-  if(!app) return;
+  const app = document.getElementById('app'); if(!app) return;
   app.innerHTML = renderShell();
   if(ui._focus){ const el = document.getElementById(ui._focus.id); if(el){ el.focus(); try{ el.setSelectionRange(ui._focus.pos, ui._focus.pos); }catch(e){} } }
 }
@@ -704,8 +657,7 @@ async function refreshFromCloudIfChanged(source){
   if(realtimeRefreshInFlight){ realtimeRefreshQueued = true; return false; }
   const now = Date.now();
   if(now - realtimeLastRefreshAt < REALTIME_MIN_REFRESH_GAP_MS) return false;
-  realtimeRefreshInFlight = true;
-  realtimeLastRefreshAt = now;
+  realtimeRefreshInFlight = true; realtimeLastRefreshAt = now;
   let changed = false;
   try{
     const {data, error} = await sbClient.from('app_state').select('data, updated_at').eq('id', 1).maybeSingle();
@@ -715,13 +667,8 @@ async function refreshFromCloudIfChanged(source){
     const remote = normalizeState(data.data);
     if(saveStatus==='pending' || saveStatus==='saving') state = mergeStates(remote, state);
     else state = remote;
-    lastKnownUpdatedAt = data.updated_at;
-    saveStatus = 'saved';
-    changed = true;
-    renderWithoutPersist();
-    flashLiveUpdate();
-    showLiveSyncIndicator();
-    updateSaveStatusLine();
+    lastKnownUpdatedAt = data.updated_at; saveStatus = 'saved'; changed = true;
+    renderWithoutPersist(); flashLiveUpdate(); showLiveSyncIndicator(); updateSaveStatusLine();
   }catch(e){ console.warn('Falha na atualização em tempo real', source || 'refresh', e); }
   finally{
     realtimeRefreshInFlight = false;
@@ -742,7 +689,7 @@ function startRealtimeSync(){
       .on('postgres_changes', {event:'UPDATE',schema:'public',table:'app_state',filter:'id=eq.1'},
         payload=>{ const updatedAt = payload && payload.new ? payload.new.updated_at : null; if(updatedAt && !sameInstant(updatedAt, lastKnownUpdatedAt)){ refreshFromCloudIfChanged('realtime'); } })
       .subscribe(status=>{ if(status==='SUBSCRIBED') console.info('Sincronização em tempo real ativa.'); });
-  }catch(e){ console.warn('Não foi possível iniciar a sincronização em tempo real', e); }
+  }catch(e){ console.warn('Falha ao iniciar realtime', e); }
   realtimePollTimer = setInterval(()=>{ if(document.visibilityState==='visible') refreshFromCloudIfChanged('poll'); }, REALTIME_POLL_MS);
 }
 
@@ -751,10 +698,8 @@ var state = loadLocalState();
 function persist(){
   try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){ console.warn('Falha ao salvar localmente', e); }
   if(cloudStatus==='connected' && sbClient){
-    saveStatus = 'pending';
-    updateSaveStatusLine();
-    clearTimeout(saveTimer);
-    saveTimer = setTimeout(cloudSave, 800);
+    saveStatus = 'pending'; updateSaveStatusLine();
+    clearTimeout(saveTimer); saveTimer = setTimeout(cloudSave, 800);
   }
 }
 function sameInstant(a, b){
@@ -765,8 +710,7 @@ function sameInstant(a, b){
 }
 async function cloudSave(){
   if(!sbClient) return;
-  saveStatus = 'saving';
-  updateSaveStatusLine();
+  saveStatus = 'saving'; updateSaveStatusLine();
   try{
     const { data: fresh, error: fetchErr } = await sbClient.from('app_state').select('data, updated_at').eq('id', 1).maybeSingle();
     if(fetchErr) throw fetchErr;
@@ -776,8 +720,7 @@ async function cloudSave(){
     const nowIso = new Date().toISOString();
     const { error } = await sbClient.from('app_state').update({data: state, updated_at: nowIso}).eq('id', 1);
     if(error) throw error;
-    lastKnownUpdatedAt = nowIso;
-    saveStatus = 'saved';
+    lastKnownUpdatedAt = nowIso; saveStatus = 'saved';
   }catch(e){ console.warn('Falha ao salvar na nuvem', e); saveStatus = 'error'; }
   updateSaveStatusLine();
 }
@@ -811,24 +754,20 @@ function dedupeRegistries(s){
   return s;
 }
 function updateSaveStatusLine(){
-  const el = document.getElementById('save-status-line');
-  if(!el) return;
+  const el = document.getElementById('save-status-line'); if(!el) return;
   if(cloudStatus!=='connected'){ el.textContent = 'Dados salvos neste navegador.'; return; }
   if(saveStatus==='pending' || saveStatus==='saving') el.innerHTML = '☁ Salvando...';
   else if(saveStatus==='error') el.innerHTML = '⚠ Falha ao salvar na nuvem';
   else el.innerHTML = '☁ Sincronizado com a nuvem';
 }
 function setForceSaveMsg(text, isError){
-  const el = document.getElementById('force-save-msg');
-  if(!el) return;
-  el.textContent = text;
-  el.style.color = isError ? 'var(--danger)' : '';
+  const el = document.getElementById('force-save-msg'); if(!el) return;
+  el.textContent = text; el.style.color = isError ? 'var(--danger)' : '';
 }
 async function forceSaveNow(){
   clearTimeout(saveTimer);
   if(cloudStatus==='connected' && sbClient){
-    setForceSaveMsg('Salvando na nuvem...');
-    await cloudSave();
+    setForceSaveMsg('Salvando na nuvem...'); await cloudSave();
     setForceSaveMsg(saveStatus==='saved' ? '✓ Alterações salvas na nuvem.' : '⚠ Falha ao salvar.', saveStatus!=='saved');
   } else { setForceSaveMsg('✓ Salvo neste navegador.'); }
 }
@@ -841,14 +780,12 @@ async function connectCloud(url, anonKey){
   usingDefaultCloud = (url===DEFAULT_CLOUD_CONFIG.url && anonKey===DEFAULT_CLOUD_CONFIG.anonKey);
   localStorage.setItem(CLOUD_CONFIG_KEY, JSON.stringify(cloudConfig));
   localStorage.removeItem(CLOUD_DISABLED_KEY);
-  cloudStatus = 'connecting'; cloudErrorMsg=''; render();
-  await boot();
+  cloudStatus = 'connecting'; cloudErrorMsg=''; render(); await boot();
 }
 function disconnectCloud(){
   stopRealtimeSync();
   cloudConfig = null; sbClient = null; cloudStatus = 'local'; cloudErrorMsg=''; usingDefaultCloud = false;
-  localStorage.removeItem(CLOUD_CONFIG_KEY);
-  localStorage.setItem(CLOUD_DISABLED_KEY, '1');
+  localStorage.removeItem(CLOUD_CONFIG_KEY); localStorage.setItem(CLOUD_DISABLED_KEY, '1');
   render();
 }
 async function boot(){
@@ -879,15 +816,13 @@ async function boot(){
         if(ins.error) throw ins.error;
         lastKnownUpdatedAt = nowIso;
       }
-      cloudStatus = 'connected';
-      startRealtimeSync();
+      cloudStatus = 'connected'; startRealtimeSync();
     }catch(e){
       console.warn('Falha ao conectar à nuvem', e);
       cloudStatus = 'error';
       const detail = (e && (e.message || e.error_description || e.hint || e.details)) || 'erro desconhecido';
-      cloudErrorMsg = 'Não foi possível conectar ao banco na nuvem. Usando os dados salvos neste navegador por enquanto.\nDetalhe técnico: '+detail;
-      sbClient = null;
-      state = loadLocalState();
+      cloudErrorMsg = 'Não foi possível conectar ao banco na nuvem. Usando os dados salvos neste navegador.\nDetalhe técnico: '+detail;
+      sbClient = null; state = loadLocalState();
     }
   } else { state = loadLocalState(); }
   render();
@@ -897,22 +832,12 @@ async function boot(){
 var ui = {
   view: 'board',
   currentBoardId: state.boards[0] ? state.boards[0].id : null,
-  search: '',
-  clientSearch: '',
-  showNotif: false,
-  sidebarOpen: false,
-  openCardId: null,
-  cardTab: 'info',
-  cardDraft: null,
-  confirmDialog: null,
-  cardErr: '',
-  modal: null,
-  calAnalyst: 'all',
-  calCategory: 'all',
-  calStart: startOfWeekISO(todayISO()),
-  boardAnalystFilter: 'all',
-  settingsTab: 'produtos',
-  formErr: ''
+  search: '', clientSearch: '',
+  showNotif: false, sidebarOpen: false,
+  openCardId: null, cardTab: 'info', cardDraft: null,
+  confirmDialog: null, cardErr: '', modal: null,
+  calAnalyst: 'all', calCategory: 'all', calStart: startOfWeekISO(todayISO()),
+  boardAnalystFilter: 'all', settingsTab: 'produtos', formErr: ''
 };
 
 /* ============================= HELPERS ============================= */
@@ -961,10 +886,7 @@ function countWeekdaysBetweenISO(startIso, endIso){
   if(endIso < startIso) return 0;
   let count = 0;
   let cur = startIso;
-  while(cur <= endIso){
-    if(isWeekdayISO(cur)) count++;
-    cur = addDaysISO(cur, 1);
-  }
+  while(cur <= endIso){ if(isWeekdayISO(cur)) count++; cur = addDaysISO(cur, 1); }
   return count;
 }
 
@@ -981,6 +903,7 @@ function cardsUsingProduct(tagId){ return state.cards.filter(c=> (c.productTags|
 function schedulesUsingModule(name){ return state.schedules.filter(s=> (s.modules||[]).includes(name)); }
 function schedulesUsingType(name){ return state.schedules.filter(s=> s.type===name); }
 function screensForModule(moduleId){ return state.screens.filter(s=>s.moduleId===moduleId); }
+function moduleByName(name){ return state.modules.find(m=>m.name===name); }
 function schedulesUsingScreen(name){ return state.schedules.filter(s=> (s.trainedScreens||[]).includes(name)); }
 function schedulesForAnalyst(analystId){
   return state.schedules.filter(s=>{
@@ -1121,8 +1044,6 @@ function readableTextColor(hex){
   const yiq = ((r*299)+(g*587)+(b*114))/1000;
   return yiq >= 150 ? '#111' : '#fff';
 }
-
-/* --- Helpers do card (progresso, saldo consolidado por cliente, etc) --- */
 function cardProgressPercent(card){
   const total = (card.contractedHours||0);
   if(!total) return 0;
@@ -1137,98 +1058,69 @@ function clientConsolidatedBalanceHours(clientId){
 }
 function clientHasPastCards(clientId){ return state.cards.some(c=>c.clientId===clientId); }
 
-/* ============ ANEXOS ============ */
-function fileIconClass(mime, name){
-  const ext = (name || '').split('.').pop().toLowerCase();
-  if((mime||'').includes('pdf') || ext === 'pdf') return 'pdf';
-  if((mime||'').startsWith('image/') || ['png','jpg','jpeg','gif','webp','bmp'].includes(ext)) return 'img';
-  if((mime||'').includes('word') || ['doc','docx','odt','rtf','txt'].includes(ext)) return 'doc';
-  if((mime||'').includes('sheet') || ['xls','xlsx','csv','ods'].includes(ext)) return 'xls';
-  if((mime||'').includes('zip') || (mime||'').includes('compressed') || ['zip','rar','7z','tar','gz'].includes(ext)) return 'zip';
-  return 'other';
+/* ============================================================
+   AGRUPAMENTO Módulo → Telas
+   ============================================================ */
+function moduleForScreenName(screenName){
+  const scr = state.screens.find(s=> s.name===screenName);
+  if(!scr) return null;
+  return byId(state.modules, scr.moduleId) || null;
 }
-function fileIconEmoji(cls){
-  switch(cls){
-    case 'pdf': return '📄';
-    case 'img': return '🖼';
-    case 'doc': return '📝';
-    case 'xls': return '📊';
-    case 'zip': return '🗜';
-    default: return '📎';
-  }
-}
-function readFileAsDataURL(file){
-  return new Promise((resolve, reject)=>{
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(reader.error || new Error('Falha ao ler arquivo'));
-    reader.readAsDataURL(file);
+function groupScreensByModule(screenNames){
+  const out = new Map();
+  (screenNames||[]).forEach(name=>{
+    const mod = moduleForScreenName(name);
+    const key = mod ? mod.name : 'Sem módulo';
+    if(!out.has(key)) out.set(key, []);
+    out.get(key).push(name);
   });
+  const ordered = [];
+  state.modules.forEach(m=>{ if(out.has(m.name)) ordered.push([m.name, out.get(m.name)]); });
+  if(out.has('Sem módulo')) ordered.push(['Sem módulo', out.get('Sem módulo')]);
+  return ordered;
 }
-async function handleCardAttachmentUpload(cardId, inputEl, form){
-  const card = getCard(cardId);
-  if(!card) return;
-  const files = Array.from(inputEl.files || []);
-  if(!files.length) return;
-  let rejected = [];
-  for(const f of files){
-    if(f.size > ATTACH_MAX_BYTES){
-      rejected.push(f.name+' ('+bytesToHuman(f.size)+' excede '+bytesToHuman(ATTACH_MAX_BYTES)+')');
-      continue;
-    }
-    try{
-      const dataUrl = await readFileAsDataURL(f);
-      card.attachments = card.attachments || [];
-      card.attachments.push({
-        id: uid('at'),
-        name: f.name,
-        type: f.type || '',
-        size: f.size,
-        data: dataUrl,
-        uploadedAt: Date.now()
-      });
-      addHistory(card, 'Anexo adicionado: '+f.name+' ('+bytesToHuman(f.size)+')');
-    }catch(err){
-      rejected.push(f.name+' (falha ao ler)');
-    }
-  }
-  inputEl.value = '';
-  if(rejected.length){
-    showAlert('Alguns arquivos não foram anexados:\n\n'+rejected.join('\n'));
-  }
-  /* Preserva o rascunho atual do formulário (outros campos não salvos) */
-  if(ui.cardDraft && ui.cardDraft.cardId===cardId){
-    const values = captureFormValues(form);
-    ui.cardDraft = {cardId, values};
-  }
-  render();
+function renderGroupedInline(screenNames, opts){
+  opts = opts || {};
+  const trainedSet = opts.trainedSet || null;
+  const expectedSet = opts.expectedSet || null;
+  const groups = groupScreensByModule(screenNames);
+  if(!groups.length) return '<span class="mod-tree-screens">'+(opts.emptyText||'—')+'</span>';
+  return groups.map(([modName, screens])=>{
+    return '<div class="mod-tree-line">'
+      + '<span class="tline-bullet">▸</span>'
+      + '<span class="mod-tree-title">'+esc(modName)+'</span>'
+      + '<span class="mod-tree-screens">—</span>'
+      + '<span class="mod-tree-chips">'
+      + screens.map(sn=>{
+          let cls = '';
+          if(trainedSet && expectedSet){
+            if(trainedSet.has(sn) && expectedSet.has(sn)) cls = 'ok';
+            else if(!trainedSet.has(sn) && expectedSet.has(sn)) cls = 'miss';
+            else if(trainedSet.has(sn) && !expectedSet.has(sn)) cls = 'extra';
+          }
+          return '<span class="mod-chip-mini '+cls+'">'+esc(sn)+'</span>';
+        }).join('')
+      + '</span></div>';
+  }).join('');
 }
-function openAttachmentInNewTab(att){
-  try{
-    const w = window.open();
-    if(!w){ showAlert('Não foi possível abrir a visualização. Verifique o bloqueador de pop-ups.'); return; }
-    if((att.type||'').includes('pdf') || /\.pdf$/i.test(att.name||'')){
-      /* Usa iframe para PDF */
-      w.document.write('<title>'+esc(att.name)+'</title><iframe src="'+att.data+'" style="border:none;position:fixed;inset:0;width:100%;height:100%;"></iframe>');
-      w.document.close();
-    } else if((att.type||'').startsWith('image/')){
-      w.document.write('<title>'+esc(att.name)+'</title><div style="margin:0;padding:0;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#222;"><img src="'+att.data+'" style="max-width:100%;max-height:100vh;" alt="'+esc(att.name)+'"></div>');
-      w.document.close();
-    } else {
-      /* Outros tipos: força o download */
-      const a = document.createElement('a');
-      a.href = att.data;
-      a.download = att.name;
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      w.close();
-    }
-  }catch(e){ showAlert('Erro ao abrir o arquivo: '+e.message); }
-}
-function downloadAttachment(att){
-  const a = document.createElement('a');
-  a.href = att.data;
-  a.download = att.name;
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+function renderSchedModulesAndScreens(s){
+  const modNames = s.modules || [];
+  const screenNames = s.trainedScreens || [];
+  if(!modNames.length && !screenNames.length) return '';
+  const groups = new Map();
+  const screenGroups = new Map();
+  groupScreensByModule(screenNames).forEach(([modName, screens])=> screenGroups.set(modName, screens));
+  modNames.forEach(mn=>{ if(!groups.has(mn)) groups.set(mn, screenGroups.get(mn) || []); });
+  screenGroups.forEach((screens, modName)=>{ if(!groups.has(modName)) groups.set(modName, screens); });
+  let html = '';
+  groups.forEach((screens, modName)=>{
+    html += '<div class="mod-schedule-block">'
+      + '<div class="mod-tree-line"><span class="tline-bullet">📦</span>'
+      + '<span class="mod-tree-title">'+esc(modName)+'</span>'
+      + (screens.length? ' <span class="mod-tree-screens">→</span> <span class="mod-tree-chips">'+screens.map(sn=>'<span class="mod-chip-mini">'+esc(sn)+'</span>').join('')+'</span>' : '')
+      + '</div></div>';
+  });
+  return html;
 }
 
 /* ============================= MUTATIONS ============================= */
@@ -1254,23 +1146,18 @@ function deleteAnalyst(id){
   state.analysts = state.analysts.filter(a=>a.id!==id);
 }
 function setAnalystActive(id, active){
-  const a = getAnalyst(id);
-  if(!a) return;
+  const a = getAnalyst(id); if(!a) return;
   if(a.isAdmin && !active){ showAlert('O analista administrador do sistema não pode ser inativado.'); return; }
   a.inactive = !active;
   if(currentUser && currentUser.analystId===id && !active){
     showAlert('Seu usuário foi inativado. Você será desconectado.');
-    setStoredUser(null);
-    document.getElementById('app').innerHTML = renderLoginScreen();
-    return;
+    setStoredUser(null); document.getElementById('app').innerHTML = renderLoginScreen(); return;
   }
 }
 function setEntityActive(kind, id, active){
   const map = { module:'modules', screen:'screens', type:'agendaTypes', product:'productTags' };
-  const arr = state[map[kind]];
-  if(!arr) return;
-  const item = byId(arr, id);
-  if(!item) return;
+  const arr = state[map[kind]]; if(!arr) return;
+  const item = byId(arr, id); if(!item) return;
   item.inactive = !active;
 }
 function createClient(data){ const c = {id:uid('cl'), code:data.code||'', name:data.name, companyName:data.companyName||'', cnpj:data.cnpj||'', ie:data.ie||'', contact:data.contact||'', email:data.email||'', phone:data.phone||'', segment:data.segment||'', city:data.city||'', clientType:data.clientType||'novo', createdAt:Date.now()}; state.clients.push(c); return c; }
@@ -1300,8 +1187,7 @@ function downloadClientTemplate(){
   const csv = '\uFEFF'+headers.join(';')+'\n'+example.join(';');
   const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = 'modelo_clientes.csv';
+  const a = document.createElement('a'); a.href = url; a.download = 'modelo_clientes.csv';
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
@@ -1326,8 +1212,7 @@ function createCard(boardId, listId, clientId, extra){
   const card = Object.assign({
     id:uid('cd'), boardId, listId, clientId, contractedHours:0, startDate:todayISO(),
     productTags:[], history:[{ts:Date.now(), text:'Card criado'}],
-    expectedModules:[], expectedScreens:[], conclusionDate:null, isConcluded:false,
-    attachments:[]
+    expectedModules:[], expectedScreens:[], conclusionDate:null, isConcluded:false, attachments:[]
   }, extra||{});
   state.cards.push(card);
   return card;
@@ -1354,8 +1239,7 @@ function concludeCard(cardId){
 }
 function reopenCard(cardId){
   const c = getCard(cardId); if(!c) return;
-  c.isConcluded = false;
-  c.conclusionDate = null;
+  c.isConcluded = false; c.conclusionDate = null;
   addHistory(c, 'Implantação reaberta');
 }
 function deleteCard(id){ state.schedules = state.schedules.filter(s=>s.cardId!==id); state.cards = state.cards.filter(c=>c.id!==id); }
@@ -1366,8 +1250,7 @@ function createSchedule(data){
   }, data);
   if(!Array.isArray(s.analystIds) || !s.analystIds.length){ s.analystIds = s.analystId ? [s.analystId] : []; }
   if(s.analystIds.length && !s.analystId) s.analystId = s.analystIds[0];
-  state.schedules.push(s);
-  return s;
+  state.schedules.push(s); return s;
 }
 function updateSchedule(id, patch){ const s=byId(state.schedules,id); if(s) Object.assign(s, patch); }
 function completeSchedule(id, deductMinutes, note){
@@ -1382,8 +1265,7 @@ function markNotDone(id){
 }
 function revertToPending(id){
   const s=byId(state.schedules,id); if(!s || s.status==='pendente') return;
-  const wasConcluida = s.status==='concluida';
-  const deducted = s.deductMinutes;
+  const wasConcluida = s.status==='concluida'; const deducted = s.deductMinutes;
   s.status='pendente'; s.deductMinutes=null;
   if(s.cardId){
     const c=getCard(s.cardId);
@@ -1417,8 +1299,7 @@ function renderShell(){
     + '<main class="main">'
       + '<header class="topbar">'+renderTopbar()+'</header>'
       + '<div class="view">'+renderView()+'</div>'
-    + '</main>'
-    + '</div>'
+    + '</main></div>'
     + (ui.modal ? renderModal() : '')
     + (ui.confirmDialog ? renderConfirmDialog() : '');
 }
@@ -1438,11 +1319,9 @@ function renderSidebar(){
     html += '<button class="side-item'+(active?' active':'')+(inativo?' inactive-analyst':'')+'" data-action="board-analyst-filter" data-id="'+a.id+'">'
       + '<span class="side-dot" style="background:'+(inativo?'#B9CAD5':a.color)+'"></span>'
       + '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+esc(a.name)+(a.isAdmin?' <span style="font-size:9px;font-weight:800;color:#F0A72F;letter-spacing:.5px;">ADMIN</span>':'')+(inativo?' <span style="font-size:9px;font-weight:700;color:#8A9AAA;letter-spacing:.4px;">INATIVO</span>':'')+'</span>'
-      + (pend? '<span class="side-badge">'+pend+'</span>' : '')
-      + '</button>';
+      + (pend? '<span class="side-badge">'+pend+'</span>' : '') + '</button>';
   });
-  html += '<button class="side-add" data-action="open-modal" data-modal="analyst-new">+ Novo analista</button>';
-  html += '</div>';
+  html += '<button class="side-add" data-action="open-modal" data-modal="analyst-new">+ Novo analista</button></div>';
 
   const totalPend = pendingConfirmations(null).length;
   html += '<div class="side-section"><div class="side-label"><span>Gestão</span></div>';
@@ -1463,8 +1342,7 @@ function navItem(view, icon, label, badge){
   const active = ui.view===view;
   return '<button class="side-item'+(active?' active':'')+'" data-action="goto-view" data-view="'+view+'">'
     + '<span>'+icon+'</span><span style="flex:1;">'+label+'</span>'
-    + (badge? '<span class="side-badge">'+badge+'</span>' : '')
-    + '</button>';
+    + (badge? '<span class="side-badge">'+badge+'</span>' : '') + '</button>';
 }
 
 /* ============================= TOPBAR ============================= */
@@ -1476,21 +1354,14 @@ function renderTopbar(){
     const selectedAnalyst = ui.boardAnalystFilter!=='all' ? getAnalyst(ui.boardAnalystFilter) : null;
     const selectedBoard = selectedAnalyst ? boardOfAnalyst(selectedAnalyst.id) : null;
     ui.currentBoardId = selectedBoard ? selectedBoard.id : (state.boards[0] ? state.boards[0].id : null);
-
     left = '<div class="topbar-title"><h2>Implantações</h2>'
-      + '<div class="sub">'+(selectedAnalyst
-        ? 'Quadro consolidado • Analista: '+esc(selectedAnalyst.name)+(selectedAnalyst.inactive?' (inativo)':'')
-        : 'Quadro consolidado • Todos os analistas')+'</div></div>'
+      + '<div class="sub">'+(selectedAnalyst ? 'Quadro consolidado • Analista: '+esc(selectedAnalyst.name)+(selectedAnalyst.inactive?' (inativo)':'') : 'Quadro consolidado • Todos os analistas')+'</div></div>'
       + '<select class="board-analyst-filter" data-action="board-analyst-filter" title="Filtrar analista">'
       + '<option value="all"'+(ui.boardAnalystFilter==='all'?' selected':'')+'>Todos os analistas</option>';
-    state.analysts.forEach(a=>{
-      left += '<option value="'+a.id+'"'+(ui.boardAnalystFilter===a.id?' selected':'')+'>'+esc(a.name)+(a.inactive?' (inativo)':'')+'</option>';
-    });
+    state.analysts.forEach(a=>{ left += '<option value="'+a.id+'"'+(ui.boardAnalystFilter===a.id?' selected':'')+'>'+esc(a.name)+(a.inactive?' (inativo)':'')+'</option>'; });
     left += '</select>'
       + '<div class="search-box" style="margin-left:8px;"><span>🔎</span><input id="search-input" placeholder="Buscar cliente..." value="'+esc(ui.search)+'"></div>'
-      + (selectedBoard
-        ? '<button class="btn btn-primary" data-action="open-modal" data-modal="card-new" data-board="'+selectedBoard.id+'">+ Novo cliente</button>'
-        : '');
+      + (selectedBoard ? '<button class="btn btn-primary" data-action="open-modal" data-modal="card-new" data-board="'+selectedBoard.id+'">+ Novo cliente</button>' : '');
   } else if(ui.view==='calendar'){
     left = '<div class="topbar-title"><h2>Agenda</h2><div class="sub">Visualize por analista ou em conjunto</div></div>';
   } else if(ui.view==='reports'){
@@ -1517,8 +1388,7 @@ function renderNotifPanel(){
     items.sort((a,b)=> (a.date+(a.startTime||'')).localeCompare(b.date+(b.startTime||'')));
     items.forEach(s=>{
       const title = scheduleDisplayTitle(s);
-      html += '<div class="notif-item">'
-        + '<div style="font-weight:700;font-size:13px;">'+esc(title)+'</div>'
+      html += '<div class="notif-item"><div style="font-weight:700;font-size:13px;">'+esc(title)+'</div>'
         + '<div style="font-size:11.5px;color:var(--ink-soft);margin:2px 0 6px;">'+scheduleDateText(s)+' '+(s.allDay?'(dia todo)':s.startTime+'–'+s.endTime)+' · '+esc(scheduleAnalystNames(s))+'</div>'
         + '<div class="row-actions">'
           + '<button class="btn btn-sm btn-primary" data-action="open-modal" data-modal="confirm-complete" data-id="'+s.id+'">Confirmar</button>'
@@ -1534,7 +1404,7 @@ function renderNotifPanel(){
 function renderView(){
   if(!state.analysts.length && ui.view!=='settings' && ui.view!=='clients'){
     return '<div class="empty-state"><h3>Comece cadastrando um analista</h3>'
-      + '<p>Cada analista tem seu próprio quadro, no estilo Trello, com os clientes em implantação sob sua responsabilidade.</p>'
+      + '<p>Cada analista tem seu próprio quadro.</p>'
       + '<button class="btn btn-primary" data-action="open-modal" data-modal="analyst-new">+ Cadastrar analista</button></div>';
   }
   switch(ui.view){
@@ -1557,15 +1427,13 @@ function renderBoardView(){
   const boards = filterId==='all' ? state.boards.slice() : (selectedBoard ? [selectedBoard] : []);
   if(!boards.length) return '<div class="empty-state"><h3>Nenhum quadro disponível</h3></div>';
 
-  const listDefs = [];
-  const seenNames = new Set();
+  const listDefs = []; const seenNames = new Set();
   boards.forEach(b=>{ (b.lists||[]).forEach(l=>{ if(!seenNames.has(l.name)){ seenNames.add(l.name); listDefs.push(l.name); } }); });
 
   let html = '<div class="board-summary">'
     + '<div class="board-summary-main"><strong>'+listDefs.length+' etapas</strong>'
     + '<span>• '+state.cards.filter(c=>boards.some(b=>b.id===c.boardId)).filter(c=>{ const cl=getClient(c.clientId); return !q || (cl && cl.name.toLowerCase().includes(q)); }).length+' clientes em implantação</span></div>'
-    + '<span class="board-summary-filter">'+(selectedAnalyst ? 'Analista: '+esc(selectedAnalyst.name)+(selectedAnalyst.inactive?' (inativo)':'') : 'Todos os analistas')+'</span>'
-    + '</div>';
+    + '<span class="board-summary-filter">'+(selectedAnalyst ? 'Analista: '+esc(selectedAnalyst.name)+(selectedAnalyst.inactive?' (inativo)':'') : 'Todos os analistas')+'</span></div>';
 
   html += '<div class="board-lists unified-board">';
   listDefs.forEach(listName=>{
@@ -1577,8 +1445,7 @@ function renderBoardView(){
     });
     if(q){ cards = cards.filter(c=>{ const cl=getClient(c.clientId); return cl && cl.name.toLowerCase().includes(q); }); }
 
-    html += '<div class="list-col">'
-      + '<div class="list-head"><span class="name">'+esc(listName)+'</span><span class="count">'+cards.length+'</span>'
+    html += '<div class="list-col"><div class="list-head"><span class="name">'+esc(listName)+'</span><span class="count">'+cards.length+'</span>'
       + (selectedBoard
         ? (function(){
             const realList = (selectedBoard.lists||[]).find(l=>l.name===listName);
@@ -1586,20 +1453,16 @@ function renderBoardView(){
               ? '<button class="icon-btn btn-sm" style="width:26px;height:26px;" data-action="delete-list" data-board="'+selectedBoard.id+'" data-list="'+realList.id+'" title="Excluir lista">✕</button>'
               : '';
           })()
-        : '')
-      + '</div>'
+        : '') + '</div>'
       + '<div class="list-cards" data-unified-list-name="'+esc(listName)+'">';
-
     cards.forEach(c=> html += renderCardMini(c, listName, filterId));
     html += '</div>';
-
     if(selectedBoard){
       const realList = (selectedBoard.lists||[]).find(l=>l.name===listName);
       if(realList){ html += '<button class="add-card-btn" data-action="open-modal" data-modal="card-new" data-board="'+selectedBoard.id+'" data-list="'+realList.id+'">+ Adicionar cliente</button>'; }
     }
     html += '</div>';
   });
-
   if(selectedBoard){ html += '<div class="list-col list-add-col"><button data-action="open-modal" data-modal="list-new" data-board="'+selectedBoard.id+'">+ Nova lista</button></div>'; }
   html += '</div>';
   return html;
@@ -1618,17 +1481,14 @@ function renderCardMini(card, listName, filterId){
   return '<div class="card-mini'+(card.isConcluded?' done':'')+'" draggable="true" data-card-id="'+card.id+'" data-action="open-card">'
     + (chips? '<div class="chip-row">'+chips+'</div>' : '')
     + '<div class="card-title">'+esc(client? client.name : '(cliente removido)')+(card.isConcluded?' <span class="done-flag">✓</span>':'')+'</div>'
-    + ((filterId==='all' && analyst)
-      ? '<div class="card-meta analyst-meta"><span class="analyst-dot" style="background:'+analyst.color+'"></span><span>'+esc(analyst.name)+'</span></div>'
-      : '')
+    + ((filterId==='all' && analyst) ? '<div class="card-meta analyst-meta"><span class="analyst-dot" style="background:'+analyst.color+'"></span><span>'+esc(analyst.name)+'</span></div>' : '')
     + '<div class="card-meta"><span class="balance-pill'+(balance<0?' neg':'')+'">'+minToHM(balance*60)+' saldo</span>'
     + (attachCount? '<span class="attach-flag">📎 '+attachCount+'</span>' : '')
     + (due? '<span class="pending-flag">● confirmar</span>' : '')
     + (card.isConcluded? '<span class="done-flag">Concluído '+fmtDateBR(card.conclusionDate)+'</span>' : '')
     + '</div>'
     + '<div class="progress-bar-outer" style="height:8px;margin:4px 0 2px;"><div class="progress-bar-inner '+pctClass+'" style="width:'+pct+'%;"></div></div>'
-    + '<div class="progress-meta"><span>'+pct.toFixed(0)+'%</span><span>'+minToHM(cardUsedMinutes(card))+' / '+card.contractedHours+'h</span></div>'
-    + '</div>';
+    + '<div class="progress-meta"><span>'+pct.toFixed(0)+'%</span><span>'+minToHM(cardUsedMinutes(card))+' / '+card.contractedHours+'h</span></div></div>';
 }
 
 /* ============================= CARD MODAL ============================= */
@@ -1659,14 +1519,13 @@ function renderCardModalContent(card){
       + '<div class="balance-box" style="margin-top:14px;">'
       + balanceItem(card.contractedHours+'h','Contratadas')
       + balanceItem(minToHM(used*60),'Usadas')
-      + balanceItem(minToHM(balance*60), 'Saldo');
-    html += '</div>';
+      + balanceItem(minToHM(balance*60), 'Saldo') + '</div>';
 
     html += '<form data-form="card-info" data-card="'+card.id+'">';
     html += '<div class="field-row">'
       + '<div class="field"><label>Total de horas contratadas</label><input type="number" min="0" step="0.5" name="contractedHours" value="'+esc(card.contractedHours)+'"></div>'
-      + '<div class="field"><label>Início da implantação</label><input type="date" name="startDate" value="'+esc(card.startDate)+'"></div>'
-      + '</div>';
+      + '<div class="field"><label>Início da implantação</label><input type="date" name="startDate" value="'+esc(card.startDate)+'"></div></div>';
+
     html += '<div class="field"><label>Produtos contratados</label><div class="check-grid">';
     activeProductTags().forEach(t=>{
       const checked = (card.productTags||[]).includes(t.id) ? 'checked' : '';
@@ -1682,25 +1541,55 @@ function renderCardModalContent(card){
     html += '<div style="display:flex;gap:6px;margin-top:9px;">'
       + '<input type="text" class="quick-add-input" data-for="product" placeholder="Novo produto...">'
       + '<input type="color" class="quick-add-color" data-for="product" value="'+colorForIndex(state.productTags.length)+'">'
-      + '<button type="button" class="btn btn-sm btn-primary" data-action="quick-add-product">+ Adicionar</button>'
-      + '</div>';
+      + '<button type="button" class="btn btn-sm btn-primary" data-action="quick-add-product">+ Adicionar</button></div></div>';
+
+    /* ===========================================================
+       MÓDULOS E TELAS PREVISTOS
+       Cada módulo é uma "caixa". As telas SÓ aparecem se o módulo
+       estiver marcado (a caixa só abre quando o módulo é marcado).
+       =========================================================== */
+    const expectedModulesSet = new Set(card.expectedModules||[]);
+    const expectedScreensSet = new Set(card.expectedScreens||[]);
+    html += '<div class="field"><label>Módulos previstos (o que o cliente deve utilizar)</label>';
+    if(!state.modules.length){
+      html += '<div class="hint">Nenhum módulo cadastrado.</div>';
+    } else {
+      state.modules.forEach(mod=>{
+        const screensOfMod = screensForModule(mod.id);
+        const modChecked = expectedModulesSet.has(mod.name);
+        // Bloco: se o módulo está marcado, mostramos as telas; senão, escondemos
+        html += '<div class="mod-group'+(modChecked?'':' mod-group-collapsed')+'" data-mod-name="'+esc(mod.name)+'">'
+          + '<div class="mod-group-header">'
+          + '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0;flex:1;">'
+          + '<input type="checkbox" name="expectedModules" value="'+esc(mod.name)+'" data-action="card-module-toggle" data-mod="'+esc(mod.name)+'" '+(modChecked?'checked':'')+'>'
+          + '<span class="mod-icon">📦</span><span>'+esc(mod.name)+'</span>'
+          + '</label>'
+          + '<span class="mod-count">'+screensOfMod.length+' tela'+(screensOfMod.length!==1?'s':'')+'</span>'
+          + '</div>';
+        if(!modChecked){
+          html += '<div class="mod-hint-hidden">Marque o módulo acima para escolher as telas que serão usadas.</div>';
+        } else {
+          if(screensOfMod.length){
+            html += '<div class="mod-group-body"><div class="check-grid">';
+            screensOfMod.forEach(scr=>{
+              const isChecked = expectedScreensSet.has(scr.name);
+              html += '<label class="check-pill"><input type="checkbox" name="expectedScreens" value="'+esc(scr.name)+'" '+isChecked+'>'+esc(scr.name)+'</label>';
+            });
+            html += '</div></div>';
+          } else {
+            html += '<div class="mod-hint-hidden">Este módulo não tem telas cadastradas.</div>';
+          }
+        }
+        html += '</div>';
+      });
+      /* Módulos previstos que talvez não existam mais no cadastro (raro) */
+      (card.expectedModules||[]).forEach(modName=>{
+        if(!state.modules.some(m=>m.name===modName)){
+          html += '<div class="mod-group"><div class="mod-group-header"><span class="mod-icon">📦</span>'+esc(modName)+' <small style="color:var(--ink-faint);">(não cadastrado)</small></div></div>';
+        }
+      });
+    }
     html += '</div>';
-
-    html += '<div class="field"><label>Módulos previstos (o que o cliente deve utilizar)</label><div class="check-grid">';
-    state.modules.forEach(mod=>{
-      const checked = (card.expectedModules||[]).includes(mod.name) ? 'checked' : '';
-      html += '<label class="check-pill"><input type="checkbox" name="expectedModules" value="'+esc(mod.name)+'" '+checked+'>'+esc(mod.name)+'</label>';
-    });
-    if(!state.modules.length) html += '<span class="hint">Nenhum módulo cadastrado.</span>';
-    html += '</div></div>';
-
-    html += '<div class="field"><label>Telas previstas (o que o cliente deve utilizar)</label><div class="check-grid">';
-    state.screens.forEach(scr=>{
-      const checked = (card.expectedScreens||[]).includes(scr.name) ? 'checked' : '';
-      html += '<label class="check-pill"><input type="checkbox" name="expectedScreens" value="'+esc(scr.name)+'" '+checked+'>'+esc(scr.name)+'</label>';
-    });
-    if(!state.screens.length) html += '<span class="hint">Nenhuma tela cadastrada.</span>';
-    html += '</div></div>';
 
     html += '<div class="field"><label>Mover para</label><select name="moveTo">';
     state.boards.forEach(b=>{
@@ -1740,15 +1629,14 @@ function renderCardModalContent(card){
   return html;
 }
 
-/* Aba de Anexos — input + lista */
+/* Aba de Anexos */
 function renderCardAttachmentsTab(card){
   const list = card.attachments || [];
-  let html = '<p class="hint" style="margin-top:-4px;">Anexe aqui o PDF do contrato, imagens, planilhas ou outros documentos relacionados a este cliente.</p>';
+  let html = '<p class="hint" style="margin-top:-4px;">Anexe o PDF do contrato, imagens, planilhas ou outros documentos relacionados.</p>';
   html += '<div class="attach-dropzone" data-action="attach-upload-click" data-card="'+card.id+'">'
     + '<div class="adz-icon">📎</div>'
     + '<div class="adz-title">Clique para escolher arquivo(s)</div>'
-    + '<div class="adz-sub">PDF, imagens, planilhas ou documentos — máx. '+bytesToHuman(ATTACH_MAX_BYTES)+' por arquivo</div>'
-    + '</div>'
+    + '<div class="adz-sub">PDF, imagens, planilhas ou documentos — máx. '+bytesToHuman(ATTACH_MAX_BYTES)+' por arquivo</div></div>'
     + '<input type="file" id="attach-upload-input-'+card.id+'" accept="*/*" multiple data-card="'+card.id+'" style="display:none;">';
 
   if(list.length){
@@ -1758,26 +1646,21 @@ function renderCardAttachmentsTab(card){
       const emoji = fileIconEmoji(cls);
       html += '<div class="attach-item">'
         + '<div class="att-icon '+cls+'">'+emoji+'</div>'
-        + '<div class="att-body">'
-          + '<div class="att-name">'+esc(att.name)+'</div>'
-          + '<div class="att-meta">'+bytesToHuman(att.size)+' · '+fmtDT(att.uploadedAt||Date.now())+'</div>'
-        + '</div>'
+        + '<div class="att-body"><div class="att-name">'+esc(att.name)+'</div>'
+        + '<div class="att-meta">'+bytesToHuman(att.size)+' · '+fmtDT(att.uploadedAt||Date.now())+'</div></div>'
         + '<div class="att-actions">'
           + '<button class="btn btn-sm btn-primary" data-action="attach-view" data-card="'+card.id+'" data-att="'+att.id+'">👁 Visualizar</button>'
           + '<button class="btn btn-sm btn-ghost" data-action="attach-download" data-card="'+card.id+'" data-att="'+att.id+'">⬇</button>'
           + '<button class="btn btn-sm btn-danger" data-action="attach-delete" data-card="'+card.id+'" data-att="'+att.id+'">🗑</button>'
-        + '</div>'
-        + '</div>';
+        + '</div></div>';
     });
     html += '</div>';
-  } else {
-    html += '<div class="hint" style="margin-top:12px;">Nenhum anexo ainda.</div>';
-  }
-  html += '<div class="attach-warn">⚠ Os anexos ficam salvos junto ao card. Como o app armazena os dados no navegador (ou no Supabase), evite anexar arquivos muito grandes.</div>';
+  } else { html += '<div class="hint" style="margin-top:12px;">Nenhum anexo ainda.</div>'; }
+  html += '<div class="attach-warn">⚠ Os anexos ficam salvos junto ao card.</div>';
   return html;
 }
 
-/* Comparação de módulos/telas previstos x efetivamente treinados */
+/* Comparação previstos × treinados */
 function collectTrainedFromCard(card){
   const trains = state.schedules.filter(s=> s.cardId===card.id && s.status==='concluida');
   const mods = new Set();
@@ -1792,58 +1675,113 @@ function renderForecastCompare(card){
   const expectedM = card.expectedModules || [];
   const expectedS = card.expectedScreens || [];
   const trained = collectTrainedFromCard(card);
+  const expectedSSet = new Set(expectedS);
+  const trainedSSet = new Set(trained.screens);
+  const expectedMSet = new Set(expectedM);
+  const trainedMSet = new Set(trained.modules);
 
-  function compareList(expectedArr, trainedArr){
-    const trainedSet = new Set(trainedArr);
-    const expectedSet = new Set(expectedArr);
-    const okItems = expectedArr.filter(x=> trainedSet.has(x));
-    const missItems = expectedArr.filter(x=> !trainedSet.has(x));
-    const extraItems = trainedArr.filter(x=> !expectedSet.has(x));
-    return { okItems, missItems, extraItems };
-  }
-  const cmpM = compareList(expectedM, trained.modules);
-  const cmpS = compareList(expectedS, trained.screens);
+  let html = '<p class="hint" style="margin-top:-4px;">Compara os itens previstos no card com os efetivamente treinados nas agendas concluídas — agrupados por módulo.</p>';
 
-  function renderListSection(title, expectedArr, trainedArr, cmp){
-    let h = '<div class="compare-sections">';
-    h += '<div class="compare-section-title">'+esc(title)+'</div>';
-    h += '<div class="compare-grid">';
-    h += '<div class="compare-col expected"><h4>Previsto</h4><div class="compare-list">';
-    if(!expectedArr.length) h += '<div class="hint">Nenhum item previsto.</div>';
-    expectedArr.forEach(name=>{
-      const ok = trainedArr.includes(name);
-      h += '<div class="compare-item '+(ok?'ok':'miss')+'"><span class="cmp-dot" style="background:'+(ok?'var(--ok)':'var(--danger)')+'"></span>'+esc(name)+(ok?' ✓':' ✗')+'</div>';
+  const allModules = [...new Set([...expectedM, ...trained.modules])];
+  const modOk = [], modMiss = [], modExtra = [];
+  allModules.forEach(m=>{
+    if(expectedMSet.has(m) && trainedMSet.has(m)) modOk.push(m);
+    else if(expectedMSet.has(m) && !trainedMSet.has(m)) modMiss.push(m);
+    else if(!expectedMSet.has(m) && trainedMSet.has(m)) modExtra.push(m);
+  });
+
+  html += '<div class="compare-sections">'
+    + '<div class="compare-section-title">Módulos</div>'
+    + '<div class="compare-grid">'
+    + '<div class="compare-col expected"><h4>Previsto</h4><div class="compare-list">'
+    + (!expectedM.length ? '<div class="hint">Nenhum módulo previsto.</div>'
+        : expectedM.map(m=>{
+            const ok = trainedMSet.has(m);
+            return '<div class="compare-item '+(ok?'ok':'miss')+'"><span class="cmp-dot" style="background:'+(ok?'var(--ok)':'var(--danger)')+'"></span>'+esc(m)+(ok?' ✓':' ✗')+'</div>';
+          }).join(''))
+    + '</div></div>'
+    + '<div class="compare-col trained"><h4>Treinado</h4><div class="compare-list">'
+    + (!trained.modules.length ? '<div class="hint">Nada treinado ainda.</div>'
+        : trained.modules.map(m=>{
+            const extra = !expectedMSet.has(m);
+            return '<div class="compare-item '+(extra?'extra':'ok')+'"><span class="cmp-dot" style="background:'+(extra?'var(--gold)':'var(--ok)')+'"></span>'+esc(m)+(extra?' +':' ✓')+'</div>';
+          }).join(''))
+    + '</div></div></div>'
+    + '<div style="margin-top:8px;font-size:12.5px;">'
+      + '<span style="color:var(--ok);font-weight:700;">'+modOk.length+' conferidos</span>'
+      + (modMiss.length? ' · <span style="color:var(--danger);font-weight:700;">'+modMiss.length+' pendentes</span>' : '')
+      + (modExtra.length? ' · <span style="color:var(--gold);font-weight:700;">'+modExtra.length+' extras</span>' : '')
+    + '</div></div>';
+
+  /* Telas agrupadas por módulo */
+  const allScreens = [...new Set([...expectedS, ...trained.screens])];
+  const screensByModule = new Map();
+  allScreens.forEach(sn=>{
+    const mod = moduleForScreenName(sn);
+    const key = mod ? mod.name : 'Sem módulo';
+    if(!screensByModule.has(key)) screensByModule.set(key, { expected:new Set(), trained:new Set(), all:new Set() });
+    const grp = screensByModule.get(key);
+    if(expectedSSet.has(sn)) grp.expected.add(sn);
+    if(trainedSSet.has(sn)) grp.trained.add(sn);
+    grp.all.add(sn);
+  });
+  const orderedMods = [];
+  state.modules.forEach(m=>{ if(screensByModule.has(m.name)) orderedMods.push(m.name); });
+  if(screensByModule.has('Sem módulo')) orderedMods.push('Sem módulo');
+
+  let scOk = 0, scMiss = 0, scExtra = 0;
+  allScreens.forEach(sn=>{
+    if(expectedSSet.has(sn) && trainedSSet.has(sn)) scOk++;
+    else if(expectedSSet.has(sn) && !trainedSSet.has(sn)) scMiss++;
+    else if(!expectedSSet.has(sn) && trainedSSet.has(sn)) scExtra++;
+  });
+
+  html += '<div class="compare-sections" style="margin-top:14px;">'
+    + '<div class="compare-section-title">Telas — por módulo</div>';
+  if(!orderedMods.length){
+    html += '<div class="hint">Nenhuma tela registrada.</div>';
+  } else {
+    orderedMods.forEach(modName=>{
+      const grp = screensByModule.get(modName);
+      const expectedArr = [...grp.expected].sort();
+      const trainedArr = [...grp.trained].sort();
+      html += '<div class="mod-group" style="margin-bottom:8px;">'
+        + '<div class="mod-group-header"><span class="mod-icon">📦</span>'+esc(modName)
+        + '<span class="mod-count">'+grp.all.size+' tela'+(grp.all.size>1?'s':'')+'</span></div>'
+        + '<div class="mod-group-body">'
+        + '<div class="compare-grid" style="margin-top:0;">'
+        + '<div class="compare-col expected" style="padding:8px 10px;"><h4 style="margin-bottom:4px;">Previsto</h4><div class="compare-list">'
+        + (!expectedArr.length ? '<div class="hint" style="font-size:11.5px;">—</div>'
+            : expectedArr.map(sn=>{
+                const ok = trainedSSet.has(sn);
+                return '<div class="compare-item '+(ok?'ok':'miss')+'" style="font-size:12px;"><span class="cmp-dot" style="background:'+(ok?'var(--ok)':'var(--danger)')+'"></span>'+esc(sn)+(ok?' ✓':' ✗')+'</div>';
+              }).join(''))
+        + '</div></div>'
+        + '<div class="compare-col trained" style="padding:8px 10px;"><h4 style="margin-bottom:4px;">Treinado</h4><div class="compare-list">'
+        + (!trainedArr.length ? '<div class="hint" style="font-size:11.5px;">—</div>'
+            : trainedArr.map(sn=>{
+                const extra = !expectedSSet.has(sn);
+                return '<div class="compare-item '+(extra?'extra':'ok')+'" style="font-size:12px;"><span class="cmp-dot" style="background:'+(extra?'var(--gold)':'var(--ok)')+'"></span>'+esc(sn)+(extra?' +':' ✓')+'</div>';
+              }).join(''))
+        + '</div></div></div>'
+        + '</div></div>';
     });
-    h += '</div></div>';
-    h += '<div class="compare-col trained"><h4>Treinado</h4><div class="compare-list">';
-    if(!trainedArr.length) h += '<div class="hint">Nada treinado ainda.</div>';
-    trainedArr.forEach(name=>{
-      const extra = !expectedArr.includes(name);
-      h += '<div class="compare-item '+(extra?'extra':'ok')+'"><span class="cmp-dot" style="background:'+(extra?'var(--gold)':'var(--ok)')+'"></span>'+esc(name)+(extra?' +':' ✓')+'</div>';
-    });
-    h += '</div></div>';
-    h += '</div>';
-    h += '<div style="margin-top:8px;font-size:12.5px;">'
-      + '<span style="color:var(--ok);font-weight:700;">'+cmp.okItems.length+' conferidos</span>'
-      + (cmp.missItems.length? ' · <span style="color:var(--danger);font-weight:700;">'+cmp.missItems.length+' pendentes</span>' : '')
-      + (cmp.extraItems.length? ' · <span style="color:var(--gold);font-weight:700;">'+cmp.extraItems.length+' extras</span>' : '')
-      + '</div>';
-    h += '</div>';
-    return h;
   }
+  html += '<div style="margin-top:8px;font-size:12.5px;">'
+    + '<span style="color:var(--ok);font-weight:700;">'+scOk+' conferidas</span>'
+    + (scMiss? ' · <span style="color:var(--danger);font-weight:700;">'+scMiss+' pendentes</span>' : '')
+    + (scExtra? ' · <span style="color:var(--gold);font-weight:700;">'+scExtra+' extras</span>' : '')
+    + '</div></div>';
 
-  let html = '<p class="hint" style="margin-top:-4px;">Compara os itens previstos no card com os efetivamente treinados nas agendas concluídas.</p>';
-  html += renderListSection('Módulos', expectedM, trained.modules, cmpM);
-  html += renderListSection('Telas', expectedS, trained.screens, cmpS);
   return html;
 }
 
 function tabBtn(key,label){ return '<button class="tab-btn'+(ui.cardTab===key?' active':'')+'" data-action="card-tab" data-tab="'+key+'">'+label+'</button>'; }
 function balanceItem(num,lbl){ return '<div class="balance-item"><div class="num">'+num+'</div><div class="lbl">'+lbl+'</div></div>'; }
+
+/* Linha de agenda */
 function renderSchedRow(s){
   const due = scheduleIsDue(s);
-  const modules = (s.modules||[]).join(', ');
-  const screens = (s.trainedScreens||[]).join(', ');
   const isInterna = isInternalType(s.type);
   const isOrphanInternal = isInterna && s.clientId && !s.cardId;
   const title = scheduleDisplayTitle(s);
@@ -1861,24 +1799,27 @@ function renderSchedRow(s){
   if(s.status==='concluida') actions += '<button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="schedule-report" data-id="'+s.id+'">🖨</button>';
   actions += '<button class="btn btn-sm btn-ghost" data-action="delete-schedule" data-id="'+s.id+'">🗑</button>';
 
+  const groupedBlock = renderSchedModulesAndScreens(s);
+
   let rowsHtml = '';
   analystsList.forEach(a=>{
     const color = scheduleColorForAnalyst(s, a?a.id:null);
     const txt = readableTextColor(color);
     const analystName = a ? a.name : '—';
-    rowsHtml += '<div class="sched-row'+(due?' due':'')+'" style="border-left:4px solid '+color+';">'
+    rowsHtml += '<div class="sched-row'+(due?' due':'')+'" style="border-left:4px solid '+color+';display:block;">'
+      + '<div style="display:flex;gap:10px;align-items:flex-start;">'
       + '<div class="sched-main">'
       + (title? '<div style="font-weight:800;font-size:13px;color:var(--brand-dark);">'+esc(title)+'</div>' : '')
       + '<div class="sched-time">'+scheduleDateText(s)+' · '+(s.allDay?'<span class="allday-badge">Dia todo</span>':s.startTime+'–'+s.endTime)
       + ' <span class="badge '+s.status+'">'+statusLabel(s.status)+'</span>'
       + ' <span class="badge" style="background:'+color+';color:'+txt+';text-transform:none;letter-spacing:0;">'+esc(s.type)+'</span>'
       + (isOrphanInternal?' <span class="nao-abatido-pill">Não abatido</span>':'')+'</div>'
-      + '<div class="sched-sub">👤 <strong>'+esc(analystName)+'</strong>'+(modules? ' · '+esc(modules) : '')+(s.status==='concluida' && s.cardId? ' · '+minToHM(s.deductMinutes)+' abatido':'')+'</div>'
-      + (screens? '<div class="sched-sub">🖥 '+esc(screens)+'</div>' : '')
+      + '<div class="sched-sub">👤 <strong>'+esc(analystName)+'</strong>'+(s.status==='concluida' && s.cardId? ' · '+minToHM(s.deductMinutes)+' abatido':'')+'</div>'
       + (s.trainedUsers? '<div class="sched-sub">🙋 '+esc(s.trainedUsers)+'</div>' : '')
+      + (groupedBlock? groupedBlock : '')
       + '</div>'
       + (a === analystsList[0] ? '<div class="row-actions">'+actions+'</div>' : '')
-      + '</div>';
+      + '</div></div>';
   });
   return rowsHtml;
 }
@@ -1908,8 +1849,7 @@ function layoutDayEvents(scheds){
   let current = [], clusterEnd = -1;
   items.forEach(it=>{
     if(current.length && it.start >= clusterEnd){ clusters.push(current); current = []; }
-    current.push(it);
-    clusterEnd = Math.max(clusterEnd, it.end);
+    current.push(it); clusterEnd = Math.max(clusterEnd, it.end);
   });
   if(current.length) clusters.push(current);
   const result = [];
@@ -1930,21 +1870,20 @@ function isServicoType(typeName){ const t = state.agendaTypes.find(t=>t.name===t
 function renderCalendarView(){
   let html = '<div class="cal-toolbar">'
     + '<select id="cal-analyst-filter" data-action="cal-filter">'
-      + '<option value="all"'+(ui.calAnalyst==='all'?' selected':'')+'>Todos os analistas</option>';
+    + '<option value="all"'+(ui.calAnalyst==='all'?' selected':'')+'>Todos os analistas</option>';
   state.analysts.forEach(a=> html += '<option value="'+a.id+'"'+(ui.calAnalyst===a.id?' selected':'')+'>'+esc(a.name)+(a.inactive?' (inativo)':'')+'</option>');
   html += '</select>'
     + '<select id="cal-category-filter" data-action="cal-category-filter">'
-      + '<option value="all"'+(ui.calCategory==='all'?' selected':'')+'>Todas as categorias</option>'
-      + '<option value="implantacao"'+(ui.calCategory==='implantacao'?' selected':'')+'>Implantação</option>'
-      + '<option value="interna"'+(ui.calCategory==='interna'?' selected':'')+'>Interna</option>'
-      + '<option value="servico"'+(ui.calCategory==='servico'?' selected':'')+'>Serviço</option>'
-      + '</select>'
+    + '<option value="all"'+(ui.calCategory==='all'?' selected':'')+'>Todas as categorias</option>'
+    + '<option value="implantacao"'+(ui.calCategory==='implantacao'?' selected':'')+'>Implantação</option>'
+    + '<option value="interna"'+(ui.calCategory==='interna'?' selected':'')+'>Interna</option>'
+    + '<option value="servico"'+(ui.calCategory==='servico'?' selected':'')+'>Serviço</option>'
+    + '</select>'
     + '<button class="btn btn-sm" data-action="cal-nav" data-dir="-1">‹ Semana anterior</button>'
     + '<button class="btn btn-sm" data-action="cal-nav" data-dir="0">Hoje</button>'
     + '<button class="btn btn-sm" data-action="cal-nav" data-dir="1">Próxima semana ›</button>'
     + '<span class="grow"></span>'
-    + '<button class="btn btn-primary" data-action="open-modal" data-modal="schedule-new">+ Novo agendamento</button>'
-    + '</div>';
+    + '<button class="btn btn-primary" data-action="open-modal" data-modal="schedule-new">+ Novo agendamento</button></div>';
 
   function inCategory(s){
     if(ui.calCategory==='all') return true;
@@ -1991,9 +1930,7 @@ function renderCalendarView(){
           const ids = scheduleAnalystIds(s);
           if(!ids.length) entries.push({ schedule:s, analystId:null });
           else ids.forEach(id => entries.push({ schedule:s, analystId:id }));
-        } else {
-          entries.push({ schedule:s, analystId: ui.calAnalyst });
-        }
+        } else { entries.push({ schedule:s, analystId: ui.calAnalyst }); }
       });
       html += '<div style="min-height:'+alldayHeight+'px;border-left:1px solid var(--border);padding:3px 4px;display:flex;flex-direction:column;gap:3px;">';
       entries.forEach(entry=>{
@@ -2010,8 +1947,7 @@ function renderCalendarView(){
         const analystPrefix = analyst ? analyst.name+' · ' : '';
         const colorStyle = due ? 'background:var(--danger);color:#fff;border-left-color:var(--danger);' : 'background:'+color+';color:'+txt+';border-left-color:'+darkenColor(color,.25)+';';
         html += '<div class="'+cls+'" style="position:static;left:auto;width:auto;'+colorStyle+'" data-action="open-modal" data-modal="schedule-edit" data-id="'+s.id+'" title="'+esc(title+' · '+(analyst?analyst.name:'—')+' · '+scheduleDateText(s))+'">'
-          + '<div class="t">'+arrow+esc(analystPrefix+title)+'</div>'
-          + '</div>';
+          + '<div class="t">'+arrow+esc(analystPrefix+title)+'</div></div>';
       });
       html += '</div>';
     });
@@ -2060,8 +1996,7 @@ function renderCalendarView(){
     if(d===today && nowMin>=startHour*60 && nowMin<=endHour*60){ html += '<div class="cal-tg-now" style="top:'+((nowMin-startHour*60)*pxPerMin)+'px;"></div>'; }
     html += '</div>';
   });
-  html += '</div></div>';
-  html += '</div></div>';
+  html += '</div></div></div></div>';
   return html;
 }
 
@@ -2071,7 +2006,6 @@ function renderReportsView(){
   html += '<div class="section-card"><h3>Saldo de horas por cliente</h3>'
     + '<p class="hint" style="margin-top:-4px;">Saldo consolidado soma todos os cards (incluindo concluídos). Férias contam só dias úteis (seg–sex), 8h48/dia.</p>'
     + '<table><thead><tr><th>Cliente</th><th>Analista</th><th>Contratadas</th><th>Usadas</th><th>Saldo</th><th>Horas não abatidas</th></tr></thead><tbody>';
-
   const rows = [];
   state.cards.forEach(c=>{
     const client=getClient(c.clientId), board=getBoard(c.boardId), analyst=board?getAnalyst(board.analystId):null;
@@ -2086,46 +2020,33 @@ function renderReportsView(){
   });
   const naoAbatidoByClient = {};
   state.clients.forEach(cl=>{ naoAbatidoByClient[cl.id] = unlinkedInternalMinutesForClient(cl.id); });
-  rows.forEach(r=>{
-    if(r.client && naoAbatidoByClient[r.client.id] && !r.naoAbatido){ r.naoAbatido = naoAbatidoByClient[r.client.id]; }
-  });
-
+  rows.forEach(r=>{ if(r.client && naoAbatidoByClient[r.client.id] && !r.naoAbatido){ r.naoAbatido = naoAbatidoByClient[r.client.id]; } });
   if(!rows.length) html += '<tr><td colspan="6" class="hint">Nenhum cliente em implantação ainda.</td></tr>';
   rows.forEach(r=>{
     const naoAbatidoTxt = r.naoAbatido > 0 ? '<span class="nao-abatido">'+minToHM(r.naoAbatido)+'</span>' : '<span class="hint">—</span>';
-    html += '<tr>'
-      + '<td>'+esc(r.client?r.client.name:'—')+(r.concluded?' <span class="badge concluida" style="vertical-align:middle;">Concluído</span>':'')+'</td>'
+    html += '<tr><td>'+esc(r.client?r.client.name:'—')+(r.concluded?' <span class="badge concluida" style="vertical-align:middle;">Concluído</span>':'')+'</td>'
       + '<td>'+esc(r.analyst?r.analyst.name:'—')+'</td>'
       + '<td>'+(r.onlyInternal? '—' : (r.contracted+'h'))+'</td>'
       + '<td>'+(r.onlyInternal? '—' : minToHM(r.used*60))+'</td>'
       + '<td>'+(r.onlyInternal? '—' : '<span style="color:'+(r.bal<0?'var(--danger)':'var(--ok)')+';font-weight:700;">'+minToHM(r.bal*60)+'</span>')+'</td>'
-      + '<td>'+naoAbatidoTxt+'</td>'
-      + '</tr>';
+      + '<td>'+naoAbatidoTxt+'</td></tr>';
   });
   html += '</tbody></table></div>';
 
-  const allUnlinked = state.schedules
-    .filter(s=> isInternalType(s.type) && s.clientId && !s.cardId && s.status==='concluida')
-    .sort((a,b)=> (b.date+(b.startTime||'')).localeCompare(a.date+(a.startTime||'')));
+  const allUnlinked = state.schedules.filter(s=> isInternalType(s.type) && s.clientId && !s.cardId && s.status==='concluida').sort((a,b)=> (b.date+(b.startTime||'')).localeCompare(a.date+(a.startTime||'')));
   if(allUnlinked.length){
-    html += '<div class="section-card"><h3>Detalhe — horas internas não abatidas</h3>'
-      + '<table><thead><tr><th>Data</th><th>Cliente</th><th>Analista</th><th>Horário</th><th>Tipo</th><th>Duração</th></tr></thead><tbody>';
+    html += '<div class="section-card"><h3>Detalhe — horas internas não abatidas</h3><table><thead><tr><th>Data</th><th>Cliente</th><th>Analista</th><th>Horário</th><th>Tipo</th><th>Duração</th></tr></thead><tbody>';
     allUnlinked.forEach(s=>{
       const cl = getClient(s.clientId);
       const dur = scheduleMinutes(s);
-      html += '<tr>'
-        + '<td>'+scheduleDateText(s)+'</td>'
-        + '<td>'+esc(cl?cl.name:'—')+'</td>'
-        + '<td>'+esc(scheduleAnalystNames(s))+'</td>'
-        + '<td>'+(s.allDay?'Dia todo':s.startTime+'–'+s.endTime)+'</td>'
-        + '<td>'+esc(s.type)+'</td>'
-        + '<td><span class="nao-abatido">'+minToHM(dur)+'</span></td>'
-        + '</tr>';
+      html += '<tr><td>'+scheduleDateText(s)+'</td><td>'+esc(cl?cl.name:'—')+'</td><td>'+esc(scheduleAnalystNames(s))+'</td>'
+        + '<td>'+(s.allDay?'Dia todo':s.startTime+'–'+s.endTime)+'</td><td>'+esc(s.type)+'</td>'
+        + '<td><span class="nao-abatido">'+minToHM(dur)+'</span></td></tr>';
     });
     html += '</tbody></table></div>';
   }
 
-  html += '<div class="section-card"><h3>Módulos treinados por cliente</h3><table><thead><tr><th>Cliente</th><th>Módulos treinados</th><th>Telas treinadas</th><th>Usuários treinados</th></tr></thead><tbody>';
+  html += '<div class="section-card"><h3>Módulos treinados por cliente</h3><table><thead><tr><th>Cliente</th><th>Módulos treinados</th><th>Telas treinadas (agrupadas)</th><th>Usuários treinados</th></tr></thead><tbody>';
   const anyTrained = state.cards.some(c=> state.schedules.some(s=>s.cardId===c.id && s.status==='concluida' && s.type==='Treinamento'));
   if(!anyTrained) html += '<tr><td colspan="4" class="hint">Nenhum treinamento concluído registrado ainda.</td></tr>';
   state.cards.forEach(c=>{
@@ -2137,7 +2058,7 @@ function renderReportsView(){
       const client=getClient(c.clientId);
       html += '<tr><td>'+esc(client?client.name:'—')+'</td>'
         + '<td>'+([...t.modules].map(m=>'<span class="chip" style="background:var(--brand);margin-right:4px;">'+esc(m)+'</span>').join('')||'<span class="hint">—</span>')+'</td>'
-        + '<td>'+([...t.screens].map(esc).join(', ')||'<span class="hint">—</span>')+'</td>'
+        + '<td>'+renderGroupedInline(t.screens, { emptyText:'—' })+'</td>'
         + '<td>'+([...users].map(esc).join(', ')||'<span class="hint">—</span>')+'</td></tr>';
     }
   });
@@ -2171,8 +2092,7 @@ function renderClientsView(){
     + '<span class="grow"></span>'
     + '<input type="file" id="import-clients-file" accept=".xlsx,.xls,.csv" style="display:none;">'
     + '<button class="btn btn-sm btn-ghost" data-action="download-client-template">Baixar modelo</button>'
-    + '<button class="btn btn-sm" data-action="import-clients-trigger">📥 Importar Excel</button>'
-    + '</div>';
+    + '<button class="btn btn-sm" data-action="import-clients-trigger">📥 Importar Excel</button></div>';
   const q = ui.clientSearch.trim().toLowerCase();
   let clients = state.clients;
   if(q){ clients = clients.filter(cl=> cl.name.toLowerCase().includes(q) || (cl.code||'').toLowerCase().includes(q) || (cl.cnpj||'').toLowerCase().includes(q) || (cl.companyName||'').toLowerCase().includes(q)); }
@@ -2190,7 +2110,7 @@ function renderClientsView(){
       + '<td>'+(cardCount? '<span style="color:'+balColor+';font-weight:700;">'+balTxt+'</span>' : '<span class="hint">—</span>')+'</td>'
       + '<td>'+esc(cl.city||'—')+'</td><td>'+esc(cl.contact||'—')+'</td><td>'+cardCount+'</td>'
       + '<td><div class="row-actions"><button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="client-edit" data-id="'+cl.id+'">Editar</button>'
-      + '<button class="btn btn-sm btn-danger" data-action="delete-client" data-id="'+cl.id+'" '+(hasLinks?'disabled title="Não é possível excluir: há vínculos."':'')+'>Excluir</button></div></td></tr>';
+      + '<button class="btn btn-sm btn-danger" data-action="delete-client" data-id="'+cl.id+'" '+(hasLinks?'disabled title="Há vínculos."':'')+'>Excluir</button></div></td></tr>';
   });
   html += '</tbody></table></div>';
   return html;
@@ -2198,12 +2118,11 @@ function renderClientsView(){
 
 /* ============================= SETTINGS VIEW ============================= */
 function switchCell(kind, id, inactive, labelOn, labelOff){
-  return '<label class="switch" title="'+(inactive? 'Inativo — clique para ativar':'Ativo — clique para inativar')+'">'
+  return '<label class="switch" title="'+(inactive? 'Inativo':'Ativo')+'">'
     + '<input type="checkbox" data-action="toggle-entity-active" data-kind="'+kind+'" data-id="'+id+'" '+(inactive?'':'checked')+'>'
     + '<span class="slider"></span></label>'
     + '<span class="status-label '+(inactive?'inactive':'active')+'">'+(inactive? (labelOff||'Inativo') : (labelOn||'Ativo'))+'</span>';
 }
-
 function renderSettingsView(){
   const admin = isAdminUser();
   const allTabs = [
@@ -2221,12 +2140,10 @@ function renderSettingsView(){
   let html = '<div class="settings-tabs">';
   visibleTabs.forEach(t=>{ html += '<button class="btn btn-sm'+(ui.settingsTab===t.k?' btn-primary':'')+'" data-action="settings-tab" data-tab="'+t.k+'">'+t.l+'</button>'; });
   html += '</div>';
-
   if(ui.settingsTab!=='nuvem'){
     html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">'
       + '<button class="btn btn-primary btn-sm" data-action="force-save">💾 Salvar agora</button>'
-      + '<span id="force-save-msg" class="hint" style="margin-top:0;"></span>'
-      + '</div>';
+      + '<span id="force-save-msg" class="hint" style="margin-top:0;"></span></div>';
   }
 
   if(ui.settingsTab==='analistas'){
@@ -2242,13 +2159,11 @@ function renderSettingsView(){
         + '<td>'+esc(a.name)+'</td>'
         + '<td>'+(a.username? '<code style="font-size:12px;background:var(--surface-2);padding:2px 6px;border-radius:5px;">'+esc(a.username)+'</code>' : '<span class="hint">—</span>')+'</td>'
         + '<td>'+esc(board?board.name:'—')+'</td>'
-        + '<td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="display:inline-block;width:14px;height:14px;border-radius:4px;background:'+a.color+';border:1px solid rgba(0,0,0,.15);"></span><code style="font-size:11.5px;background:var(--surface-2);padding:2px 6px;border-radius:5px;">'+a.color+'</code></span></td>'
+        + '<td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="display:inline-block;width:14px;height:14px;border-radius:4px;background:'+a.color+';border:1px solid rgba(0,0,0,.15);"></span></span></td>'
         + '<td>'+(a.isAdmin? '<span class="badge" style="background:var(--gold-soft);color:var(--gold);">Administrador</span>' : '<span class="badge" style="background:var(--brand-soft);color:var(--brand);">Analista</span>')+'</td>'
         + '<td>'+(a.isAdmin? '<span class="badge" style="background:var(--ok-soft);color:var(--ok);">Ativo</span>' : switchCell('analyst', a.id, a.inactive, 'Ativo', 'Inativo'))+'</td>'
-        + '<td><div class="row-actions">'
-          + '<button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="analyst-edit" data-id="'+a.id+'">Editar</button>'
-          + '<button class="btn btn-sm btn-danger" data-action="delete-analyst" data-id="'+a.id+'" '+(canDelete?'':'disabled title="'+esc(blockTitle)+'"')+'>Excluir</button>'
-          + '</div></td></tr>';
+        + '<td><div class="row-actions"><button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="analyst-edit" data-id="'+a.id+'">Editar</button>'
+        + '<button class="btn btn-sm btn-danger" data-action="delete-analyst" data-id="'+a.id+'" '+(canDelete?'':'disabled title="'+esc(blockTitle)+'"')+'>Excluir</button></div></td></tr>';
     });
     html += '</tbody></table><div style="margin-top:12px;"><button class="btn btn-primary btn-sm" data-action="open-modal" data-modal="analyst-new">+ Novo analista</button></div></div>';
   } else if(ui.settingsTab==='produtos'){
@@ -2273,13 +2188,14 @@ function renderSettingsView(){
     html += '<div class="section-card"><h3>Módulos do sistema — cadastro</h3>';
     if(!state.modules.length){ html += '<p class="hint">Nenhum módulo cadastrado ainda.</p>'; }
     else {
-      html += '<table><thead><tr><th>Módulo</th><th>Agendamentos vinculados</th><th>Situação</th><th></th></tr></thead><tbody>';
+      html += '<table><thead><tr><th>Módulo</th><th>Telas</th><th>Agendamentos vinculados</th><th>Situação</th><th></th></tr></thead><tbody>';
       state.modules.forEach(m=>{
         const linked = schedulesUsingModule(m.name);
         const clientNames = clientNamesForSchedules(linked);
         const linkedScreens = screensForModule(m.id);
         const canDelete = linked.length===0 && linkedScreens.length===0;
         html += '<tr'+(m.inactive?' class="row-inactive"':'')+'><td style="font-weight:700;">'+esc(m.name)+'</td>'
+          + '<td>'+(linkedScreens.length ? linkedScreens.map(s=>'<span class="mod-chip-mini">'+esc(s.name)+'</span>').join(' ') : '<span class="hint">Nenhuma</span>')+'</td>'
           + '<td>'+(linked.length ? (linked.length+' agendamento(s)'+(clientNames.length? ' — '+clientNames.map(esc).join(', '):'')) : '<span class="hint">Nenhum</span>')+'</td>'
           + '<td>'+switchCell('module', m.id, m.inactive, 'Ativo', 'Inativo')+'</td>'
           + '<td><div class="row-actions"><button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="module-edit" data-id="'+m.id+'">Editar</button>'
@@ -2293,18 +2209,22 @@ function renderSettingsView(){
     if(!state.modules.length){ html += '<p class="hint">Cadastre um módulo primeiro.</p>'; }
     else if(!state.screens.length){ html += '<p class="hint">Nenhuma tela cadastrada ainda.</p>'; }
     else {
-      html += '<table><thead><tr><th>Tela</th><th>Módulo</th><th>Agendamentos vinculados</th><th>Situação</th><th></th></tr></thead><tbody>';
-      state.screens.forEach(scr=>{
-        const mod = byId(state.modules, scr.moduleId);
-        const linked = schedulesUsingScreen(scr.name);
-        const canDelete = linked.length===0;
-        html += '<tr'+(scr.inactive?' class="row-inactive"':'')+'><td style="font-weight:700;">'+esc(scr.name)+'</td><td>'+esc(mod?mod.name:'—')+'</td>'
-          + '<td>'+(linked.length ? (linked.length+' agendamento(s)') : '<span class="hint">Nenhum</span>')+'</td>'
-          + '<td>'+switchCell('screen', scr.id, scr.inactive, 'Ativo', 'Inativo')+'</td>'
-          + '<td><div class="row-actions"><button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="screen-edit" data-id="'+scr.id+'">Editar</button>'
-          + '<button class="btn btn-sm btn-danger" data-action="delete-screen" data-id="'+scr.id+'" '+(canDelete?'':'disabled title="Há agendamentos usando esta tela."')+'>Excluir</button></div></td></tr>';
+      state.modules.forEach(mod=>{
+        const screensOfMod = screensForModule(mod.id);
+        if(!screensOfMod.length) return;
+        html += '<div class="mod-group"><div class="mod-group-header"><span class="mod-icon">📦</span>'+esc(mod.name)+'<span class="mod-count">'+screensOfMod.length+'</span></div>'
+          + '<div class="mod-group-body"><table><thead><tr><th>Tela</th><th>Agendamentos vinculados</th><th>Situação</th><th></th></tr></thead><tbody>';
+        screensOfMod.forEach(scr=>{
+          const linked = schedulesUsingScreen(scr.name);
+          const canDelete = linked.length===0;
+          html += '<tr'+(scr.inactive?' class="row-inactive"':'')+'><td style="font-weight:700;">'+esc(scr.name)+'</td>'
+            + '<td>'+(linked.length ? (linked.length+' agendamento(s)') : '<span class="hint">Nenhum</span>')+'</td>'
+            + '<td>'+switchCell('screen', scr.id, scr.inactive, 'Ativo', 'Inativo')+'</td>'
+            + '<td><div class="row-actions"><button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="screen-edit" data-id="'+scr.id+'">Editar</button>'
+            + '<button class="btn btn-sm btn-danger" data-action="delete-screen" data-id="'+scr.id+'" '+(canDelete?'':'disabled title="Há agendamentos."')+'>Excluir</button></div></td></tr>';
+        });
+        html += '</tbody></table></div></div>';
       });
-      html += '</tbody></table>';
     }
     if(state.modules.length){ html += '<div style="margin-top:12px;"><button class="btn btn-primary btn-sm" data-action="open-modal" data-modal="screen-new">+ Nova tela</button></div>'; }
     html += '</div>';
@@ -2324,7 +2244,7 @@ function renderSettingsView(){
           + '<td>'+(linked.length ? (linked.length+' agendamento(s)') : '<span class="hint">Nenhum</span>')+'</td>'
           + '<td>'+switchCell('type', t.id, t.inactive, 'Ativo', 'Inativo')+'</td>'
           + '<td><div class="row-actions"><button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="type-edit" data-id="'+t.id+'">Editar</button>'
-          + '<button class="btn btn-sm btn-danger" data-action="delete-type" data-id="'+t.id+'" '+(canDelete?'':'disabled title="Há agendamentos usando este tipo."')+'>Excluir</button></div></td></tr>';
+          + '<button class="btn btn-sm btn-danger" data-action="delete-type" data-id="'+t.id+'" '+(canDelete?'':'disabled title="Há agendamentos."')+'>Excluir</button></div></td></tr>';
       });
       html += '</tbody></table>';
     }
@@ -2342,8 +2262,7 @@ function renderSettingsView(){
           + '<td>'+(a.password? '•••••••• <button class="btn btn-sm btn-ghost" data-action="toggle-show-pass" data-id="'+a.id+'" style="font-size:11px;">👁 ver</button>' : '<span class="hint">—</span>')+'</td>'
           + '<td>'+(a.isAdmin?'Administrador':'Analista')+'</td>'
           + '<td>'+(a.inactive? '<span class="badge" style="background:#B9CAD5;color:#fff;">Inativo</span>' : '<span class="badge" style="background:var(--ok-soft);color:var(--ok);">Ativo</span>')+'</td>'
-          + '<td><button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="analyst-edit" data-id="'+a.id+'">Editar</button></td>'
-          + '</tr>';
+          + '<td><button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="analyst-edit" data-id="'+a.id+'">Editar</button></td></tr>';
       });
       html += '</tbody></table>';
     }
@@ -2355,15 +2274,12 @@ function renderSettingsView(){
         + '<div class="field"><label>Senha atual</label><input type="password" name="currentPassword" required></div>'
         + '<div class="field"><label>Nova senha</label><input type="password" name="newPassword" minlength="4" required></div>'
         + '<div class="field"><label>Confirmar nova senha</label><input type="password" name="confirmPassword" minlength="4" required></div>'
-        + '</div>'
-        + '<div class="form-actions"><button type="submit" class="btn btn-primary">Alterar senha</button></div>'
-        + '</form></div>';
+        + '</div><div class="form-actions"><button type="submit" class="btn btn-primary">Alterar senha</button></div></form></div>';
     }
     html += '<div class="section-card"><h3>Conta mestra de emergência</h3>'
       + '<table><thead><tr><th>Usuário</th><th>Senha</th></tr></thead><tbody>'
       + '<tr><td><code style="background:var(--surface-2);padding:2px 6px;border-radius:5px;">'+MASTER_USER+'</code></td>'
-      + '<td><code style="background:var(--surface-2);padding:2px 6px;border-radius:5px;">'+MASTER_PASS+'</code></td></tr>'
-      + '</tbody></table></div>';
+      + '<td><code style="background:var(--surface-2);padding:2px 6px;border-radius:5px;">'+MASTER_PASS+'</code></td></tr></tbody></table></div>';
   } else if(ui.settingsTab==='nuvem' && admin){
     html += '<div class="section-card"><h3>Sincronização na nuvem</h3>';
     const hasDefault = !!(DEFAULT_CLOUD_CONFIG.url && DEFAULT_CLOUD_CONFIG.anonKey);
@@ -2379,8 +2295,7 @@ function renderSettingsView(){
       html += '<form data-form="cloud-config">'
         + '<div class="field"><label>Project URL</label><input type="text" name="url" value="'+esc(cloudConfig?cloudConfig.url:'')+'" required></div>'
         + '<div class="field"><label>Anon public key</label><input type="text" name="anonKey" value="'+esc(cloudConfig?cloudConfig.anonKey:'')+'" required></div>'
-        + '<div class="form-actions"><span style="flex:1;"></span><button type="submit" class="btn btn-primary">Conectar</button></div>'
-        + '</form>';
+        + '<div class="form-actions"><span style="flex:1;"></span><button type="submit" class="btn btn-primary">Conectar</button></div></form>';
     }
     html += '</div>';
   }
@@ -2402,12 +2317,10 @@ function renderModal(){
       + '<div class="field"><label>Nome</label><input type="text" name="name" value="'+esc(a?a.name:'')+'" required></div>'
       + '<div class="field-row">'
       + '<div class="field"><label>Usuário (login)</label><input type="text" name="username" value="'+esc(a?a.username:'')+'" required autocomplete="off"></div>'
-      + '<div class="field"><label>Cor</label><input type="color" name="color" value="'+(a?a.color:colorForIndex(state.analysts.length))+'"></div>'
-      + '</div>'
+      + '<div class="field"><label>Cor</label><input type="color" name="color" value="'+(a?a.color:colorForIndex(state.analysts.length))+'"></div></div>'
       + '<div class="field-row">'
       + '<div class="field"><label>'+(a?'Nova senha (em branco mantém)':'Senha')+'</label><input type="password" name="password" '+(a?'':'required')+' minlength="4" autocomplete="new-password"></div>'
-      + '<div class="field"><label>Confirmar senha</label><input type="password" name="passwordConfirm" '+(a?'':'required')+' minlength="4" autocomplete="new-password"></div>'
-      + '</div>'
+      + '<div class="field"><label>Confirmar senha</label><input type="password" name="passwordConfirm" '+(a?'':'required')+' minlength="4" autocomplete="new-password"></div></div>'
       + (canToggleAdmin ? '<div class="field"><label class="check-pill" style="width:fit-content;"><input type="checkbox" name="isAdmin"> Conceder perfil de administrador</label></div>' : '')
       + (isSelf ? '<div class="hint">Você está editando seu próprio usuário.</div>' : '')
       + '<div class="form-actions"><button type="submit" class="btn btn-primary">Salvar</button></div></form>';
@@ -2417,8 +2330,8 @@ function renderModal(){
     inner = '<div class="modal-header"><h3>'+(c?'Editar cliente':'Novo cliente')+'</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
       + '<form data-form="client" data-id="'+(c?c.id:'')+'">'
       + '<div class="field-row"><div class="field"><label>Código</label><input type="text" name="code" value="'+esc(c?c.code:'')+'"></div><div class="field"><label>Tipo</label><select name="clientType">'
-        + '<option value="novo" '+(ctype==='novo'?'selected':'')+'>Novo</option>'
-        + '<option value="base" '+(ctype==='base'?'selected':'')+'>Base</option>'
+      + '<option value="novo" '+(ctype==='novo'?'selected':'')+'>Novo</option>'
+      + '<option value="base" '+(ctype==='base'?'selected':'')+'>Base</option>'
       + '</select></div></div>'
       + '<div class="field"><label>Nome fantasia</label><input type="text" name="name" value="'+esc(c?c.name:'')+'" required></div>'
       + '<div class="field"><label>Razão social</label><input type="text" name="companyName" value="'+esc(c?c.companyName:'')+'"></div>'
@@ -2455,9 +2368,9 @@ function renderModal(){
       + '<form data-form="agenda-type" data-id="'+(tp?tp.id:'')+'">'
       + '<div class="field"><label>Nome</label><input type="text" name="name" value="'+esc(tp?tp.name:'')+'" required></div>'
       + '<div class="field"><label>Categoria</label><select name="catKind">'
-        + '<option value="implantacao" '+(!isInt && !isSrv?'selected':'')+'>Implantação</option>'
-        + '<option value="interna" '+(isInt?'selected':'')+'>Interna</option>'
-        + '<option value="servico" '+(isSrv?'selected':'')+'>Serviço</option>'
+      + '<option value="implantacao" '+(!isInt && !isSrv?'selected':'')+'>Implantação</option>'
+      + '<option value="interna" '+(isInt?'selected':'')+'>Interna</option>'
+      + '<option value="servico" '+(isSrv?'selected':'')+'>Serviço</option>'
       + '</select></div>'
       + '<div class="form-actions"><button type="submit" class="btn btn-primary">Salvar</button></div></form>';
   } else if(m.type==='list-new'){
@@ -2478,15 +2391,11 @@ function renderModal(){
     inner = '<div class="modal-header"><h3>Novo cliente no quadro</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
       + '<form data-form="card-new" data-board="'+m.board+'" data-list="'+(m.list||board.lists[0].id)+'">'
       + '<div class="field"><label>Cliente</label>'+renderClientPicker('clientId', cnClientId, m.clientQuery)+'</div>';
-    if(!cnClientId){
-      inner += '<div class="field"><label>Nome do novo cliente</label><input type="text" name="newClientName" value="'+esc(cnNewName)+'" placeholder="Obrigatório se não selecionar um cliente acima"></div>';
-    }
+    if(!cnClientId){ inner += '<div class="field"><label>Nome do novo cliente</label><input type="text" name="newClientName" value="'+esc(cnNewName)+'"></div>'; }
     if(selClient && hasPrevious){
-      inner += '<div class="choice-box">'
-        + '<div class="choice-title">💡 Cliente já possui histórico</div>'
+      inner += '<div class="choice-box"><div class="choice-title">💡 Cliente já possui histórico</div>'
         + '<div class="choice-desc">Saldo consolidado anterior: <strong>'+minToHM(previousBalance*60)+'</strong> em '+state.cards.filter(c=>c.clientId===selClient.id).length+' card(s).</div>'
-        + '<label class="check-pill" style="margin-top:8px;"><input type="checkbox" name="useExistingBalance" '+(cnUseBalance?'checked':'')+'> Usar as horas disponíveis anteriores neste novo card</label>'
-        + '</div>';
+        + '<label class="check-pill" style="margin-top:8px;"><input type="checkbox" name="useExistingBalance" '+(cnUseBalance?'checked':'')+'> Usar as horas disponíveis anteriores neste novo card</label></div>';
     }
     inner += '<div class="field-row"><div class="field"><label>Horas contratadas</label><input type="number" min="0" step="0.5" name="contractedHours" value="'+esc(cnHours)+'"></div>'
       + '<div class="field"><label>Início</label><input type="date" name="startDate" value="'+esc(cnStart)+'"></div></div>'
@@ -2513,24 +2422,22 @@ function renderModal(){
     const dur = s ? scheduleMinutes(s) : 0;
     inner = '<div class="modal-header"><h3>Vincular a um quadro?</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
       + '<div class="choice-box">'
-        + '<div class="choice-title">'+esc(client?client.name:'(cliente)')+' — '+esc(s?s.type:'')+'</div>'
-        + '<div class="choice-desc">'+(s?scheduleDateText(s):'')+' · '+(s&&s.allDay?'Dia todo':(s?s.startTime+'–'+s.endTime:''))+' · '+minToHM(dur)+'</div>'
-        + '<div class="choice-desc" style="margin-top:8px;">Esta é uma <strong>agenda interna</strong> vinculada a um cliente. Deseja criar um <strong>card/quadro</strong> para abater do saldo?</div>'
-      + '</div>'
+      + '<div class="choice-title">'+esc(client?client.name:'(cliente)')+' — '+esc(s?s.type:'')+'</div>'
+      + '<div class="choice-desc">'+(s?scheduleDateText(s):'')+' · '+(s&&s.allDay?'Dia todo':(s?s.startTime+'–'+s.endTime:''))+' · '+minToHM(dur)+'</div>'
+      + '<div class="choice-desc" style="margin-top:8px;">Esta é uma <strong>agenda interna</strong> vinculada a um cliente. Deseja criar um <strong>card/quadro</strong> para abater do saldo?</div></div>'
       + '<div class="choice-actions">'
-        + '<button class="btn btn-ghost" data-action="internal-answer-no">Não, apenas registrar</button>'
-        + '<button class="btn btn-primary" data-action="internal-answer-yes">Sim, criar quadro</button>'
-      + '</div>';
+      + '<button class="btn btn-ghost" data-action="internal-answer-no">Não, apenas registrar</button>'
+      + '<button class="btn btn-primary" data-action="internal-answer-yes">Sim, criar quadro</button></div>';
   } else if(m.type==='after-complete-print'){
     const s = m.payload && m.payload.scheduleId ? byId(state.schedules, m.payload.scheduleId) : null;
     if(!s) return '<div class="overlay"><div class="modal"><p>Agendamento não encontrado.</p></div></div>';
     const dur = scheduleMinutes(s);
     inner = '<div class="modal-header"><h3>✓ Agenda concluída</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
       + '<div class="choice-box"><div class="choice-title">'+esc(scheduleDisplayTitle(s))+'</div>'
-        + '<div class="choice-desc">'+scheduleDateText(s)+' · '+(s.allDay?'Dia todo':s.startTime+'–'+s.endTime)+' · '+minToHM(dur)+' abatido(s)</div>'
-        + '<div class="choice-desc" style="margin-top:8px;">Deseja imprimir o relatório do atendimento?</div></div>'
+      + '<div class="choice-desc">'+scheduleDateText(s)+' · '+(s.allDay?'Dia todo':s.startTime+'–'+s.endTime)+' · '+minToHM(dur)+' abatido(s)</div>'
+      + '<div class="choice-desc" style="margin-top:8px;">Deseja imprimir o relatório do atendimento?</div></div>'
       + '<div class="choice-actions"><button class="btn btn-ghost" data-action="after-complete-no-print">Não</button>'
-        + '<button class="btn btn-primary" data-action="after-complete-print">🖨 Sim</button></div>';
+      + '<button class="btn btn-primary" data-action="after-complete-print">🖨 Sim</button></div>';
   } else if(m.type==='card-conclude-confirm'){
     const c = m.payload && m.payload.cardId ? getCard(m.payload.cardId) : null;
     if(!c) return '<div class="overlay"><div class="modal"><p>Card não encontrado.</p></div></div>';
@@ -2538,14 +2445,12 @@ function renderModal(){
     const used = cardUsedMinutes(c);
     const bal = cardBalanceHours(c);
     inner = '<div class="modal-header"><h3>Concluir implantação?</h3><button class="modal-close" data-action="close-modal">✕</button></div>'
-      + '<div class="choice-box">'
-        + '<div class="choice-title">'+esc(client?client.name:'')+'</div>'
-        + '<div class="choice-desc">Tempo usado: <strong>'+minToHM(used)+'</strong> de <strong>'+c.contractedHours+'h</strong> contratadas.</div>'
-        + '<div class="choice-desc">Saldo que ficará disponível: <strong style="color:'+(bal<0?'var(--danger)':'var(--ok)')+';">'+minToHM(bal*60)+'</strong>.</div>'
-        + '<div class="choice-desc" style="margin-top:8px;">Ao confirmar, geraremos o <strong>relatório de fechamento</strong> com dados do cliente, produtos, módulos/telas e tempo gasto.</div>'
-      + '</div>'
+      + '<div class="choice-box"><div class="choice-title">'+esc(client?client.name:'')+'</div>'
+      + '<div class="choice-desc">Tempo usado: <strong>'+minToHM(used)+'</strong> de <strong>'+c.contractedHours+'h</strong> contratadas.</div>'
+      + '<div class="choice-desc">Saldo que ficará disponível: <strong style="color:'+(bal<0?'var(--danger)':'var(--ok)')+';">'+minToHM(bal*60)+'</strong>.</div>'
+      + '<div class="choice-desc" style="margin-top:8px;">Ao confirmar, geraremos o <strong>relatório de fechamento</strong>.</div></div>'
       + '<div class="choice-actions"><button class="btn btn-ghost" data-action="close-modal">Cancelar</button>'
-        + '<button class="btn btn-primary" data-action="card-conclude-confirm">✓ Concluir e gerar relatório</button></div>';
+      + '<button class="btn btn-primary" data-action="card-conclude-confirm">✓ Concluir e gerar relatório</button></div>';
   } else if(m.type==='card-closing-report'){
     inner = renderCardClosingReport(m.payload && m.payload.cardId);
   } else if(m.type==='card-forecast-report'){
@@ -2554,7 +2459,6 @@ function renderModal(){
   return '<div class="overlay"><div class="modal'+(m.type && (m.type.startsWith('schedule') || m.type==='card-closing-report' || m.type==='card-forecast-report')?' wide':'')+'">'+inner+'</div></div>';
 }
 
-/* Relatório de fechamento da implantação */
 function renderCardClosingReport(cardId){
   const c = getCard(cardId);
   if(!c) return '<div class="modal-header"><h3>Card não encontrado</h3><button class="modal-close" data-action="close-modal">✕</button></div>';
@@ -2576,6 +2480,14 @@ function renderCardClosingReport(cardId){
     return s.date >= startDate && s.date <= endDate;
   });
   const internalMinutes = internalSchedulesInPeriod.reduce((sum,s)=> sum + scheduleMinutes(s), 0);
+
+  function groupedScreensText(screenNames){
+    const groups = groupScreensByModule(screenNames);
+    if(!groups.length) return '—';
+    return groups.map(([modName, screens])=> esc(modName)+': '+screens.map(esc).join(', ')).join(' | ');
+  }
+  const expectedGrouped = groupedScreensText(c.expectedScreens||[]);
+  const trainedGrouped = groupedScreensText(trained.screens);
 
   let html = '<div class="modal-header no-print"><h3>Relatório de fechamento da implantação</h3><button class="modal-close" data-action="close-modal">✕</button></div>';
   html += '<div id="print-report">'
@@ -2600,18 +2512,18 @@ function renderCardClosingReport(cardId){
     + '<table><tbody>'
     + (products.length ? products.map(p=>'<tr><td>'+esc(p.name)+'</td></tr>').join('') : '<tr><td><em>Nenhum produto registrado.</em></td></tr>')
     + '</tbody></table>'
-    + '<h3 style="font-size:14px;margin:16px 0 6px;">Módulos / Telas</h3>'
-    + '<table><thead><tr><th>Módulos previstos</th><th>Módulos treinados</th></tr></thead><tbody>'
-    + '<tr><td>'+((c.expectedModules||[]).map(esc).join(', ') || '—')+'</td><td>'+((trained.modules||[]).map(esc).join(', ') || '—')+'</td></tr>'
-    + '</tbody><thead><tr><th>Telas previstas</th><th>Telas treinadas</th></tr></thead><tbody>'
-    + '<tr><td>'+((c.expectedScreens||[]).map(esc).join(', ') || '—')+'</td><td>'+((trained.screens||[]).map(esc).join(', ') || '—')+'</td></tr>'
+    + '<h3 style="font-size:14px;margin:16px 0 6px;">Módulos e Telas (previsto × treinado)</h3>'
+    + '<table><thead><tr><th style="width:50%;">Previsto (Módulo: telas)</th><th>Treinado (Módulo: telas)</th></tr></thead><tbody>'
+    + '<tr><td>'+esc(expectedGrouped)+'</td><td>'+esc(trainedGrouped)+'</td></tr>'
     + '</tbody></table>'
     + '<h3 style="font-size:14px;margin:16px 0 6px;">Tempo gasto por agenda</h3>'
-    + '<table><thead><tr><th>Data</th><th>Título / Tipo</th><th>Analista(s)</th><th>Duração</th></tr></thead><tbody>'
+    + '<table><thead><tr><th>Data</th><th>Título / Tipo</th><th>Módulos e Telas</th><th>Analista(s)</th><th>Duração</th></tr></thead><tbody>'
     + (cardSchedules.length ? cardSchedules.map(s=>{
         const dur = scheduleMinutes(s);
-        return '<tr><td>'+scheduleDateText(s)+'</td><td>'+esc(scheduleDisplayTitle(s))+'</td><td>'+esc(scheduleAnalystNames(s))+'</td><td>'+minToHM(dur)+'</td></tr>';
-      }).join('') : '<tr><td colspan="4"><em>Nenhuma agenda concluída vinculada ao card.</em></td></tr>')
+        const modsTxt = (s.modules||[]).join(', ') || '—';
+        const screensTxt = groupedScreensText(s.trainedScreens||[]);
+        return '<tr><td>'+scheduleDateText(s)+'</td><td>'+esc(scheduleDisplayTitle(s))+'</td><td>'+esc(modsTxt)+(screensTxt!=='—'?' — '+esc(screensTxt):'')+'</td><td>'+esc(scheduleAnalystNames(s))+'</td><td>'+minToHM(dur)+'</td></tr>';
+      }).join('') : '<tr><td colspan="5"><em>Nenhuma agenda concluída vinculada ao card.</em></td></tr>')
     + '</tbody></table>'
     + '<h3 style="font-size:14px;margin:16px 0 6px;">Saldo</h3>'
     + '<table><tbody>'
@@ -2644,6 +2556,11 @@ function renderCardForecastReport(cardId){
   const trainedSSet = new Set(trained.screens);
   const expectedMSet = new Set(expectedM);
   const expectedSSet = new Set(expectedS);
+
+  const expectedGroups = groupScreensByModule(expectedS);
+  const trainedGroups = groupScreensByModule(trained.screens);
+  const allModulesForScreens = new Set([...expectedGroups.map(g=>g[0]), ...trainedGroups.map(g=>g[0])]);
+
   let html = '<div class="modal-header no-print"><h3>Relatório comparativo — Previsto × Treinado</h3><button class="modal-close" data-action="close-modal">✕</button></div>';
   html += '<div id="print-report">'
     + '<h2 style="margin-bottom:2px;">Relatório Comparativo — Previsto × Treinado</h2>'
@@ -2660,20 +2577,36 @@ function renderCardForecastReport(cardId){
     else if(!expectedMSet.has(name) && trainedMSet.has(name)) st = 'Extra';
     html += '<tr><td>'+esc(name)+'</td><td>'+prev+'</td><td>'+tr+'</td><td>'+st+'</td></tr>';
   });
-  html += '</tbody></table>'
-    + '<h3 style="font-size:14px;margin:16px 0 6px;">Telas</h3>'
-    + '<table><thead><tr><th>Tela</th><th>Previsto</th><th>Treinado</th><th>Status</th></tr></thead><tbody>';
-  const allScr = [...new Set([...expectedS, ...trained.screens])];
-  if(!allScr.length) html += '<tr><td colspan="4"><em>Nenhuma tela registrada.</em></td></tr>';
-  allScr.forEach(name=>{
-    const prev = expectedSSet.has(name) ? 'Sim' : '—';
-    const tr = trainedSSet.has(name) ? 'Sim' : '—';
-    let st = 'OK';
-    if(expectedSSet.has(name) && !trainedSSet.has(name)) st = 'Pendente';
-    else if(!expectedSSet.has(name) && trainedSSet.has(name)) st = 'Extra';
-    html += '<tr><td>'+esc(name)+'</td><td>'+prev+'</td><td>'+tr+'</td><td>'+st+'</td></tr>';
-  });
-  html += '</tbody></table></div>';
+  html += '</tbody></table>';
+
+  html += '<h3 style="font-size:14px;margin:16px 0 6px;">Telas (agrupadas por módulo)</h3>';
+  if(!allModulesForScreens.size){
+    html += '<p><em>Nenhuma tela registrada.</em></p>';
+  } else {
+    html += '<table><thead><tr><th>Módulo</th><th>Tela</th><th>Previsto</th><th>Treinado</th><th>Status</th></tr></thead><tbody>';
+    const orderedMods = [];
+    state.modules.forEach(m=>{ if(allModulesForScreens.has(m.name)) orderedMods.push(m.name); });
+    if(allModulesForScreens.has('Sem módulo')) orderedMods.push('Sem módulo');
+
+    orderedMods.forEach(modName=>{
+      const expectedArr = (expectedGroups.find(g=>g[0]===modName)||[null,[]])[1];
+      const trainedArr = (trainedGroups.find(g=>g[0]===modName)||[null,[]])[1];
+      const allScreensMod = [...new Set([...expectedArr, ...trainedArr])];
+      allScreensMod.forEach((sn, idx)=>{
+        const prev = expectedSSet.has(sn) ? 'Sim' : '—';
+        const tr = trainedSSet.has(sn) ? 'Sim' : '—';
+        let st = 'OK';
+        if(expectedSSet.has(sn) && !trainedSSet.has(sn)) st = 'Pendente';
+        else if(!expectedSSet.has(sn) && trainedSSet.has(sn)) st = 'Extra';
+        html += '<tr>'
+          + (idx===0 ? '<td rowspan="'+allScreensMod.length+'" style="font-weight:700;vertical-align:top;">'+esc(modName)+'</td>' : '')
+          + '<td>'+esc(sn)+'</td><td>'+prev+'</td><td>'+tr+'</td><td>'+st+'</td></tr>';
+      });
+    });
+    html += '</tbody></table>';
+  }
+
+  html += '</div>';
   html += '<div class="form-actions no-print"><span style="flex:1;"></span><button class="btn btn-primary" data-action="print-report">🖨 Imprimir / Salvar PDF</button></div>';
   return html;
 }
@@ -2683,14 +2616,13 @@ function renderScheduleReportContent(scheduleId){
   if(!s) return '<div class="modal-header"><h3>Agendamento não encontrado</h3><button class="modal-close" data-action="close-modal">✕</button></div>';
   const client = s.clientId ? getClient(s.clientId) : null;
   const analysts = scheduleAnalysts(s);
-  const modules = (s.modules||[]).join(', ') || '—';
-  const screens = (s.trainedScreens||[]).join(', ') || '—';
   const users = s.trainedUsers || '—';
   const duration = scheduleMinutes(s);
   const perAnalyst = scheduleMinutesPerAnalyst(s);
   const nAnalysts = Math.max(1, scheduleAnalystIds(s).length);
   const analystsList = analysts.length ? analysts.map(a=>esc(a.name)).join(', ') : '—';
   const durDetail = nAnalysts > 1 ? minToHM(duration)+' ('+minToHM(perAnalyst)+' × '+nAnalysts+')' : minToHM(duration);
+
   let html = '<div class="modal-header no-print"><h3>Relatório de atendimento</h3><button class="modal-close" data-action="close-modal">✕</button></div>';
   html += '<div id="print-report">'
     + (s.title ? '<h3 style="margin-bottom:2px;">'+esc(s.title)+'</h3>' : '')
@@ -2702,8 +2634,12 @@ function renderScheduleReportContent(scheduleId){
     + '<tr><td style="font-weight:700;">Data</td><td>'+scheduleDateText(s)+'</td></tr>'
     + '<tr><td style="font-weight:700;">Horário</td><td>'+(s.allDay? 'Dia todo' : s.startTime+' – '+s.endTime)+' — '+durDetail+'</td></tr>'
     + '<tr><td style="font-weight:700;">Tipo de agenda</td><td>'+esc(s.type)+'</td></tr>'
-    + '<tr><td style="font-weight:700;">Módulo(s)</td><td>'+esc(modules)+'</td></tr>'
-    + '<tr><td style="font-weight:700;">Tela(s) treinada(s)</td><td>'+esc(screens)+'</td></tr>'
+    + '<tr><td style="font-weight:700;vertical-align:top;">Módulos e Telas</td><td>'
+    + ((s.modules||[]).length || (s.trainedScreens||[]).length
+        ? groupScreensByModule(s.trainedScreens||[]).map(([mn, sc])=>'<strong>'+esc(mn)+'</strong>'+(sc.length?' → '+sc.map(esc).join(', '):'')).join('<br>')
+          || ((s.modules||[]).map(esc).join(', '))
+        : '—')
+    + '</td></tr>'
     + '<tr><td style="font-weight:700;">Usuário(s) treinado(s)</td><td>'+esc(users)+'</td></tr>'
     + '<tr><td style="font-weight:700;vertical-align:top;">Observações</td><td>'+esc(s.notes||'—')+'</td></tr>'
     + '</tbody></table></div>';
@@ -2734,6 +2670,11 @@ function renderClientPicker(fieldName, selectedClientId, query){
   return html;
 }
 
+/* ============================================================
+   FORMULÁRIO DE AGENDA
+   Módulo + telas com mesmo padrão: telas só aparecem se o módulo
+   estiver marcado.
+   ============================================================ */
 function renderScheduleForm(m){
   const editing = m.type==='schedule-edit' ? byId(state.schedules, m.id) : null;
   const cardCtx = m.card ? getCard(m.card) : (editing && editing.cardId ? getCard(editing.cardId) : null);
@@ -2797,15 +2738,14 @@ function renderScheduleForm(m){
     html += '<label class="multi-analyst-item'+(checked?' checked':'')+'" style="'+(checked?'border-color:'+a.color+';background:'+a.color+'14;color:'+darkenColor(a.color,.25)+';':'')+'">'
       + '<input type="checkbox" name="analystIds" value="'+a.id+'" '+(checked?'checked':'')+'>'
       + '<span class="m-dot" style="background:'+(a.inactive?'#B9CAD5':a.color)+'"></span>'
-      + '<span>'+esc(a.name)+(a.isAdmin?' · ADMIN':'')+'</span>'
-      + '</label>';
+      + '<span>'+esc(a.name)+(a.isAdmin?' · ADMIN':'')+'</span></label>';
   });
   html += '</div></div>';
 
   html += '<div class="field-row">'
     + '<div class="field"><label>'+(eff.allDay?'Dia inicial':'Data')+'</label><input type="date" name="date" value="'+esc(eff.date)+'"></div>'
     + '<div class="field" style="justify-content:flex-end;">'
-    +   '<label class="allday-toggle"><input type="checkbox" name="allDay" '+(eff.allDay?'checked':'')+'> Dia todo</label>'
+    + '<label class="allday-toggle"><input type="checkbox" name="allDay" '+(eff.allDay?'checked':'')+'> Dia todo</label>'
     + '</div></div>';
 
   if(eff.allDay){
@@ -2838,26 +2778,43 @@ function renderScheduleForm(m){
   });
   html += '</select></div>';
 
-  html += '<div class="field"><label>Módulo(s)</label><div class="check-grid">';
-  state.modules.forEach(mod=>{
-    const isChecked = eff.modules.includes(mod.name);
-    if(mod.inactive && !isChecked) return;
-    html += '<label class="check-pill"><input type="checkbox" name="modules" value="'+esc(mod.name)+'" '+(isChecked?'checked':'')+'>'+esc(mod.name)+'</label>';
-  });
-  html += '</div></div>';
-
-  const checkedModules = state.modules.filter(mo=> eff.modules.includes(mo.name));
-  checkedModules.forEach(mod=>{
-    const screensForMod = screensForModule(mod.id);
-    if(!screensForMod.length) return;
-    html += '<div class="field"><label>Telas — '+esc(mod.name)+'</label><div class="check-grid">';
-    screensForMod.forEach(scr=>{
-      const isChecked = eff.trainedScreens.includes(scr.name);
-      if(scr.inactive && !isChecked) return;
-      html += '<label class="check-pill"><input type="checkbox" name="trainedScreens" value="'+esc(scr.name)+'" '+(isChecked?'checked':'')+'>'+esc(scr.name)+'</label>';
+  /* ===========================================================
+     MÓDULOS E TELAS — telas só aparecem se o módulo estiver marcado
+     =========================================================== */
+  html += '<div class="field"><label>Módulos e telas</label>';
+  if(!state.modules.length){
+    html += '<div class="hint">Nenhum módulo cadastrado.</div>';
+  } else {
+    state.modules.forEach(mod=>{
+      const screensOfMod = screensForModule(mod.id);
+      const modChecked = eff.modules.includes(mod.name);
+      html += '<div class="mod-group'+(modChecked?'':' mod-group-collapsed')+'" data-mod-name="'+esc(mod.name)+'">'
+        + '<div class="mod-group-header">'
+        + '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0;flex:1;">'
+        + '<input type="checkbox" name="modules" value="'+esc(mod.name)+'" data-action="sched-module-toggle" data-mod="'+esc(mod.name)+'" '+(modChecked?'checked':'')+'>'
+        + '<span class="mod-icon">📦</span><span>'+esc(mod.name)+'</span>'
+        + '</label>'
+        + '<span class="mod-count">'+screensOfMod.length+' tela'+(screensOfMod.length!==1?'s':'')+'</span>'
+        + '</div>';
+      if(!modChecked){
+        html += '<div class="mod-hint-hidden">Marque o módulo acima para escolher as telas treinadas.</div>';
+      } else {
+        if(screensOfMod.length){
+          html += '<div class="mod-group-body"><div class="check-grid">';
+          screensOfMod.forEach(scr=>{
+            const isChecked = eff.trainedScreens.includes(scr.name);
+            if(scr.inactive && !isChecked) return;
+            html += '<label class="check-pill"><input type="checkbox" name="trainedScreens" value="'+esc(scr.name)+'" '+(isChecked?'checked':'')+'>'+esc(scr.name)+'</label>';
+          });
+          html += '</div></div>';
+        } else {
+          html += '<div class="mod-hint-hidden">Este módulo não tem telas cadastradas.</div>';
+        }
+      }
+      html += '</div>';
     });
-    html += '</div></div>';
-  });
+  }
+  html += '</div>';
 
   html += '<div class="field"><label>Usuários treinados</label><textarea name="trainedUsers">'+esc(eff.trainedUsers)+'</textarea></div>';
   html += '<div class="field"><label>Observações</label><textarea name="notes">'+esc(eff.notes)+'</textarea></div>';
@@ -2886,6 +2843,81 @@ function renderConfirmDialog(){
   return '<div class="overlay confirm-overlay"><div class="modal" style="max-width:420px;">'
     + '<p style="margin:4px 0 18px;white-space:pre-line;">'+esc(d.message)+'</p>'
     + '<div class="form-actions">'+buttons+'</div></div></div>';
+}
+
+/* Anexos */
+function fileIconClass(mime, name){
+  const ext = (name || '').split('.').pop().toLowerCase();
+  if((mime||'').includes('pdf') || ext === 'pdf') return 'pdf';
+  if((mime||'').startsWith('image/') || ['png','jpg','jpeg','gif','webp','bmp'].includes(ext)) return 'img';
+  if((mime||'').includes('word') || ['doc','docx','odt','rtf','txt'].includes(ext)) return 'doc';
+  if((mime||'').includes('sheet') || ['xls','xlsx','csv','ods'].includes(ext)) return 'xls';
+  if((mime||'').includes('zip') || (mime||'').includes('compressed') || ['zip','rar','7z','tar','gz'].includes(ext)) return 'zip';
+  return 'other';
+}
+function fileIconEmoji(cls){
+  switch(cls){
+    case 'pdf': return '📄';
+    case 'img': return '🖼';
+    case 'doc': return '📝';
+    case 'xls': return '📊';
+    case 'zip': return '🗜';
+    default: return '📎';
+  }
+}
+function readFileAsDataURL(file){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error || new Error('Falha ao ler arquivo'));
+    reader.readAsDataURL(file);
+  });
+}
+async function handleCardAttachmentUpload(cardId, inputEl, form){
+  const card = getCard(cardId);
+  if(!card) return;
+  const files = Array.from(inputEl.files || []);
+  if(!files.length) return;
+  let rejected = [];
+  for(const f of files){
+    if(f.size > ATTACH_MAX_BYTES){
+      rejected.push(f.name+' ('+bytesToHuman(f.size)+' excede '+bytesToHuman(ATTACH_MAX_BYTES)+')');
+      continue;
+    }
+    try{
+      const dataUrl = await readFileAsDataURL(f);
+      card.attachments = card.attachments || [];
+      card.attachments.push({ id: uid('at'), name: f.name, type: f.type || '', size: f.size, data: dataUrl, uploadedAt: Date.now() });
+      addHistory(card, 'Anexo adicionado: '+f.name+' ('+bytesToHuman(f.size)+')');
+    }catch(err){ rejected.push(f.name+' (falha ao ler)'); }
+  }
+  inputEl.value = '';
+  if(rejected.length){ showAlert('Alguns arquivos não foram anexados:\n\n'+rejected.join('\n')); }
+  if(ui.cardDraft && ui.cardDraft.cardId===cardId){
+    const values = captureFormValues(form);
+    ui.cardDraft = {cardId, values};
+  }
+  render();
+}
+function openAttachmentInNewTab(att){
+  try{
+    const w = window.open();
+    if(!w){ showAlert('Não foi possível abrir a visualização. Verifique o bloqueador de pop-ups.'); return; }
+    if((att.type||'').includes('pdf') || /\.pdf$/i.test(att.name||'')){
+      w.document.write('<title>'+esc(att.name)+'</title><iframe src="'+att.data+'" style="border:none;position:fixed;inset:0;width:100%;height:100%;"></iframe>');
+      w.document.close();
+    } else if((att.type||'').startsWith('image/')){
+      w.document.write('<title>'+esc(att.name)+'</title><div style="margin:0;padding:0;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#222;"><img src="'+att.data+'" style="max-width:100%;max-height:100vh;"></div>');
+      w.document.close();
+    } else {
+      const a = document.createElement('a'); a.href = att.data; a.download = att.name;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a); w.close();
+    }
+  }catch(e){ showAlert('Erro ao abrir o arquivo: '+e.message); }
+}
+function downloadAttachment(att){
+  const a = document.createElement('a'); a.href = att.data; a.download = att.name;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
 
 document.addEventListener('click', function(e){
@@ -2937,27 +2969,12 @@ document.addEventListener('click', function(e){
   else if(a==='card-reopen'){ const id = el.dataset.id; showConfirm('Reabrir esta implantação?', function(){ reopenCard(id); ui.modal=null; }); }
   else if(a==='card-print-closing'){ ui.modal = {type:'card-closing-report', payload:{cardId: el.dataset.id}}; render(); }
   else if(a==='card-print-forecast'){ ui.modal = {type:'card-forecast-report', payload:{cardId: el.dataset.id}}; render(); }
-  else if(a==='attach-upload-click'){
-    const cardId = el.dataset.card;
-    const input = document.getElementById('attach-upload-input-'+cardId);
-    if(input) input.click();
-  }
-  else if(a==='attach-view'){
-    const cardId = el.dataset.card; const attId = el.dataset.att;
-    const card = getCard(cardId);
-    const att = card && (card.attachments||[]).find(x=>x.id===attId);
-    if(att) openAttachmentInNewTab(att);
-  }
-  else if(a==='attach-download'){
-    const cardId = el.dataset.card; const attId = el.dataset.att;
-    const card = getCard(cardId);
-    const att = card && (card.attachments||[]).find(x=>x.id===attId);
-    if(att) downloadAttachment(att);
-  }
+  else if(a==='attach-upload-click'){ const cardId = el.dataset.card; const input = document.getElementById('attach-upload-input-'+cardId); if(input) input.click(); }
+  else if(a==='attach-view'){ const cardId = el.dataset.card; const attId = el.dataset.att; const card = getCard(cardId); const att = card && (card.attachments||[]).find(x=>x.id===attId); if(att) openAttachmentInNewTab(att); }
+  else if(a==='attach-download'){ const cardId = el.dataset.card; const attId = el.dataset.att; const card = getCard(cardId); const att = card && (card.attachments||[]).find(x=>x.id===attId); if(att) downloadAttachment(att); }
   else if(a==='attach-delete'){
     const cardId = el.dataset.card; const attId = el.dataset.att;
-    const card = getCard(cardId);
-    const att = card && (card.attachments||[]).find(x=>x.id===attId);
+    const card = getCard(cardId); const att = card && (card.attachments||[]).find(x=>x.id===attId);
     if(!att) return;
     showConfirm('Excluir o anexo "'+att.name+'"?', function(){
       card.attachments = (card.attachments||[]).filter(x=>x.id!==attId);
@@ -2974,24 +2991,12 @@ document.addEventListener('click', function(e){
     state.productTags.push(newTag);
     render();
   }
-  else if(a==='client-picker-select'){
-    const form = el.closest('form'); const field = el.dataset.field;
-    const values = captureFormValues(form);
-    values[field] = el.dataset.id;
-    if(field==='clientId') delete values.newClientName;
-    if(ui.modal){ ui.modal.clientQuery = ''; ui.modal.values = values; render(); }
-  }
-  else if(a==='client-picker-clear'){
-    const form = el.closest('form'); const field = el.dataset.field;
-    const values = captureFormValues(form); values[field] = '';
-    if(ui.modal){ ui.modal.clientQuery = ''; ui.modal.values = values; render(); }
-  }
+  else if(a==='client-picker-select'){ const form = el.closest('form'); const field = el.dataset.field; const values = captureFormValues(form); values[field] = el.dataset.id; if(field==='clientId') delete values.newClientName; if(ui.modal){ ui.modal.clientQuery = ''; ui.modal.values = values; render(); } }
+  else if(a==='client-picker-clear'){ const form = el.closest('form'); const field = el.dataset.field; const values = captureFormValues(form); values[field] = ''; if(ui.modal){ ui.modal.clientQuery = ''; ui.modal.values = values; render(); } }
   else if(a==='delete-list'){ deleteListFromBoard(el.dataset.board, el.dataset.list); render(); }
   else if(a==='delete-analyst'){
     if(!isAdminUser()){ showAlert('Apenas administradores.'); return; }
-    const id = el.dataset.id;
-    const an = getAnalyst(id);
-    if(!an) return;
+    const id = el.dataset.id; const an = getAnalyst(id); if(!an) return;
     if(an.isAdmin){ showAlert('O administrador não pode ser excluído.'); return; }
     const linkedScheds = schedulesForAnalyst(id).length;
     const board = boardOfAnalyst(id);
@@ -3068,10 +3073,42 @@ document.addEventListener('change', function(e){
     if(file){ importClientsFromFile(file).catch(err=>{ showAlert('Erro: '+(err && err.message ? err.message : err)); }); }
   }
   else if(e.target.matches('input[type="file"][data-card]')){
-    /* Upload de anexo do card */
     const cardId = e.target.dataset.card;
     const form = e.target.closest('form') || document.querySelector('form[data-form="card-info"]');
     if(cardId){ handleCardAttachmentUpload(cardId, e.target, form); }
+  }
+  /* ===========================================================
+     TOGGLE DE MÓDULO — revela/esconde as telas do módulo
+     Funciona no formulário do card (data-action="card-module-toggle")
+     e no formulário de agenda (data-action="sched-module-toggle").
+     Quando marcado: as telas do módulo são exibidas.
+     Quando desmarcado: esconde as telas E desmarca qualquer tela
+     que estivesse selecionada (para não persistir telas órfãs).
+     =========================================================== */
+  else if(e.target.matches('input[data-action="card-module-toggle"], input[data-action="sched-module-toggle"]')){
+    const isChecked = e.target.checked;
+    const modName = e.target.dataset.mod;
+    const form = e.target.closest('form');
+    if(!form) return;
+    if(!isChecked){
+      // Desmarcou o módulo: limpa as telas vinculadas a esse módulo
+      const mod = moduleByName(modName);
+      if(mod){
+        const screensOfMod = screensForModule(mod.id);
+        screensOfMod.forEach(scr=>{
+          const cb = form.querySelector('input[name="trainedScreens"][value="'+CSS.escape(scr.name)+'"], input[name="expectedScreens"][value="'+CSS.escape(scr.name)+'"]');
+          if(cb) cb.checked = false;
+        });
+      }
+    }
+    // Preserva os demais valores do formulário no rascunho
+    if(ui.modal){
+      const values = captureFormValues(form);
+      ui.modal.values = values;
+      render();
+      return;
+    }
+    render();
   }
   else if(e.target.matches('select[name="moveTo"]')){
     const form = e.target.closest('form');
@@ -3080,10 +3117,7 @@ document.addEventListener('change', function(e){
     const r = moveCard(cardId, boardId, listId);
     if(r && r.toList && isDoneListName(r.toList.name)){
       const card = r.c;
-      if(!card.isConcluded){
-        ui.modal = {type:'card-conclude-confirm', payload:{cardId: card.id}};
-        render(); return;
-      }
+      if(!card.isConcluded){ ui.modal = {type:'card-conclude-confirm', payload:{cardId: card.id}}; render(); return; }
     }
     render();
   }
@@ -3202,10 +3236,7 @@ document.addEventListener('submit', async function(e){
     }
     let hours = parseFloat(fd.get('contractedHours'))||0;
     const useExisting = fd.get('useExistingBalance')==='on';
-    if(useExisting){
-      const prev = clientConsolidatedBalanceHours(clientId);
-      if(prev > 0) hours += prev;
-    }
+    if(useExisting){ const prev = clientConsolidatedBalanceHours(clientId); if(prev > 0) hours += prev; }
     createCard(form.dataset.board, form.dataset.list, clientId, { contractedHours: hours, startDate: fd.get('startDate')||todayISO() });
     ui.modal=null; render();
   }
@@ -3216,7 +3247,16 @@ document.addEventListener('submit', async function(e){
     const newStart = fd.get('startDate');
     const newTags = fd.getAll('productTags');
     const expectedModules = fd.getAll('expectedModules');
-    const expectedScreens = fd.getAll('expectedScreens');
+    // Só salvamos telas cujo módulo pai está entre os módulos previstos
+    const rawExpectedScreens = fd.getAll('expectedScreens');
+    const allowedScreens = new Set();
+    expectedModules.forEach(modName=>{
+      const mod = moduleByName(modName);
+      if(!mod) return;
+      screensForModule(mod.id).forEach(scr=> allowedScreens.add(scr.name));
+    });
+    const expectedScreens = rawExpectedScreens.filter(sn=> allowedScreens.has(sn));
+
     let histTexts = [];
     if(newHours !== card.contractedHours) histTexts.push('Horas alteradas de '+card.contractedHours+'h para '+newHours+'h');
     if(newStart !== card.startDate) histTexts.push('Início alterado para '+fmtDateBR(newStart));
@@ -3252,7 +3292,6 @@ document.addEventListener('submit', async function(e){
     if(card){ analystIds = [getBoard(card.boardId).analystId]; }
     if(!analystIds.length){ ui.formErr = 'Selecione analista(s).'; render(); return; }
     const id = form.dataset.id;
-
     if(!allDay && hasAllDayBlocking(analystIds, date, id||null)){ ui.formErr = 'Há agenda de dia todo nesta data.'; render(); return; }
     if(!allDay && timeToMin(endTime) <= timeToMin(startTime)){ ui.formErr = 'Horário inválido.'; render(); return; }
     if(!allDay && scheduleConflict(analystIds, date, startTime, endTime, id||null, false)){ ui.formErr = 'Conflito de horário.'; render(); return; }
@@ -3275,11 +3314,22 @@ document.addEventListener('submit', async function(e){
       }
     }
 
+    // Só salvamos telas cujo módulo pai está entre os módulos do agendamento
+    const selectedModules = fd.getAll('modules');
+    const rawScreens = fd.getAll('trainedScreens');
+    const allowedScreens = new Set();
+    selectedModules.forEach(modName=>{
+      const mod = moduleByName(modName);
+      if(!mod) return;
+      screensForModule(mod.id).forEach(scr=> allowedScreens.add(scr.name));
+    });
+    const selectedScreens = rawScreens.filter(sn=> allowedScreens.has(sn));
+
     const data = {
       title, analystId: analystIds[0], analystIds, clientId, cardId: resolvedCardId,
       date, endDate: allDay ? endDate : date, allDay, startTime, endTime, type: typeName,
-      category: fd.get('category')||'implantacao', modules: fd.getAll('modules'),
-      trainedScreens: fd.getAll('trainedScreens'), trainedUsers: fd.get('trainedUsers')||'', notes: fd.get('notes')||''
+      category: fd.get('category')||'implantacao', modules: selectedModules,
+      trainedScreens: selectedScreens, trainedUsers: fd.get('trainedUsers')||'', notes: fd.get('notes')||''
     };
     let savedSchedule = null;
     if(id){ updateSchedule(id, data); savedSchedule = byId(state.schedules, id); }
