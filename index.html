@@ -57,7 +57,6 @@ h1,h2,h3,h4{ font-family:var(--font-head); margin:0; color:var(--ink); }
 
 .shell{ display:flex; height:100vh; width:100%; overflow:hidden; }
 
-/* ---------- Sidebar ---------- */
 .sidebar{
   width:230px; flex:0 0 230px; background:var(--brand-dark); color:#EFF4F1;
   display:flex; flex-direction:column; padding:18px 14px; gap:18px; overflow-y:auto;
@@ -82,7 +81,6 @@ h1,h2,h3,h4{ font-family:var(--font-head); margin:0; color:var(--ink); }
 .side-spacer{ flex:1; }
 .side-foot{ font-size:11px; color:#9FB6AC; padding:6px 8px; line-height:1.5; }
 
-/* ---------- Main / Topbar ---------- */
 .main{ flex:1; display:flex; flex-direction:column; min-width:0; }
 .topbar{
   display:flex; align-items:center; gap:14px; padding:14px 22px; background:var(--surface);
@@ -105,7 +103,6 @@ h1,h2,h3,h4{ font-family:var(--font-head); margin:0; color:var(--ink); }
 .notif-dot{ position:absolute; top:-4px; right:-4px; background:var(--danger); color:#fff; font-size:10px; font-weight:800; border-radius:20px; min-width:16px; height:16px; display:flex;align-items:center;justify-content:center; padding:0 3px; }
 .view{ flex:1; overflow:auto; padding:20px 22px 40px; }
 
-/* ---------- Buttons ---------- */
 .btn{ border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--ink); padding:8px 14px; font-weight:600; font-size:13.5px; display:inline-flex; align-items:center; gap:7px; white-space:nowrap;}
 .btn:hover{ background:var(--surface-2); }
 .btn-primary{ background:var(--brand); border-color:var(--brand); color:#fff; }
@@ -119,7 +116,6 @@ h1,h2,h3,h4{ font-family:var(--font-head); margin:0; color:var(--ink); }
 .btn-sm{ padding:5px 10px; font-size:12.5px; border-radius:7px; }
 .btn:disabled{ opacity:.5; cursor:not-allowed; }
 
-/* ---------- Board / Lists / Cards ---------- */
 .board-lists{ display:flex; gap:14px; align-items:flex-start; overflow-x:auto; padding-bottom:16px; min-height:60vh; }
 .list-col{ background:var(--bg-soft); border-radius:var(--radius-m); width:270px; flex:0 0 270px; display:flex; flex-direction:column; max-height:calc(100vh - 190px); }
 .list-head{ display:flex; align-items:center; gap:8px; padding:11px 12px 7px; }
@@ -147,7 +143,6 @@ h1,h2,h3,h4{ font-family:var(--font-head); margin:0; color:var(--ink); }
 .empty-state h3{ font-size:20px; margin-bottom:8px; }
 .empty-state p{ color:var(--ink-soft); margin-bottom:20px; }
 
-/* ---------- Modals ---------- */
 .overlay{ position:fixed; inset:0; background:rgba(15,20,17,.5); display:flex; align-items:flex-start; justify-content:center; padding:5vh 16px; overflow-y:auto; z-index:100; }
 .overlay.card-overlay{ z-index:90; }
 .overlay.confirm-overlay{ z-index:300; }
@@ -173,7 +168,6 @@ h1,h2,h3,h4{ font-family:var(--font-head); margin:0; color:var(--ink); }
 .error-msg{ background:var(--danger-soft); color:var(--danger); border-radius:8px; padding:8px 11px; font-size:12.5px; font-weight:600; margin-bottom:12px; white-space:pre-line; }
 input[type=color]{ width:38px; height:32px; padding:2px; border:1px solid var(--border); border-radius:7px; background:var(--surface-2); }
 
-/* ---------- Card modal ---------- */
 .card-modal-top{ display:flex; align-items:flex-start; gap:12px; }
 .card-modal-meta{ font-size:12.5px; color:var(--ink-soft); display:flex; gap:14px; flex-wrap:wrap; margin-top:4px; }
 .tabs{ display:flex; gap:4px; border-bottom:1px solid var(--border); margin:16px 0 16px; }
@@ -196,7 +190,6 @@ input[type=color]{ width:38px; height:32px; padding:2px; border:1px solid var(--
 .hist-row .ts{ font-size:11px; color:var(--ink-faint); margin-top:2px; }
 .row-actions{ display:flex; gap:5px; flex:0 0 auto; }
 
-/* ---------- Calendar ---------- */
 .cal-toolbar{ display:flex; align-items:center; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
 .cal-toolbar .grow{ flex:1; }
 .cal-tg-outer{ border:1px solid var(--border); border-radius:10px; overflow-x:auto; overflow-y:hidden; background:var(--surface); }
@@ -237,7 +230,6 @@ input[type=color]{ width:38px; height:32px; padding:2px; border:1px solid var(--
 .client-picker-empty{ padding:12px; text-align:center; color:var(--ink-faint); font-size:12.5px; }
 .client-picker-selected{ display:flex; align-items:center; justify-content:space-between; gap:8px; border:1px solid var(--border); border-radius:8px; padding:9px 11px; background:var(--brand-soft); }
 
-/* ---------- Tables ---------- */
 table{ width:100%; border-collapse:collapse; background:var(--surface); border-radius:10px; overflow:hidden; }
 th,td{ text-align:left; padding:10px 12px; border-bottom:1px solid var(--border); font-size:13px; }
 th{ background:var(--surface-2); font-size:11.5px; text-transform:uppercase; letter-spacing:.3px; color:var(--ink-soft); font-weight:700; }
@@ -303,7 +295,6 @@ tr.row-inactive{ opacity:.55; }
   .no-print{ display:none !important; }
 }
 
-/* ================= REALTEC VISUAL REFRESH ================= */
 :root{
   --bg:#F4F7F9;
   --bg-soft:#EAF1F5;
@@ -410,7 +401,6 @@ th{background:#F1F6F9;color:#607587;}
 }
 
 
-/* ================= UNIFIED BOARD VIEW ================= */
 .board-analyst-filter{
   min-width:190px;
   border:1px solid #D6E1E8;
@@ -454,7 +444,6 @@ th{background:#F1F6F9;color:#607587;}
 }
 
 
-/* ===== Atualização em tempo real — feedback sutil ===== */
 #app.rt-live-update{animation:rtLiveUpdate .42s ease-out;}
 @keyframes rtLiveUpdate{
   0%{opacity:.88;}
@@ -472,7 +461,6 @@ th{background:#F1F6F9;color:#607587;}
 .live-sync-indicator.show{opacity:.92;transform:translateY(0);}
 .live-sync-dot{width:6px;height:6px;border-radius:50%;background:var(--ok);}
 
-/* ================= LOGIN ================= */
 #login-screen{
   position:fixed; inset:0; z-index:10000;
   display:flex; align-items:center; justify-content:center;
@@ -514,6 +502,26 @@ th{background:#F1F6F9;color:#607587;}
   padding:10px 12px; font-size:12.5px; font-weight:600; margin-bottom:14px; text-align:left;
 }
 .login-footer{ margin-top:22px; font-size:11px; color:var(--ink-faint); }
+
+/* Toggle switch usado para Ativo/Inativo nas telas de cadastro */
+.switch{
+  position:relative; display:inline-block; width:44px; height:24px; vertical-align:middle;
+}
+.switch input{ opacity:0; width:0; height:0; }
+.switch .slider{
+  position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0;
+  background:#C7D2DA; border-radius:24px; transition:.2s;
+}
+.switch .slider::before{
+  content:''; position:absolute; height:18px; width:18px; left:3px; bottom:3px;
+  background:#fff; border-radius:50%; transition:.2s; box-shadow:0 1px 3px rgba(0,0,0,.2);
+}
+.switch input:checked + .slider{ background:var(--ok); }
+.switch input:checked + .slider::before{ transform:translateX(20px); }
+.switch input:disabled + .slider{ opacity:.5; cursor:not-allowed; }
+.status-label{ font-size:11.5px; font-weight:700; margin-left:6px; vertical-align:middle; }
+.status-label.active{ color:var(--ok); }
+.status-label.inactive{ color:var(--ink-faint); }
 </style>
 </head>
 <body>
@@ -524,8 +532,6 @@ th{background:#F1F6F9;color:#607587;}
 <script>
 /* ============================= LOGIN ============================= */
 const LOGIN_KEY = 'implanta_logged_user_v1';
-/* Conta mestra de emergência — sempre funciona, independente dos analistas cadastrados.
-   Serve para o administrador conseguir entrar caso perca a própria senha. */
 const MASTER_USER = 'administrador';
 const MASTER_PASS = '71209403';
 
@@ -566,16 +572,12 @@ function doLogin(){
     document.getElementById('app').innerHTML = renderLoginScreen('Preencha usuário e senha.');
     return;
   }
-
-  // 1) Conta mestra de emergência (sempre funciona)
   if(u === MASTER_USER && p === MASTER_PASS){
     setStoredUser({username:MASTER_USER, displayName:'Administrador', role:'admin', isMaster:true});
     document.getElementById('app').innerHTML = '';
     boot();
     return;
   }
-
-  // 2) Analistas cadastrados com login/senha próprios
   const analyst = state.analysts.find(a=> a.username && a.username.toLowerCase() === u);
   if(analyst){
     if(analyst.inactive){
@@ -597,7 +599,6 @@ function doLogin(){
     boot();
     return;
   }
-
   document.getElementById('app').innerHTML = renderLoginScreen('Usuário ou senha inválidos. Tente novamente.');
 }
 
@@ -619,18 +620,18 @@ function defaultState(){
     cards: [],
     schedules: [],
     productTags: [
-      {id:uid('pt'), name:'PDV', color:'#3E8E7E'},
-      {id:uid('pt'), name:'Frota', color:'#C99A2E'},
-      {id:uid('pt'), name:'Financeiro', color:'#7B4B94'},
-      {id:uid('pt'), name:'Estoque', color:'#3E74B0'}
+      {id:uid('pt'), name:'PDV', color:'#3E8E7E', inactive:false},
+      {id:uid('pt'), name:'Frota', color:'#C99A2E', inactive:false},
+      {id:uid('pt'), name:'Financeiro', color:'#7B4B94', inactive:false},
+      {id:uid('pt'), name:'Estoque', color:'#3E74B0', inactive:false}
     ],
     modules: [],
     screens: [],
     agendaTypes: [
-      {id:uid('at'), name:'Treinamento', isInternal:false},
-      {id:uid('at'), name:'Reunião', isInternal:false},
-      {id:uid('at'), name:'Visita', isInternal:false},
-      {id:uid('at'), name:'Interna', isInternal:true}
+      {id:uid('at'), name:'Treinamento', isInternal:false, inactive:false},
+      {id:uid('at'), name:'Reunião', isInternal:false, inactive:false},
+      {id:uid('at'), name:'Visita', isInternal:false, inactive:false},
+      {id:uid('at'), name:'Interna', isInternal:true, inactive:false}
     ]
   };
   const adminAnalyst = {id:uid('an'), name:ADMIN_ANALYST_NAME, color:'#0B5C8E', username:'rodrigo.soares', password:'71209403', isAdmin:true, inactive:false};
@@ -661,7 +662,7 @@ function ensureAdminAnalyst(s){
     ]});
   } else {
     admin.isAdmin = true;
-    admin.inactive = false; // admin nunca fica inativo
+    admin.inactive = false;
     if(!admin.username) admin.username = 'rodrigo.soares';
     if(!admin.password) admin.password = '71209403';
   }
@@ -680,11 +681,14 @@ function normalizeState(raw){
   let s = raw;
   if(!s || typeof s!=='object') s = defaultState();
   ['analysts','boards','clients','cards','schedules','productTags','modules','screens','agendaTypes'].forEach(k=>{ if(!Array.isArray(s[k])) s[k]=defaultState()[k]; });
-  s.modules = s.modules.map(m=> (typeof m==='string') ? {id:uid('md'), name:m} : m);
+  s.modules = s.modules.map(m=> (typeof m==='string') ? {id:uid('md'), name:m, inactive:false} : Object.assign({inactive:false}, m));
+  s.screens = s.screens.map(scr=> Object.assign({inactive:false}, scr));
+  s.productTags = s.productTags.map(t=> Object.assign({inactive:false}, t));
   s.agendaTypes = s.agendaTypes.map(t=> {
-    if(typeof t==='string') return {id:uid('at'), name:t, isInternal: t==='Interna'};
-    if(t.isInternal===undefined) return Object.assign({}, t, {isInternal: t.name==='Interna'});
-    return t;
+    if(typeof t==='string') return {id:uid('at'), name:t, isInternal: t==='Interna', inactive:false};
+    const copy = Object.assign({inactive:false}, t);
+    if(copy.isInternal===undefined) copy.isInternal = copy.name==='Interna';
+    return copy;
   });
   s.analysts = s.analysts.map(a=>{
     const copy = Object.assign({}, a);
@@ -1078,6 +1082,12 @@ function schedulesUsingModule(name){ return state.schedules.filter(s=> (s.module
 function schedulesUsingType(name){ return state.schedules.filter(s=> s.type===name); }
 function screensForModule(moduleId){ return state.screens.filter(s=>s.moduleId===moduleId); }
 function schedulesUsingScreen(name){ return state.schedules.filter(s=> (s.trainedScreens||[]).includes(name)); }
+/* Verifica se um analista tem qualquer agendamento vinculado */
+function schedulesForAnalyst(analystId){ return state.schedules.filter(s=> s.analystId===analystId); }
+/* Verifica se um cliente tem qualquer card/agendamento vinculado */
+function cardsForClient(clientId){ return state.cards.filter(c=>c.clientId===clientId); }
+function schedulesForClient(clientId){ return state.schedules.filter(s=> s.clientId===clientId); }
+
 function renameScreenEverywhere(oldName, newName){
   if(oldName===newName) return;
   state.schedules.forEach(s=>{ if(Array.isArray(s.trainedScreens) && s.trainedScreens.includes(oldName)){ s.trainedScreens = s.trainedScreens.map(n=> n===oldName?newName:n); } });
@@ -1104,9 +1114,13 @@ function pendingConfirmations(analystId){ return state.schedules.filter(s=> sche
 function addHistory(card, text){ card.history = card.history||[]; card.history.unshift({ts:Date.now(), text}); }
 function colorForIndex(i){ return PALETTE[i % PALETTE.length]; }
 function isAdminUser(){ return !!(currentUser && (currentUser.isAdmin || currentUser.role==='admin')); }
-/* Analistas ativos aparecem na sidebar e em selects; inativos ficam ocultos, mas seus quadros
-   continuam existindo (para não perder cards/agendamentos). */
+
+/* Listas de itens ativos (excluem inativos) — usadas em selects e na agenda */
 function activeAnalysts(){ return state.analysts.filter(a=> !a.inactive); }
+function activeModules(){ return state.modules.filter(m=> !m.inactive); }
+function activeScreens(){ return state.screens.filter(s=> !s.inactive); }
+function activeAgendaTypes(){ return state.agendaTypes.filter(t=> !t.inactive); }
+function activeProductTags(){ return state.productTags.filter(t=> !t.inactive); }
 
 /* ============================= MUTATIONS ============================= */
 function createAnalyst(name, color, username, password, isAdmin){
@@ -1141,13 +1155,21 @@ function setAnalystActive(id, active){
   if(!a) return;
   if(a.isAdmin && !active){ showAlert('O analista administrador do sistema não pode ser inativado.'); return; }
   a.inactive = !active;
-  // Se o próprio usuário logado foi inativado, encerra a sessão dele.
   if(currentUser && currentUser.analystId===id && !active){
     showAlert('Seu usuário foi inativado. Você será desconectado.');
     setStoredUser(null);
     document.getElementById('app').innerHTML = renderLoginScreen();
     return;
   }
+}
+/* Inativação genérica para módulos, telas, tipos de agenda e produtos */
+function setEntityActive(kind, id, active){
+  const map = { module:'modules', screen:'screens', type:'agendaTypes', product:'productTags' };
+  const arr = state[map[kind]];
+  if(!arr) return;
+  const item = byId(arr, id);
+  if(!item) return;
+  item.inactive = !active;
 }
 function createClient(data){ const c = {id:uid('cl'), code:data.code||'', name:data.name, companyName:data.companyName||'', cnpj:data.cnpj||'', ie:data.ie||'', contact:data.contact||'', email:data.email||'', phone:data.phone||'', segment:data.segment||'', city:data.city||'', clientType:data.clientType||'novo', createdAt:Date.now()}; state.clients.push(c); return c; }
 function updateClient(id, patch){ const c=getClient(id); if(c) Object.assign(c, patch); }
@@ -1550,9 +1572,16 @@ function renderCardModalContent(card){
       + '<div class="field"><label>Início da implantação</label><input type="date" name="startDate" value="'+esc(effStart)+'"></div>'
       + '</div>';
     html += '<div class="field"><label>Produtos contratados</label><div class="check-grid">';
-    state.productTags.forEach(t=>{
+    activeProductTags().forEach(t=>{
       const checked = effTags.includes(t.id) ? 'checked' : '';
       html += '<label class="check-pill" style="border-color:'+t.color+'55;"><input type="checkbox" name="productTags" value="'+t.id+'" '+checked+'><span style="color:'+t.color+';font-weight:700;">'+esc(t.name)+'</span></label>';
+    });
+    /* Se o card tem algum produto que ficou inativo, mostramos com aviso para o usuário poder removê-lo */
+    (card.productTags||[]).forEach(tid=>{
+      const t = byId(state.productTags, tid);
+      if(t && t.inactive && !activeProductTags().some(at=>at.id===tid)){
+        html += '<label class="check-pill" style="border-color:var(--border);opacity:.6;"><input type="checkbox" name="productTags" value="'+t.id+'" checked><span style="font-weight:700;">'+esc(t.name)+' <small style="color:var(--ink-faint);">(inativo)</small></span></label>';
+      }
     });
     html += '</div>';
     html += '<div style="display:flex;gap:6px;margin-top:9px;">'
@@ -1813,17 +1842,25 @@ function renderClientsView(){
     const cardCount = state.cards.filter(c=>c.clientId===cl.id).length;
     const isNovo = (cl.clientType||'novo')==='novo';
     const typeBadge = '<span class="badge" style="background:'+(isNovo?'var(--gold-soft)':'var(--brand-soft)')+';color:'+(isNovo?'var(--gold)':'var(--brand)')+';">'+(isNovo?'Novo':'Base')+'</span>';
+    const hasLinks = cardCount > 0 || schedulesForClient(cl.id).length > 0;
     html += '<tr><td>'+esc(cl.code||'—')+'</td><td style="font-weight:700;">'+esc(cl.name)+'</td><td>'+esc(cl.companyName||'—')+'</td><td>'+esc(cl.cnpj||'—')+'</td><td>'+typeBadge+'</td><td>'+esc(cl.segment||'—')+'</td><td>'+esc(cl.city||'—')+'</td><td>'+esc(cl.contact||'—')+'</td><td>'+esc(cl.email||'—')+'</td><td>'+esc(cl.phone||'—')+'</td><td>'+cardCount+'</td>'
-      + '<td><div class="row-actions"><button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="client-edit" data-id="'+cl.id+'">Editar</button><button class="btn btn-sm btn-danger" data-action="delete-client" data-id="'+cl.id+'">Excluir</button></div></td></tr>';
+      + '<td><div class="row-actions"><button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="client-edit" data-id="'+cl.id+'">Editar</button>'
+      + '<button class="btn btn-sm btn-danger" data-action="delete-client" data-id="'+cl.id+'" '+(hasLinks?'disabled title="Não é possível excluir: este cliente possui card(s)/agendamento(s) vinculado(s). Remova-os primeiro."':'')+'>Excluir</button></div></td></tr>';
   });
   html += '</tbody></table></div>';
   return html;
 }
 
 /* ============================= SETTINGS VIEW ============================= */
+function switchCell(kind, id, inactive, labelOn, labelOff){
+  return '<label class="switch" title="'+(inactive? 'Inativo — clique para ativar':'Ativo — clique para inativar')+'">'
+    + '<input type="checkbox" data-action="toggle-entity-active" data-kind="'+kind+'" data-id="'+id+'" '+(inactive?'':'checked')+'>'
+    + '<span class="slider"></span></label>'
+    + '<span class="status-label '+(inactive?'inactive':'active')+'">'+(inactive? (labelOff||'Inativo') : (labelOn||'Ativo'))+'</span>';
+}
+
 function renderSettingsView(){
   const admin = isAdminUser();
-  // Abas disponíveis: admin vê tudo; analista comum vê apenas Produtos, Módulos, Telas e Tipos.
   const allTabs = [
     {k:'analistas', l:'Analistas', adminOnly:true},
     {k:'produtos',  l:'Produtos',  adminOnly:false},
@@ -1835,7 +1872,6 @@ function renderSettingsView(){
   ];
   const visibleTabs = allTabs.filter(t=> admin || !t.adminOnly);
 
-  // Se a aba selecionada não está disponível para este perfil, cai na primeira disponível.
   if(!visibleTabs.some(t=> t.k===ui.settingsTab)){
     ui.settingsTab = visibleTabs[0] ? visibleTabs[0].k : 'produtos';
   }
@@ -1855,63 +1891,65 @@ function renderSettingsView(){
 
   if(ui.settingsTab==='analistas'){
     html += '<div class="section-card"><h3>Analistas</h3>'
-      + '<p class="hint" style="margin-top:-4px;">Cada analista precisa de um login e senha próprios. Analistas inativos não conseguem logar nem aparecem nas listas de seleção, mas seus quadros e cards são preservados.</p>'
+      + '<p class="hint" style="margin-top:-4px;">Cada analista precisa de um login e senha próprios. Analistas inativos não conseguem logar nem aparecem nas listas de seleção, mas seus quadros e cards são preservados. Analistas com agendamentos vinculados não podem ser excluídos — inative-os.</p>'
       + '<table><thead><tr><th></th><th>Nome</th><th>Usuário</th><th>Quadro</th><th>Perfil</th><th>Situação</th><th></th></tr></thead><tbody>';
     state.analysts.forEach(a=>{
       const board = boardOfAnalyst(a.id);
+      const linkedScheds = schedulesForAnalyst(a.id).length;
+      const canDelete = !a.isAdmin && linkedScheds === 0 && !(board && cardsInBoard(board.id).length);
+      const blockTitle = a.isAdmin ? 'Administrador do sistema não pode ser excluído.' : (linkedScheds ? 'Não é possível excluir: há '+linkedScheds+' agendamento(s) vinculado(s) a este analista.' : (board && cardsInBoard(board.id).length ? 'Não é possível excluir: há cards vinculados ao quadro deste analista.' : ''));
       html += '<tr'+(a.inactive?' class="row-inactive"':'')+'>'
         + '<td><span class="side-dot" style="background:'+(a.inactive?'#B9CAD5':a.color)+';display:inline-block;"></span></td>'
         + '<td>'+esc(a.name)+'</td>'
         + '<td>'+(a.username? '<code style="font-size:12px;background:var(--surface-2);padding:2px 6px;border-radius:5px;">'+esc(a.username)+'</code>' : '<span class="hint">Não definido</span>')+'</td>'
         + '<td>'+esc(board?board.name:'—')+'</td>'
         + '<td>'+(a.isAdmin? '<span class="badge" style="background:var(--gold-soft);color:var(--gold);">Administrador</span>' : '<span class="badge" style="background:var(--brand-soft);color:var(--brand);">Analista</span>')+'</td>'
-        + '<td>'+(a.inactive? '<span class="badge" style="background:#B9CAD5;color:#fff;">Inativo</span>' : '<span class="badge" style="background:var(--ok-soft);color:var(--ok);">Ativo</span>')+'</td>'
+        + '<td>'+(a.isAdmin? '<span class="badge" style="background:var(--ok-soft);color:var(--ok);">Ativo</span>' : switchCell('analyst', a.id, a.inactive, 'Ativo', 'Inativo'))+'</td>'
         + '<td><div class="row-actions">'
           + '<button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="analyst-edit" data-id="'+a.id+'">Editar</button>'
-          + (a.isAdmin
-              ? ''
-              : (a.inactive
-                  ? '<button class="btn btn-sm btn-primary" data-action="analyst-activate" data-id="'+a.id+'">Ativar</button>'
-                  : '<button class="btn btn-sm btn-gold" data-action="analyst-deactivate" data-id="'+a.id+'">Inativar</button>'))
-          + (a.isAdmin?'':'<button class="btn btn-sm btn-danger" data-action="delete-analyst" data-id="'+a.id+'">Excluir</button>')
+          + '<button class="btn btn-sm btn-danger" data-action="delete-analyst" data-id="'+a.id+'" '+(canDelete?'':'disabled title="'+esc(blockTitle)+'"')+'>Excluir</button>'
           + '</div></td></tr>';
     });
     html += '</tbody></table><div style="margin-top:12px;"><button class="btn btn-primary btn-sm" data-action="open-modal" data-modal="analyst-new">+ Novo analista</button></div></div>';
   } else if(ui.settingsTab==='produtos'){
-    html += '<div class="section-card"><h3>Produtos contratados — cadastro</h3>';
+    html += '<div class="section-card"><h3>Produtos contratados — cadastro</h3>'
+      + '<p class="hint" style="margin-top:-4px;">Produtos inativos ficam ocultos nos novos cards, mas continuam vinculados aos que já os utilizam.</p>';
     if(!state.productTags.length){
       html += '<p class="hint" style="margin-top:-2px;">Nenhum produto cadastrado ainda.</p>';
     } else {
-      html += '<table><thead><tr><th></th><th>Produto</th><th>Clientes vinculados</th><th></th></tr></thead><tbody>';
+      html += '<table><thead><tr><th></th><th>Produto</th><th>Clientes vinculados</th><th>Situação</th><th></th></tr></thead><tbody>';
       state.productTags.forEach(t=>{
         const linkedCards = cardsUsingProduct(t.id);
         const names = linkedCards.map(c=>{ const cl=getClient(c.clientId); return esc(cl?cl.name:'—'); });
         const canDelete = linkedCards.length===0;
-        html += '<tr><td><span class="side-dot" style="background:'+t.color+';display:inline-block;"></span></td>'
+        html += '<tr'+(t.inactive?' class="row-inactive"':'')+'><td><span class="side-dot" style="background:'+(t.inactive?'#B9CAD5':t.color)+';display:inline-block;"></span></td>'
           + '<td style="font-weight:700;">'+esc(t.name)+'</td>'
           + '<td>'+(names.length? names.join(', ') : '<span class="hint">Nenhum</span>')+'</td>'
+          + '<td>'+switchCell('product', t.id, t.inactive, 'Ativo', 'Inativo')+'</td>'
           + '<td><div class="row-actions">'
             + '<button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="product-edit" data-id="'+t.id+'">Editar</button>'
-            + '<button class="btn btn-sm btn-danger" data-action="delete-product" data-id="'+t.id+'" '+(canDelete?'':'disabled title="Não é possível excluir: há cliente(s) vinculado(s) a este produto."')+'>Excluir</button>'
+            + '<button class="btn btn-sm btn-danger" data-action="delete-product" data-id="'+t.id+'" '+(canDelete?'':'disabled title="Não é possível excluir: há '+linkedCards.length+' cliente(s) vinculado(s) a este produto."')+'>Excluir</button>'
             + '</div></td></tr>';
       });
       html += '</tbody></table>';
     }
     html += '<div style="margin-top:12px;"><button class="btn btn-primary btn-sm" data-action="open-modal" data-modal="product-new">+ Novo produto</button></div></div>';
   } else if(ui.settingsTab==='modulos'){
-    html += '<div class="section-card"><h3>Módulos do sistema — cadastro</h3>';
+    html += '<div class="section-card"><h3>Módulos do sistema — cadastro</h3>'
+      + '<p class="hint" style="margin-top:-4px;">Módulos inativos ficam ocultos em novos agendamentos, mas permanecem vinculados aos já existentes. Módulos com agendamentos ou telas vinculadas não podem ser excluídos — inative-os.</p>';
     if(!state.modules.length){
       html += '<p class="hint" style="margin-top:-2px;">Nenhum módulo cadastrado ainda.</p>';
     } else {
-      html += '<table><thead><tr><th>Módulo</th><th>Agendamentos vinculados</th><th></th></tr></thead><tbody>';
+      html += '<table><thead><tr><th>Módulo</th><th>Agendamentos vinculados</th><th>Situação</th><th></th></tr></thead><tbody>';
       state.modules.forEach(m=>{
         const linked = schedulesUsingModule(m.name);
         const clientNames = clientNamesForSchedules(linked);
         const linkedScreens = screensForModule(m.id);
         const canDelete = linked.length===0 && linkedScreens.length===0;
-        const blockTitle = linked.length ? 'Não é possível excluir: há agendamento(s) usando este módulo.' : (linkedScreens.length ? 'Não é possível excluir: há tela(s) cadastrada(s) neste módulo.' : '');
-        html += '<tr><td style="font-weight:700;">'+esc(m.name)+'</td>'
+        const blockTitle = linked.length ? 'Não é possível excluir: há '+linked.length+' agendamento(s) usando este módulo.' : (linkedScreens.length ? 'Não é possível excluir: há '+linkedScreens.length+' tela(s) cadastrada(s) neste módulo.' : '');
+        html += '<tr'+(m.inactive?' class="row-inactive"':'')+'><td style="font-weight:700;">'+esc(m.name)+'</td>'
           + '<td>'+(linked.length ? (linked.length+' agendamento(s)'+(clientNames.length? ' — '+clientNames.map(esc).join(', '):'')) : '<span class="hint">Nenhum</span>')+'</td>'
+          + '<td>'+switchCell('module', m.id, m.inactive, 'Ativo', 'Inativo')+'</td>'
           + '<td><div class="row-actions">'
             + '<button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="module-edit" data-id="'+m.id+'">Editar</button>'
             + '<button class="btn btn-sm btn-danger" data-action="delete-module" data-id="'+m.id+'" '+(canDelete?'':'disabled title="'+esc(blockTitle)+'"')+'>Excluir</button>'
@@ -1921,23 +1959,25 @@ function renderSettingsView(){
     }
     html += '<div style="margin-top:12px;"><button class="btn btn-primary btn-sm" data-action="open-modal" data-modal="module-new">+ Novo módulo</button></div></div>';
   } else if(ui.settingsTab==='telas'){
-    html += '<div class="section-card"><h3>Telas — cadastro</h3>';
+    html += '<div class="section-card"><h3>Telas — cadastro</h3>'
+      + '<p class="hint" style="margin-top:-4px;">Telas inativas ficam ocultas em novos agendamentos de treinamento, mas permanecem vinculadas aos já existentes. Use o botão de ativar/inativar para desativar sem perder os vínculos.</p>';
     if(!state.modules.length){
       html += '<p class="hint" style="margin-top:-2px;">Cadastre um módulo primeiro — toda tela precisa estar vinculada a um módulo.</p>';
     } else if(!state.screens.length){
       html += '<p class="hint" style="margin-top:-2px;">Nenhuma tela cadastrada ainda.</p>';
     } else {
-      html += '<table><thead><tr><th>Tela</th><th>Módulo</th><th>Agendamentos vinculados</th><th></th></tr></thead><tbody>';
+      html += '<table><thead><tr><th>Tela</th><th>Módulo</th><th>Agendamentos vinculados</th><th>Situação</th><th></th></tr></thead><tbody>';
       state.screens.forEach(scr=>{
         const mod = byId(state.modules, scr.moduleId);
         const linked = schedulesUsingScreen(scr.name);
         const clientNames = clientNamesForSchedules(linked);
         const canDelete = linked.length===0;
-        html += '<tr><td style="font-weight:700;">'+esc(scr.name)+'</td><td>'+esc(mod?mod.name:'—')+'</td>'
+        html += '<tr'+(scr.inactive?' class="row-inactive"':'')+'><td style="font-weight:700;">'+esc(scr.name)+'</td><td>'+esc(mod?mod.name:'—')+'</td>'
           + '<td>'+(linked.length ? (linked.length+' agendamento(s)'+(clientNames.length? ' — '+clientNames.map(esc).join(', '):'')) : '<span class="hint">Nenhum</span>')+'</td>'
+          + '<td>'+switchCell('screen', scr.id, scr.inactive, 'Ativo', 'Inativo')+'</td>'
           + '<td><div class="row-actions">'
             + '<button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="screen-edit" data-id="'+scr.id+'">Editar</button>'
-            + '<button class="btn btn-sm btn-danger" data-action="delete-screen" data-id="'+scr.id+'" '+(canDelete?'':'disabled title="Não é possível excluir: há agendamento(s) usando esta tela."')+'>Excluir</button>'
+            + '<button class="btn btn-sm btn-danger" data-action="delete-screen" data-id="'+scr.id+'" '+(canDelete?'':'disabled title="Não é possível excluir: há '+linked.length+' agendamento(s) usando esta tela."')+'>Excluir</button>'
             + '</div></td></tr>';
       });
       html += '</tbody></table>';
@@ -1947,21 +1987,23 @@ function renderSettingsView(){
     }
     html += '</div>';
   } else if(ui.settingsTab==='tipos'){
-    html += '<div class="section-card"><h3>Tipos de agenda — cadastro</h3>';
+    html += '<div class="section-card"><h3>Tipos de agenda — cadastro</h3>'
+      + '<p class="hint" style="margin-top:-4px;">Tipos inativos ficam ocultos em novos agendamentos, mas permanecem vinculados aos já existentes. Tipos com agendamentos não podem ser excluídos — inative-os.</p>';
     if(!state.agendaTypes.length){
       html += '<p class="hint" style="margin-top:-2px;">Nenhum tipo cadastrado ainda.</p>';
     } else {
-      html += '<table><thead><tr><th>Tipo</th><th>Categoria</th><th>Agendamentos vinculados</th><th></th></tr></thead><tbody>';
+      html += '<table><thead><tr><th>Tipo</th><th>Categoria</th><th>Agendamentos vinculados</th><th>Situação</th><th></th></tr></thead><tbody>';
       state.agendaTypes.forEach(t=>{
         const linked = schedulesUsingType(t.name);
         const clientNames = clientNamesForSchedules(linked);
         const canDelete = linked.length===0;
-        html += '<tr><td style="font-weight:700;">'+esc(t.name)+'</td>'
+        html += '<tr'+(t.inactive?' class="row-inactive"':'')+'><td style="font-weight:700;">'+esc(t.name)+'</td>'
           + '<td><span class="badge" style="background:'+(t.isInternal?'var(--gold-soft)':'var(--brand-soft)')+';color:'+(t.isInternal?'var(--gold)':'var(--brand)')+';">'+(t.isInternal?'Interna':'Implantação')+'</span></td>'
           + '<td>'+(linked.length ? (linked.length+' agendamento(s)'+(clientNames.length? ' — '+clientNames.map(esc).join(', '):'')) : '<span class="hint">Nenhum</span>')+'</td>'
+          + '<td>'+switchCell('type', t.id, t.inactive, 'Ativo', 'Inativo')+'</td>'
           + '<td><div class="row-actions">'
             + '<button class="btn btn-sm btn-ghost" data-action="open-modal" data-modal="type-edit" data-id="'+t.id+'">Editar</button>'
-            + '<button class="btn btn-sm btn-danger" data-action="delete-type" data-id="'+t.id+'" '+(canDelete?'':'disabled title="Não é possível excluir: há agendamento(s) usando este tipo."')+'>Excluir</button>'
+            + '<button class="btn btn-sm btn-danger" data-action="delete-type" data-id="'+t.id+'" '+(canDelete?'':'disabled title="Não é possível excluir: há '+linked.length+' agendamento(s) usando este tipo."')+'>Excluir</button>'
             + '</div></td></tr>';
       });
       html += '</tbody></table>';
@@ -2040,7 +2082,6 @@ function renderModal(){
   const m = ui.modal;
   let inner = '';
   if(m.type==='analyst-new' || m.type==='analyst-edit'){
-    // Só admin pode criar/editar analistas (a interface já esconde a aba, mas garantimos aqui também)
     if(!isAdminUser()){
       return '<div class="overlay"><div class="modal"><p>Sem permissão para esta ação.</p><div class="form-actions"><button class="btn btn-primary" data-action="close-modal">Fechar</button></div></div></div>';
     }
@@ -2098,7 +2139,7 @@ function renderModal(){
       + '<form data-form="screen" data-id="'+(scr?scr.id:'')+'">'
       + '<div class="field"><label>Nome da tela</label><input type="text" name="name" value="'+esc(scr?scr.name:'')+'" required></div>'
       + '<div class="field"><label>Módulo</label><select name="moduleId">';
-    state.modules.forEach(md=> inner += '<option value="'+md.id+'" '+(scr && scr.moduleId===md.id?'selected':'')+'>'+esc(md.name)+'</option>');
+    state.modules.forEach(md=> inner += '<option value="'+md.id+'" '+(scr && scr.moduleId===md.id?'selected':'')+'>'+esc(md.name)+(md.inactive?' (inativo)':'')+'</option>');
     inner += '</select></div>'
       + '<div class="form-actions"><button type="submit" class="btn btn-primary">Salvar</button></div></form>';
   } else if(m.type==='type-new' || m.type==='type-edit'){
@@ -2210,7 +2251,7 @@ function renderScheduleForm(m){
     date: draft ? draft.date : (editing ? editing.date : (m.prefillDate || todayISO())),
     startTime: draft ? draft.startTime : (editing ? editing.startTime : (m.prefillStart || '09:00')),
     endTime: draft ? draft.endTime : (editing ? editing.endTime : (m.prefillEnd || '10:00')),
-    type: draft ? draft.type : (editing ? editing.type : (state.agendaTypes.find(t=>!t.isInternal) ? state.agendaTypes.find(t=>!t.isInternal).name : (state.agendaTypes[0]?state.agendaTypes[0].name:''))),
+    type: draft ? draft.type : (editing ? editing.type : (activeAgendaTypes().find(t=>!t.isInternal) ? activeAgendaTypes().find(t=>!t.isInternal).name : (activeAgendaTypes()[0]?activeAgendaTypes()[0].name:''))),
     category: draft ? (draft.category||'implantacao') : (editing ? (editing.category||'implantacao') : 'implantacao'),
     modules: draft ? (draft.modules||[]) : (editing ? (editing.modules||[]) : []),
     trainedScreens: draft ? (draft.trainedScreens||[]) : (editing ? (editing.trainedScreens||[]) : []),
@@ -2246,7 +2287,12 @@ function renderScheduleForm(m){
     }
   }
   html += '<div class="field"><label>Analista</label><select name="analystId" '+(cardCtx?'disabled':'')+'>';
-  state.analysts.forEach(a=> html += '<option value="'+a.id+'" '+((eff.analystId===a.id)?'selected':'')+'>'+esc(a.name)+(a.inactive?' (inativo)':'')+'</option>');
+  state.analysts.forEach(a=>{
+    /* Mostra todos, mas marca inativos; ao editar mantém o analista atual mesmo se estiver inativo. */
+    const showInactive = a.inactive && (editing && editing.analystId===a.id);
+    if(a.inactive && !showInactive) return;
+    html += '<option value="'+a.id+'" '+((eff.analystId===a.id)?'selected':'')+'>'+esc(a.name)+(a.inactive?' (inativo)':'')+'</option>';
+  });
   html += '</select></div>';
   html += '<div class="field-row">'
     + '<div class="field"><label>Data</label><input type="date" name="date" value="'+esc(eff.date)+'"></div>'
@@ -2254,12 +2300,21 @@ function renderScheduleForm(m){
     + '<div class="field"><label>Fim</label><input type="time" name="endTime" value="'+esc(eff.endTime)+'"></div>'
     + '</div>';
   html += '<div class="field"><label>Tipo</label><select name="type">';
-  state.agendaTypes.filter(t=> !!t.isInternal === (eff.category==='interna')).forEach(t=> html += '<option value="'+esc(t.name)+'" '+(eff.type===t.name?'selected':'')+'>'+esc(t.name)+'</option>');
+  /* Mostra apenas tipos ativos da categoria; mantém o tipo atual mesmo se estiver inativo (ao editar). */
+  state.agendaTypes.filter(t=> !!t.isInternal === (eff.category==='interna')).forEach(t=>{
+    const showInactive = t.inactive && (editing && editing.type===t.name);
+    if(t.inactive && !showInactive) return;
+    html += '<option value="'+esc(t.name)+'" '+(eff.type===t.name?'selected':'')+'>'+esc(t.name)+(t.inactive?' (inativo)':'')+'</option>';
+  });
   html += '</select></div>';
   html += '<div class="field"><label>Módulo(s) do sistema</label><div class="check-grid">';
+  /* Mostra módulos ativos; se o agendamento atual usa algum módulo inativo, mostra com aviso para poder remover. */
   state.modules.forEach(mod=>{
-    const checked = eff.modules.includes(mod.name) ? 'checked':'';
-    html += '<label class="check-pill"><input type="checkbox" name="modules" value="'+esc(mod.name)+'" '+checked+'>'+esc(mod.name)+'</label>';
+    const isInactive = mod.inactive;
+    const isChecked = eff.modules.includes(mod.name);
+    if(isInactive && !isChecked) return;
+    const checked = isChecked ? 'checked':'';
+    html += '<label class="check-pill" style="'+(isInactive?'opacity:.6;':'')+'"><input type="checkbox" name="modules" value="'+esc(mod.name)+'" '+checked+'>'+esc(mod.name)+(isInactive?' <small style="color:var(--ink-faint);">(inativo)</small>':'')+'</label>';
   });
   html += '</div>';
   if(!readOnly){
@@ -2275,8 +2330,10 @@ function renderScheduleForm(m){
     if(!screensForMod.length) return;
     html += '<div class="field"><label>Telas treinadas — '+esc(mod.name)+'</label><div class="check-grid">';
     screensForMod.forEach(scr=>{
-      const checked = eff.trainedScreens.includes(scr.name) ? 'checked':'';
-      html += '<label class="check-pill"><input type="checkbox" name="trainedScreens" value="'+esc(scr.name)+'" '+checked+'>'+esc(scr.name)+'</label>';
+      const isChecked = eff.trainedScreens.includes(scr.name);
+      if(scr.inactive && !isChecked) return;
+      const checked = isChecked ? 'checked':'';
+      html += '<label class="check-pill" style="'+(scr.inactive?'opacity:.6;':'')+'"><input type="checkbox" name="trainedScreens" value="'+esc(scr.name)+'" '+checked+'>'+esc(scr.name)+(scr.inactive?' <small style="color:var(--ink-faint);">(inativo)</small>':'')+'</label>';
     });
     html += '</div></div>';
   });
@@ -2379,7 +2436,7 @@ document.addEventListener('click', function(e){
     const name = (input.value||'').trim();
     if(!name){ input.focus(); return; }
     const values = captureFormValues(form);
-    const newTag = {id:uid('pt'), name, color: colorInput ? colorInput.value : colorForIndex(state.productTags.length)};
+    const newTag = {id:uid('pt'), name, color: colorInput ? colorInput.value : colorForIndex(state.productTags.length), inactive:false};
     state.productTags.push(newTag);
     values.productTags = (values.productTags||[]).concat(newTag.id);
     ui.cardDraft = {cardId: form.dataset.card, values};
@@ -2407,7 +2464,7 @@ document.addEventListener('click', function(e){
     const name = (input.value||'').trim();
     if(!name){ input.focus(); return; }
     const values = captureFormValues(form);
-    if(!state.modules.some(m=>m.name===name)) state.modules.push({id:uid('md'), name});
+    if(!state.modules.some(m=>m.name===name)) state.modules.push({id:uid('md'), name, inactive:false});
     values.modules = (values.modules||[]).concat(name);
     ui.modal.values = values;
     render();
@@ -2416,10 +2473,43 @@ document.addEventListener('click', function(e){
   else if(a==='delete-analyst'){
     if(!isAdminUser()){ showAlert('Apenas administradores podem excluir analistas.'); return; }
     const id = el.dataset.id;
+    const an = getAnalyst(id);
+    if(!an) return;
+    /* Bloqueio de exclusão quando houver qualquer vínculo */
+    if(an.isAdmin){ showAlert('O analista administrador do sistema não pode ser excluído.'); return; }
+    const linkedScheds = schedulesForAnalyst(id).length;
+    const board = boardOfAnalyst(id);
+    const boardCards = board ? cardsInBoard(board.id).length : 0;
+    if(linkedScheds > 0){
+      showAlert('Não é possível excluir "'+an.name+'": há '+linkedScheds+' agendamento(s) vinculado(s). Inative o analista em vez de excluir, ou remova os agendamentos primeiro.');
+      return;
+    }
+    if(boardCards > 0){
+      showAlert('Não é possível excluir "'+an.name+'": há '+boardCards+' card(s) no quadro deste analista. Inative o analista em vez de excluir, ou remova os cards primeiro.');
+      return;
+    }
     showConfirm('Excluir este analista, seu quadro e todos os cards/agendamentos vinculados?', function(){
       deleteAnalyst(id);
       if(ui.currentBoardId && !getBoard(ui.currentBoardId)) ui.currentBoardId = state.boards[0]?state.boards[0].id:null;
     });
+  }
+  else if(a==='toggle-entity-active'){
+    /* switch com data-kind=analyst|module|screen|type|product */
+    const kind = el.dataset.kind;
+    const id = el.dataset.id;
+    const willBeActive = el.checked;
+    if(kind==='analyst'){
+      if(!isAdminUser()){ showAlert('Apenas administradores podem alterar o status de analistas.'); el.checked = !el.checked; return; }
+      const a = getAnalyst(id);
+      if(a && a.isAdmin && !willBeActive){
+        showAlert('O analista administrador do sistema não pode ser inativado.');
+        el.checked = true; return;
+      }
+      setAnalystActive(id, willBeActive);
+    } else {
+      setEntityActive(kind, id, willBeActive);
+    }
+    render();
   }
   else if(a==='analyst-deactivate'){
     if(!isAdminUser()){ showAlert('Apenas administradores podem inativar analistas.'); return; }
@@ -2435,7 +2525,15 @@ document.addEventListener('click', function(e){
   }
   else if(a==='delete-client'){
     const id = el.dataset.id;
-    showConfirm('Excluir este cliente e seus cards vinculados?', function(){ deleteClient(id); });
+    const cl = getClient(id);
+    if(!cl) return;
+    const linkedCards = cardsForClient(id).length;
+    const linkedScheds = schedulesForClient(id).length;
+    if(linkedCards > 0 || linkedScheds > 0){
+      showAlert('Não é possível excluir "'+cl.name+'": há '+linkedCards+' card(s) e '+linkedScheds+' agendamento(s) vinculado(s). Remova esses vínculos primeiro.');
+      return;
+    }
+    showConfirm('Excluir este cliente?', function(){ deleteClient(id); });
   }
   else if(a==='delete-schedule'){
     const id = el.dataset.id;
@@ -2455,7 +2553,7 @@ document.addEventListener('click', function(e){
     const linked = cardsUsingProduct(tagId);
     if(linked.length){
       const names = linked.map(c=>{ const cl=getClient(c.clientId); return cl?cl.name:'—'; });
-      showAlert('Não é possível excluir: este produto está vinculado a '+linked.length+' cliente(s) — '+names.join(', ')+'. Remova o produto desses clientes antes de excluí-lo.');
+      showAlert('Não é possível excluir: este produto está vinculado a '+linked.length+' cliente(s) — '+names.join(', ')+'. Inative o produto em vez de excluir, ou remova dos clientes primeiro.');
     } else {
       showConfirm('Excluir este produto do cadastro?', function(){ state.productTags = state.productTags.filter(t=>t.id!==tagId); });
     }
@@ -2467,7 +2565,7 @@ document.addEventListener('click', function(e){
     const linked = schedulesUsingModule(mod.name);
     const linkedScreens = screensForModule(id);
     if(linked.length){
-      showAlert('Não é possível excluir: este módulo está sendo usado em '+linked.length+' agendamento(s). Remova-o desses agendamentos antes de excluir.');
+      showAlert('Não é possível excluir: este módulo está sendo usado em '+linked.length+' agendamento(s). Inative o módulo em vez de excluir, ou remova dos agendamentos primeiro.');
     } else if(linkedScreens.length){
       showAlert('Não é possível excluir: este módulo tem '+linkedScreens.length+' tela(s) cadastrada(s) — '+linkedScreens.map(s=>s.name).join(', ')+'. Exclua ou reatribua essas telas primeiro.');
     } else {
@@ -2480,7 +2578,7 @@ document.addEventListener('click', function(e){
     if(!scr) return;
     const linked = schedulesUsingScreen(scr.name);
     if(linked.length){
-      showAlert('Não é possível excluir: esta tela está marcada como treinada em '+linked.length+' agendamento(s). Remova-a desses agendamentos antes de excluir.');
+      showAlert('Não é possível excluir: esta tela está marcada como treinada em '+linked.length+' agendamento(s). Inative a tela em vez de excluir, ou remova-a dos agendamentos primeiro.');
     } else {
       showConfirm('Excluir esta tela do cadastro?', function(){ state.screens = state.screens.filter(s=>s.id!==id); });
     }
@@ -2497,13 +2595,12 @@ document.addEventListener('click', function(e){
     if(!tp) return;
     const linked = schedulesUsingType(tp.name);
     if(linked.length){
-      showAlert('Não é possível excluir: este tipo está sendo usado em '+linked.length+' agendamento(s). Remova-o desses agendamentos antes de excluir.');
+      showAlert('Não é possível excluir: este tipo está sendo usado em '+linked.length+' agendamento(s). Inative o tipo em vez de excluir, ou remova-o dos agendamentos primeiro.');
     } else {
       showConfirm('Excluir este tipo do cadastro?', function(){ state.agendaTypes = state.agendaTypes.filter(t=>t.id!==id); });
     }
   }
   else if(a==='settings-tab'){
-    // Bloqueia navegação por abas restritas mesmo se o botão for clicado por engano
     const tab = el.dataset.tab;
     const adminOnly = ['analistas','acesso','nuvem'];
     if(adminOnly.includes(tab) && !isAdminUser()){ showAlert('Apenas administradores podem acessar esta aba.'); return; }
@@ -2563,7 +2660,7 @@ document.addEventListener('change', function(e){
     const form = e.target.closest('form');
     const values = captureFormValues(form);
     const newCategory = e.target.value;
-    const validTypes = state.agendaTypes.filter(t=> !!t.isInternal === (newCategory==='interna'));
+    const validTypes = activeAgendaTypes().filter(t=> !!t.isInternal === (newCategory==='interna'));
     if(!validTypes.some(t=>t.name===values.type)){ values.type = validTypes.length ? validTypes[0].name : ''; }
     values.category = newCategory;
     if(ui.modal){ ui.modal.values = values; render(); }
@@ -2627,17 +2724,14 @@ document.addEventListener('submit', async function(e){
 
     if(!username){ showAlert('Informe o usuário (login).'); return; }
     if(!/^[a-z0-9._-]+$/.test(username)){ showAlert('O usuário pode conter apenas letras, números, ponto, underscore e hífen.'); return; }
-
     if(state.analysts.some(a=> a.username && a.username.toLowerCase()===username && a.id!==id)){
       showAlert('Já existe um analista com o usuário "'+username+'". Escolha outro.'); return;
     }
-
     if(!id && !password){ showAlert('Defina uma senha para o novo analista.'); return; }
     if(password || passwordConfirm){
       if(password !== passwordConfirm){ showAlert('As senhas não coincidem.'); return; }
       if(password.length < 4){ showAlert('A senha deve ter pelo menos 4 caracteres.'); return; }
     }
-
     if(id){
       const a = getAnalyst(id);
       if(!a) return;
@@ -2762,7 +2856,7 @@ document.addEventListener('submit', async function(e){
     const color = fd.get('color');
     const id = form.dataset.id;
     if(id){ const p=byId(state.productTags,id); if(p){ p.name=name; p.color=color; } }
-    else{ state.productTags.push({id:uid('pt'), name, color}); }
+    else{ state.productTags.push({id:uid('pt'), name, color, inactive:false}); }
     ui.modal=null; render();
   }
   else if(type==='module'){
@@ -2776,7 +2870,7 @@ document.addEventListener('submit', async function(e){
       const md = byId(state.modules, id);
       if(md){ renameModuleEverywhere(md.name, name); md.name = name; }
     } else if(name){
-      state.modules.push({id:uid('md'), name});
+      state.modules.push({id:uid('md'), name, inactive:false});
     }
     ui.modal=null; render();
   }
@@ -2792,7 +2886,7 @@ document.addEventListener('submit', async function(e){
       const scr = byId(state.screens, id);
       if(scr){ renameScreenEverywhere(scr.name, name); scr.name = name; scr.moduleId = moduleId; }
     } else if(name){
-      state.screens.push({id:uid('scr'), name, moduleId});
+      state.screens.push({id:uid('scr'), name, moduleId, inactive:false});
     }
     ui.modal=null; render();
   }
@@ -2808,7 +2902,7 @@ document.addEventListener('submit', async function(e){
       const tp = byId(state.agendaTypes, id);
       if(tp){ renameTypeEverywhere(tp.name, name); tp.name = name; tp.isInternal = isInternal; }
     } else if(name){
-      state.agendaTypes.push({id:uid('at'), name, isInternal});
+      state.agendaTypes.push({id:uid('at'), name, isInternal, inactive:false});
     }
     ui.modal=null; render();
   }
